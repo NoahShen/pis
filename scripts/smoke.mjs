@@ -14,6 +14,12 @@ const forcedExitEntry = path.join(
   "fixtures",
   "forced-exit-entry.mjs",
 );
+const pendingListenEntry = path.join(
+  projectRoot,
+  "tests",
+  "fixtures",
+  "pending-listen-entry.mjs",
+);
 
 const STARTUP_TIMEOUT_MS = 5_000;
 const NORMAL_EXIT_TIMEOUT_MS = 3_000;
@@ -173,6 +179,38 @@ async function waitForReady(state) {
 
   fail(
     `server did not become ready within ${STARTUP_TIMEOUT_MS}ms\n${outputFor(state)}`,
+  );
+}
+
+async function waitForEvent(state, event, label) {
+  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    if (state.launchError !== undefined) {
+      throw state.launchError;
+    }
+
+    const entry = findEntry(
+      jsonLines(state.stdout),
+      (candidate) => candidate?.event === event,
+    );
+    if (entry !== undefined) {
+      assert(
+        entry.pid === state.child.pid,
+        `${event} pid ${String(entry.pid)} did not match child pid ${String(state.child.pid)}`,
+      );
+      return entry;
+    }
+
+    if (state.exit !== undefined) {
+      fail(`${label} exited before ${event}\n${outputFor(state)}`);
+    }
+
+    await delay(20);
+  }
+
+  fail(
+    `${label} did not emit ${event} within ${STARTUP_TIMEOUT_MS}ms\n${outputFor(state)}`,
   );
 }
 
@@ -406,11 +444,72 @@ async function runForcedExitScenario() {
   }
 }
 
+async function runPendingListenScenario() {
+  let state;
+
+  try {
+    state = spawnCaptured(pendingListenEntry, { API_TOKEN });
+    await waitForEvent(state, "pending-listen", "pending-listen child");
+    assert(state.child.kill("SIGTERM"), "could not send SIGTERM");
+    await waitForEvent(state, "late-listening", "pending-listen child");
+    await waitForEvent(state, "late-closed", "pending-listen child");
+
+    const exit = await waitForExit(
+      state,
+      NORMAL_EXIT_TIMEOUT_MS,
+      "pending-listen shutdown",
+    );
+    assert(
+      exit.code === 0,
+      `pending-listen exit code was ${String(exit.code)} (${String(exit.signal)})`,
+    );
+    assert(
+      exit.signal === null,
+      `pending-listen terminated with signal ${exit.signal}`,
+    );
+
+    const entries = jsonLines(state.stdout);
+    assert(
+      findEntry(entries, (entry) => entry?.event === "ready") === undefined,
+      "pending-listen emitted a false ready event",
+    );
+    assert(
+      findEntry(
+        entries,
+        (entry) => entry?.event === "error" && entry?.operation === "listen",
+      ) === undefined,
+      "pending-listen changed shutdown into a listen failure",
+    );
+    const shutdown = findEntry(entries, (entry) => entry?.event === "shutdown");
+    assert(
+      shutdown?.outcome === "closed" && shutdown?.forced === false,
+      `pending-listen captured an unexpected shutdown: ${JSON.stringify(shutdown)}`,
+    );
+    assert(
+      findEntry(entries, (entry) => entry?.event === "late-listening") !==
+        undefined,
+      "pending-listen did not establish its delayed listening resource",
+    );
+    assert(
+      findEntry(entries, (entry) => entry?.event === "late-closed") !==
+        undefined,
+      "pending-listen did not close its delayed listening resource",
+    );
+    assertNoSensitiveOutput(state);
+    console.log(
+      "Smoke passed: signal before listen settled exited 0, emitted no false ready, and closed the late resource",
+    );
+  } finally {
+    await terminateAfterFailure(state);
+  }
+}
+
 try {
   await runSignalScenario("SIGINT");
   await runSignalScenario("SIGTERM");
   await runListenFailureScenario();
   await runForcedExitScenario();
+  await runPendingListenScenario();
   console.log("Smoke verification passed.");
 } catch (error) {
   console.error(
