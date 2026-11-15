@@ -7,6 +7,7 @@ import {
 } from "../../src/database/event-search.js";
 import { openDatabase } from "../../src/database/open-database.js";
 import { initializeDatabase } from "../../src/database/schema.js";
+import { withTransaction } from "../../src/database/transaction.js";
 import { withDatabasePath, closeDatabase } from "../fixtures/database.js";
 import { createFaultyDatabase } from "../fixtures/faulty-database.js";
 
@@ -52,7 +53,7 @@ const EVENT_A_TEXT = [
 
 const EVENT_B_TEXT = [
   "事件乙标题",
-  "实体乙",
+  "实体",
   "主题乙",
   "范围乙",
   "  事件乙描述  ",
@@ -119,7 +120,7 @@ function seedSearchEvents(db: Database.Database): void {
   ).run(
     EVENT_B,
     "事件乙标题",
-    "实体乙",
+    "实体",
     "主题乙",
     "范围乙",
     "  事件乙描述  ",
@@ -142,15 +143,18 @@ function seedSearchEvents(db: Database.Database): void {
       ) VALUES (?, ?, ?, ?, ?, ?)
     `,
   );
-  for (let index = 1; index <= 12; index += 1) {
+  // Insert in reverse chronological order; 11 and 12 share a timestamp and
+  // therefore require the id tie-break to retain the expected text order.
+  for (let index = 12; index >= 1; index -= 1) {
     const description = index === 1 ? "旧线索甲乙丙" : `更新${index}描述`;
+    const discoveredHour = index >= 11 ? 11 : index;
     insertUpdate.run(
       `event-a-update-${String(index).padStart(2, "0")}`,
       EVENT_A,
       `更新${index}标题`,
       description,
       null,
-      `2026-11-15T${String(index).padStart(2, "0")}:00:00.000+08:00`,
+      `2026-11-15T${String(discoveredHour).padStart(2, "0")}:00:00.000+08:00`,
     );
   }
   insertUpdate.run(
@@ -277,9 +281,57 @@ describe("event search", () => {
         expect(text).toBe(EVENT_A_TEXT);
         expect(text?.split("\n")).toHaveLength(32);
         expect(text).toContain("乙方别名\n甲\n甲方别名\n更新1标题");
+        expect(text).toContain(
+          "更新10描述\n更新11标题\n更新11描述\n更新12标题\n更新12描述",
+        );
         expect(EVENT_B_TEXT.split("\n")).toContain("  事件乙描述  ");
         expect(EVENT_B_TEXT).toContain("  事件乙描述  \n乙方专属别名");
         expect(text).not.toContain("未确认别名");
+      } finally {
+        closeDatabase(db);
+      }
+    });
+  });
+
+  it("refreshEventSearch joins caller transaction and rolls back its savepoint", async () => {
+    await withDatabasePath((databasePath) => {
+      const db = openDatabase(databasePath);
+
+      try {
+        initializeSearchDatabase(db);
+        seedExistingSearchRows(db);
+
+        withTransaction(db, () => {
+          db.prepare("UPDATE events SET title = ? WHERE id = ?").run(
+            "事务内提交标题",
+            EVENT_A,
+          );
+          refreshEventSearch(db, EVENT_A);
+        });
+
+        expect(
+          db.prepare("SELECT title FROM events WHERE id = ?").get(EVENT_A),
+        ).toEqual({ title: "事务内提交标题" });
+        expect(eventSearchText(db, EVENT_A)).toEqual([
+          EVENT_A_TEXT.replace("事件甲标题", "事务内提交标题"),
+        ]);
+
+        const businessBeforeRollback = businessSnapshot(db);
+        const searchBeforeRollback = searchRows(db);
+
+        expect(() =>
+          withTransaction(db, () => {
+            db.prepare("UPDATE events SET description = ? WHERE id = ?").run(
+              "事务回滚描述",
+              EVENT_A,
+            );
+            refreshEventSearch(db, EVENT_A);
+            throw new Error("caller transaction rollback");
+          }),
+        ).toThrow("caller transaction rollback");
+
+        expect(businessSnapshot(db)).toEqual(businessBeforeRollback);
+        expect(searchRows(db)).toEqual(searchBeforeRollback);
       } finally {
         closeDatabase(db);
       }
@@ -468,7 +520,7 @@ describe("event search", () => {
         expect(
           db
             .prepare("SELECT id FROM events WHERE entity_name = ? ORDER BY id")
-            .all("实体乙"),
+            .all("实体"),
         ).toEqual([{ id: EVENT_B }]);
         expect(
           db
@@ -479,11 +531,7 @@ describe("event search", () => {
         ).toEqual([{ event_id: EVENT_A }]);
 
         expect(
-          queryPlan(
-            db,
-            "SELECT id FROM events WHERE entity_name = ?",
-            "实体乙",
-          ),
+          queryPlan(db, "SELECT id FROM events WHERE entity_name = ?", "实体"),
         ).toContain("idx_events_entity_name");
         expect(
           queryPlan(
