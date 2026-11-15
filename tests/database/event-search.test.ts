@@ -15,6 +15,7 @@ const EVENT_A = "event-a";
 const EVENT_B = "event-b";
 const CONTENT_A = "content-alias-a";
 const CONTENT_B = "content-alias-b";
+const UNCONFIRMED_ALIAS = "未确认别名";
 
 const EVENT_A_TEXT = [
   "事件甲标题",
@@ -80,9 +81,9 @@ function seedSearchEvents(db: Database.Database): void {
   );
   insertContent.run(
     CONTENT_A,
-    "Alias Content A",
+    `Alias Content A（${UNCONFIRMED_ALIAS}候选）`,
     "2026-11-15T08:00:00.000+08:00",
-    "Alias content A",
+    `Alias content A；待确认实体：${UNCONFIRMED_ALIAS}`,
     "FULL",
   );
   insertContent.run(
@@ -252,6 +253,15 @@ describe("event search", () => {
 
       try {
         initializeSearchDatabase(db);
+        const sourceContent = db
+          .prepare<[string], { title: string; body: string }>(
+            "SELECT title, body FROM contents WHERE id = ?",
+          )
+          .get(CONTENT_A);
+        expect(sourceContent).toBeDefined();
+        expect(sourceContent?.title).toContain(UNCONFIRMED_ALIAS);
+        expect(sourceContent?.body).toContain(UNCONFIRMED_ALIAS);
+
         refreshEventSearch(db, EVENT_A);
         refreshEventSearch(db, EVENT_A);
         refreshEventSearch(db, EVENT_B);
@@ -286,7 +296,7 @@ describe("event search", () => {
         );
         expect(EVENT_B_TEXT.split("\n")).toContain("  事件乙描述  ");
         expect(EVENT_B_TEXT).toContain("  事件乙描述  \n乙方专属别名");
-        expect(text).not.toContain("未确认别名");
+        expect(text).not.toContain(UNCONFIRMED_ALIAS);
       } finally {
         closeDatabase(db);
       }
@@ -529,6 +539,13 @@ describe("event search", () => {
             )
             .all("甲"),
         ).toEqual([{ event_id: EVENT_A }]);
+        expect(
+          db
+            .prepare(
+              "SELECT event_id FROM event_entity_aliases WHERE alias = ? ORDER BY event_id",
+            )
+            .all(UNCONFIRMED_ALIAS),
+        ).toEqual([]);
 
         expect(
           queryPlan(db, "SELECT id FROM events WHERE entity_name = ?", "实体"),
@@ -538,6 +555,13 @@ describe("event search", () => {
             db,
             "SELECT event_id FROM event_entity_aliases WHERE alias = ?",
             "甲",
+          ),
+        ).toContain("idx_event_entity_aliases_alias");
+        expect(
+          queryPlan(
+            db,
+            "SELECT event_id FROM event_entity_aliases WHERE alias = ?",
+            UNCONFIRMED_ALIAS,
           ),
         ).toContain("idx_event_entity_aliases_alias");
       } finally {
