@@ -1,0 +1,12 @@
+docs/
+通用规范/
+config/
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+*.db
+*.db-*
+.env
+.env.*

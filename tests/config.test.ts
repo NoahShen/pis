@@ -27,9 +27,9 @@ describe("loadConfig", () => {
       logLevel: "silent",
     });
 
-    expect(loadConfig({ PORT: "65535", API_TOKEN: "x", LOG_LEVEL: "trace" }).port).toBe(
-      65535,
-    );
+    expect(
+      loadConfig({ PORT: "65535", API_TOKEN: "x", LOG_LEVEL: "trace" }).port,
+    ).toBe(65535);
   });
 
   it("loadConfig ignores unknown environment variables", () => {
@@ -73,7 +73,8 @@ describe("loadConfig", () => {
     const safeReasons = {
       HOST: "must be non-empty without surrounding whitespace",
       PORT: "must be a decimal integer from 0 to 65535",
-      LOG_LEVEL: "must be one of fatal, error, warn, info, debug, trace, silent",
+      LOG_LEVEL:
+        "must be one of fatal, error, warn, info, debug, trace, silent",
     } as const;
 
     for (const [path, values] of invalidValues) {

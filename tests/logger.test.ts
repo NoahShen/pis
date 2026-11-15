@@ -12,7 +12,9 @@ class CaptureStream extends Writable {
     encoding: BufferEncoding,
     callback: (error?: Error | null) => void,
   ): void {
-    this.chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding));
+    this.chunks.push(
+      Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding),
+    );
     callback();
   }
 
@@ -40,7 +42,11 @@ describe("structured logger", () => {
     };
 
     logger.ready({ host: "127.0.0.1", port: 3000, ...sentinels } as never);
-    logger.shutdown({ outcome: "closed", forced: false, ...sentinels } as never);
+    logger.shutdown({
+      outcome: "closed",
+      forced: false,
+      ...sentinels,
+    } as never);
     await logger.flush();
 
     expect(destination.lines()).toMatchObject([

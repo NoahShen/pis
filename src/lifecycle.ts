@@ -315,7 +315,10 @@ export function startServer({
   return { ready, completed };
 }
 
-async function flushForStartupError(logger: Logger, timeoutMs: number): Promise<void> {
+async function flushForStartupError(
+  logger: Logger,
+  timeoutMs: number,
+): Promise<void> {
   const budget = createTimeout(Math.max(0, timeoutMs));
 
   try {
@@ -329,7 +332,8 @@ async function flushForStartupError(logger: Logger, timeoutMs: number): Promise<
 
 export async function main(deps: MainDependencies = {}): Promise<void> {
   const forceExit = deps.forceExit ?? ((code: 1): never => process.exit(code));
-  const shutdownTimeoutMs = deps.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS;
+  const shutdownTimeoutMs =
+    deps.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS;
   const loggerFactory = deps.loggerFactory ?? createLogger;
   const appFactory = deps.appFactory ?? buildApp;
   let config: AppConfig;
@@ -337,7 +341,8 @@ export async function main(deps: MainDependencies = {}): Promise<void> {
   try {
     config = loadConfig(deps.env ?? process.env);
   } catch (error) {
-    const reason = error instanceof ConfigError ? "config_error" : "internal_error";
+    const reason =
+      error instanceof ConfigError ? "config_error" : "internal_error";
     let logger: Logger;
 
     try {

@@ -3,11 +3,7 @@ import { createServer } from "node:net";
 import Fastify, { type FastifyInstance } from "fastify";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  closeWithTimeout,
-  main,
-  startServer,
-} from "../src/lifecycle.js";
+import { closeWithTimeout, main, startServer } from "../src/lifecycle.js";
 import { CapturedLogger, FakeSignals } from "./fixtures/captured-logger.js";
 
 function isPending(promise: Promise<unknown>): Promise<boolean> {
@@ -133,7 +129,10 @@ describe("startServer", () => {
         signalSource: signals,
       });
 
-      await expect(server.ready).resolves.toEqual({ host: "127.0.0.1", port: 41001 });
+      await expect(server.ready).resolves.toEqual({
+        host: "127.0.0.1",
+        port: 41001,
+      });
       signals.emit("SIGTERM");
       signals.emit("SIGINT");
       await vi.advanceTimersByTimeAsync(5_000);
@@ -143,7 +142,9 @@ describe("startServer", () => {
         reason: "timeout",
         forced: true,
       });
-      expect(logger.shutdownEntries).toEqual([{ outcome: "timeout", forced: true }]);
+      expect(logger.shutdownEntries).toEqual([
+        { outcome: "timeout", forced: true },
+      ]);
       expect(logger.flushCount).toBe(0);
     } finally {
       vi.useRealTimers();
@@ -170,9 +171,14 @@ describe("startServer", () => {
     await new Promise((resolve) => setImmediate(resolve));
     signals.emit("SIGTERM");
 
-    await expect(server.completed).resolves.toMatchObject({ code: 0, reason: "closed" });
+    await expect(server.completed).resolves.toMatchObject({
+      code: 0,
+      reason: "closed",
+    });
     expect(closeCount).toBe(1);
-    expect(logger.shutdownEntries).toEqual([{ outcome: "closed", forced: false }]);
+    expect(logger.shutdownEntries).toEqual([
+      { outcome: "closed", forced: false },
+    ]);
     expect(signals.count()).toBe(0);
   });
 
@@ -211,7 +217,9 @@ describe("closeWithTimeout", () => {
     const logger = new CapturedLogger();
 
     await expect(closeWithTimeout(app, logger, 100)).resolves.toBe("failed");
-    expect(logger.shutdownEntries).toEqual([{ outcome: "failed", forced: true }]);
+    expect(logger.shutdownEntries).toEqual([
+      { outcome: "failed", forced: true },
+    ]);
     expect(logger.errorEntries).toEqual([
       { operation: "shutdown", reason: "close_error" },
     ]);
@@ -240,7 +248,9 @@ describe("closeWithTimeout", () => {
         signalSource: signals,
       });
 
-      await vi.waitFor(() => expect(productionLogger.readyEntries).toHaveLength(1));
+      await vi.waitFor(() =>
+        expect(productionLogger.readyEntries).toHaveLength(1),
+      );
       signals.emit("SIGINT");
       await running;
 
@@ -264,7 +274,9 @@ describe("closeWithTimeout", () => {
 
       await vi.advanceTimersByTimeAsync(20);
       await expect(closing).resolves.toBe("timeout");
-      expect(logger.shutdownEntries).toEqual([{ outcome: "closed", forced: false }]);
+      expect(logger.shutdownEntries).toEqual([
+        { outcome: "closed", forced: false },
+      ]);
     } finally {
       vi.useRealTimers();
     }
@@ -276,7 +288,9 @@ describe("closeWithTimeout", () => {
     logger.failNextFlush();
 
     await expect(closeWithTimeout(app, logger, 100)).resolves.toBe("failed");
-    expect(logger.shutdownEntries).toEqual([{ outcome: "closed", forced: false }]);
+    expect(logger.shutdownEntries).toEqual([
+      { outcome: "closed", forced: false },
+    ]);
   });
 });
 

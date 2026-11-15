@@ -27,10 +27,15 @@
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "smoke": "npm run build && npm run smoke:run",
-    "smoke:run": "node scripts/smoke.mjs"
+    "smoke:run": "node scripts/smoke.mjs",
+    "verify:toolchain": "node scripts/verify-toolchain.mjs",
+    "format": "node scripts/format.mjs --write",
+    "format:check": "node scripts/format.mjs --check",
+    "verify": "npm run verify:toolchain && npm run typecheck && npm test && npm run build && npm run smoke && npm run format:check"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
+    "prettier": "3.10.1",
     "typescript": "7.0.2",
     "vitest": "5.1.0"
   },
