@@ -1,7 +1,7 @@
 # D01 Plan · SQLite 与事务基础
 
 > 版本：v0.2 · 2026-11-15
-> 状态：**APPROVED · Architect G3 v0.2 复审通过；用户执行批准 PENDING**
+> 状态：**APPROVED · Architect G3 v0.2 复审通过；用户已批准执行**
 > 起草：Paseo Lead（仅规划）
 > 依据：[Intent v0.1](intent.md)（APPROVED）、[Spec v0.1](spec.md)（APPROVED）、[数据库设计 v1.0](../../PIS_数据库设计_v1.0.md) §1.5～§1.8、[任务拆分 v0.1](../../PIS_V1_开发实施计划与任务拆分_v0.1.md) D01、[测试设计 v0.2](../../PIS_V1_测试用例设计_v0.2.md) §4.10。
 > 代码基线：`7ab2b4f732e61aed7218376e45a4c1f1e77f78fe`（D01 Intent/Spec 文档提交）；D00 有效基线为 `8f5681081507a738d072fd9c965f037e7facebd0`。
@@ -13,7 +13,7 @@
 正式派发 Worker 必须同时满足：
 
 1. Architect 完成 G3 并把本文件状态改为 `APPROVED`。
-2. 项目负责人已审核本 Plan，并明确回复批准执行。当前 `USER_EXECUTION_APPROVAL=PENDING`。
+2. 项目负责人已审核本 Plan，并明确回复批准执行。当前 `USER_EXECUTION_APPROVAL=APPROVED`，依据负责人审阅 v0.2 后回复“好的，没问题了，继续下一步”。
 3. Lead 从已合并 D01 文档基线创建独立任务分支并记录 base SHA。
 4. T01 使用现有精确工具链 `/Users/noahshen/.local/share/pis/toolchains/node-v26.13.1-darwin-arm64/bin`；执行时显式置于 `PATH` 前部。`verify:toolchain` 失败时不得安装依赖、改写 `package-lock.json` 或运行 `npm ci`。
 5. 四卡严格串行、每卡由新的 Paseo Worker 领取；Worker 不自行 stage/commit，不宣称 PASS。
@@ -433,7 +433,7 @@ D01 只有在四卡与上述集成 Gate 全部完成后方可申请里程碑验�
 | 故障注入变成 SQL mock | Proxy 仅对一个 INSERT 抛错，READ/DDL/事务仍真实 | 移除该注入测试并 BLOCKED，不能改生产测试参数 |
 | 格式工具漏掉资源/脚本 | `.ts/.mjs` 自动纳入；SQL 不在白名单；`format:check` + git diff | 回滚越界格式，不修改权威 docs |
 
-**当前已完成/未执行边界**：精确工具链路径、Node `26.13.1`、npm `11.20.0` 与 `verify:toolchain` 退出码 0 已有 Lead 只读复核证据；这不代表 native addon 或 SQLite 能力兼容。D01 依赖安装、native 构建/加载、实际 SQLite/trigram、WAL、DDL、事务、锁竞争、FTS、typecheck、测试、build、database smoke、full verify、darwin-arm64、ubuntu-latest CI、干净 checkout 与任何 Worker 执行均为 `NOT_RUN`。Architect G3 v0.2 已通过，用户执行审批仍为 PENDING。
+**当前已完成/未执行边界**：精确工具链路径、Node `26.13.1`、npm `11.20.0` 与 `verify:toolchain` 退出码 0 已有 Lead 只读复核证据；这不代表 native addon 或 SQLite 能力兼容。D01 依赖安装、native 构建/加载、实际 SQLite/trigram、WAL、DDL、事务、锁竞争、FTS、typecheck、测试、build、database smoke、full verify、darwin-arm64、ubuntu-latest CI、干净 checkout 与任何 Worker 执行均为 `NOT_RUN`。Architect G3 v0.2 已通过，用户执行审批为 APPROVED；实现与测试仍须按任务逐项完成。
 
 ## 10. G3 记录
 
@@ -443,4 +443,4 @@ D01 只有在四卡与上述集成 Gate 全部完成后方可申请里程碑验�
 | Architect G3 v0.1 · 2026-11-15 | `CHANGES_REQUIRED` | 要求入参类型真正拒绝 PromiseLike/联合、移除测试对未构建 `dist` 的依赖、澄清既有精确工具链、T02/T04 边界与去重验证 |
 | Lead Plan v0.2 修订 · 2026-11-15 | `REVISION_SUBMITTED` | 已修订类型签名与类型用例、docs/src 与 post-build src/dist 分工、工具链路径、T02/T04 边界及一卡一次 full verify |
 | Architect G3 v0.2 · 2026-11-15 | `APPROVED` | 复核入参类型约束及正负类型用例计划、源码测试与构建后检查的分工、工具链和文件边界；上轮阻塞项已解决。此结论只批准 Plan，不代表 D01 实现或兼容性已验证；等待负责人执行批准 |
-| 项目负责人执行审批 | `PENDING` | Plan 需先交负责人审阅；即使 G3 通过，未获明确批准也不得派发 Worker |
+| 项目负责人执行审批 | `APPROVED` | 负责人审阅已通过 G3 的 Plan v0.2 后回复“好的，没问题了，继续下一步”；授权按本 Plan 逐卡执行 |
