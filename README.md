@@ -1,6 +1,6 @@
 # PIS
 
-PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库处于 D00「工程骨架」阶段，只提供构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施。
+PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00 的构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施，以及 D01 的 SQLite 连接与初始化基础。数据库尚未接入 HTTP 服务启动流程。
 
 ## 先决版本
 
@@ -35,11 +35,18 @@ npm run typecheck
 npm test
 npm run build
 npm run smoke
+npm run database:smoke
 npm run format:check
 npm run format
 ```
 
-`npm run smoke` 会先重新构建。`npm start` 不会隐式安装或编译，执行前必须已有 `dist/server.js`。格式工具只处理白名单内的工程文件；`docs/`、`通用规范/`、`config/`、Prompt、依赖、构建产物和临时文件不会被重写。
+`npm run smoke` 会先重新构建，然后依次运行真实进程 smoke 和编译产物数据库 smoke。`npm run database:smoke` 要求先执行 `npm run build`，它核对 `src/database/schema.sql` 与 `dist/database/schema.sql` 字节一致，并从编译产物初始化临时数据库。`npm start` 不会隐式安装或编译，执行前必须已有 `dist/server.js`。格式工具只处理白名单内的工程文件；`docs/`、`通用规范/`、`config/`、Prompt、依赖、构建产物和临时文件不会被重写。
+
+## 数据库基础
+
+冻结 DDL 的唯一权威来源是数据库设计文档；`src/database/schema.sql` 是可运行副本，并由测试校验其内容与文档唯一 SQL 代码块一致。`npm run build` 在 TypeScript 编译后只复制该 SQL 资源到 `dist/database/schema.sql`，生产模块从自身位置加载它，不依赖当前工作目录或 `docs/`。
+
+`initializeDatabase(db)` 负责一次性建立冻结的 11 张业务表、显式索引和 `event_search` FTS5 表；连接级 WAL、外键与 busy timeout 在 DDL 事务前配置。该函数可对当前冻结结构重复执行并保留已有数据，但**不是迁移器**：它不升级或修复历史 schema。
 
 ## 配置
 
@@ -92,9 +99,9 @@ curl --fail-with-body \
 
 ## 当前范围与未决项
 
-D00 当前范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify 健康端点、Pino 安全日志、环境配置校验和可测试的启停生命周期。
+D00 范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify 健康端点、Pino 安全日志、环境配置校验和可测试的启停生命周期。D01 当前提供 better-sqlite3 连接与冻结 schema 初始化基础；事务、时间存取和 Event FTS 维护仍由后续任务完成。
 
-当前不包含数据库、业务 API、RSS 抓取、LLM 调用、任务队列、Prompt 加载或 PM2 部署配置。`/api/*` 和 `/feeds/*` 尚未实现。
+当前不包含业务 API、RSS 抓取、LLM 调用、任务队列、Prompt 加载或 PM2 部署配置。`/api/*` 和 `/feeds/*` 尚未实现。
 
 Prompt 目录与权威设计当前存在待对齐项：当前实际路径为 `config/prompt/`，权威设计目标为 `config/prompts/`。该事项应在 D02-T01 前对齐，D00 不修改 Prompt。
 
