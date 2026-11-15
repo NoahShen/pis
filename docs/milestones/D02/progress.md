@@ -12,7 +12,7 @@
 - 旧 `USER_CONTEXT_PUBLIC_GIT_APPROVAL=PENDING` 已废止，不得继续作为阻塞。
 - 真实 `config/prompt/user-context.md` 保留原位、仅本地私有；不复制到 worktree、不 stage、不进入候选、不读取正文用于生成公开文件。旧目录不整目录移动或删除。
 - T01 已新增精确 `.gitignore` 规则 `/config/prompt/user-context.md`，不忽略 `config/prompts/user-context.md`。公开同名文件仅由 T01 Worker 新建明确标注的通用合成测试背景。
-- D02 推进心跳 `b59d1a26` 已 active：`*/10 * * * *`，`Asia/Shanghai`，由当前 Architect 检查推进与分级验收；最终验收后由 Architect 删除。
+- D02 推进心跳 `b59d1a26`（`*/10 * * * *`，`Asia/Shanghai`）已由当前 Architect 在本地集成 Gate 批准后删除；未删除其他 heartbeat。
 - `T01_DOCS_COMMIT=130542511b35cda488fc4d88de3655a885cd6d04`
 - T01：`PASS · LOCAL_MERGE_VERIFIED`
 - `WORKSPACE_ID=wks_e7db32a91815c4ec`
@@ -86,7 +86,7 @@
 - System content 只含本次原始 instructions、固定标签和 T02 当前 Schema；动态指令 sentinel 只作为 user JSON 普通数据，Knowledge 的合成 User Context 只进入独立 `user_context` 字段。PMT-13 两轮重新读盘；Stub 使用固定队列、只读请求快照和稳定耗尽错误，仅位于 test fixture。
 - T04 parser 计数测试通过 `importOriginal` 包装真实 `parseLlmResponse`，保留实际返回与校验行为；非法输出、合法空/否定结果继续证明真实解析路径，不是假阳性。
 - T04 以精确四路径 stage 后提交，并用 `--no-ff` 合入 local main；未 push。
-- D02 本地集成 Gate：`LEAD_VERIFIED · ARCHITECT_FINAL_REVIEW_PENDING`
+- D02 本地集成 Gate：`APPROVED · ARCHITECT_FINAL_REVIEW_APPROVED`
 - `D02_CLEAN_SNAPSHOT_SOURCE=2f96f676d54623b8194e58e3b25bde595c17497c`
 - 从 merge commit 通过 `git archive` 创建不含 `.git/node_modules/dist/coverage` 的干净快照；真实 `config/prompt/user-context.md` 不在快照。`npm ci` 安装 93 packages、0 vulnerabilities，`package.json`/`package-lock.json` 摘要安装前后不变。
 - 干净快照 `npm run verify` 为 24/24 文件、136/136 测试通过，精确 Node `v26.13.1` / npm `11.20.0`、typecheck/build/SIGINT+SIGTERM smoke/database smoke/71-file format check 全部通过。
@@ -95,7 +95,10 @@
 - 最终 operation→Prompt、response/reference、Schema 与 typed call 映射未出现第二套来源；生成 Schema 独立对象计数 processing-route 1/1、event-search 2/2、event-analysis 5/5、knowledge-analysis 3/3、topic-matching 1/1，全部 strict。D02 diff 未修改 `package.json`/锁文件、数据库、CI 或配置脚本；生产 `src` 无 Stub，D02 测试不读取真实 Context、不访问数据库或真实网络。
 - 临时干净快照 `/private/tmp/pis-d02-gate.l3lqis` 在证据采集后已按精确路径删除。`D02_REMOTE_CI=NOT_RUN`；真实 OpenAI-compatible Provider、PMT-11/12 模型语义、完整 Runtime 两次预算、业务落库均 `NOT_RUN`。
 - `D02_PUSH=NOT_RUN`；`D02_FINAL_PASS=NOT_ISSUED`。远程 CI 未授权/未运行前不得宣布整个里程碑验收完成。
+- Architect 终验独立核对 `main=332978ec2523cfbe3f6cb8a58312871db66724b7` / tree `b4cc3bb30a8f4e5eca8cebcd49de4caf61eac95a` 与 T04 merge parents/tree 精确一致；主树 clean、`diff --check` 通过，从 D02 基线 `0fcc52b` 以来仅 23 个白名单文件，无依赖/数据库/CI/formatter 越界。
+- Architect 独立核对六个 Markdown 与全部摘要、旧私有路径精确 ignore、公开路径不被 ignore、HEAD 无真实私有文件；运行精确 toolchain/typecheck 与四组定向测试 4 files/46 tests 全部通过，并完整复核 operation→Prompt→Schema→typed-call 单链。Architect 采纳 Lead 的干净归档 `npm ci`（93 packages、0 vulnerabilities）与 full verify 24 files/136 tests + build/smokes/71-file format 证据，本轮未重跑 full。
+- `D02_LOCAL_GATE=APPROVED`；`D02_REMOTE_CI=NOT_RUN`；`D02_FINAL_PASS=NOT_ISSUED`。未 push、未启动 D03。
 
 ## 下一步
 
-将 T04 merge、干净快照与本地集成证据交 Architect 终验。Architect 批准后记录本地集成 Gate 结论并删除 D02 推进心跳；不得 push、不得启动 D03，也不得以未运行远程 CI 宣布 D02 最终验收完成。
+本地集成 Gate 已完成并获 Architect 批准；D02 推进心跳已删除。后续等待项目负责人另行授权 push/远程 CI，并完成后真实 OpenAI-compatible Provider、PMT-11/12 模型语义、完整 Runtime 两次预算与业务落库验证；在此之前不得宣布 D02 最终 PASS，也不得启动 D03。
