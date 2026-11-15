@@ -65,15 +65,37 @@
 - Architect 独立 `verify:toolchain`、定向 18/18 测试与 `git diff --check` 均通过，完整阅读源码、测试和 README diff；采纳 Lead full verify 证据，本轮未独立重跑全量。
 - Endpoint 校验以 WHATWG `URL` 规范化后的 protocol/hostname/username/password 为安全边界；仅因 URL 会擦除显式空 userinfo，额外窄拒绝 `https://@host`/`https://:@host`，并覆盖 host 大小写、IPv4/IPv6 等价形式及 path/query/fragment 中 `@`。
 - T03 以精确三路径 stage 后提交，并用 `--no-ff` 合入 local main；未 push。
-- T04：`DELEGATED · WORKER_RUNNING · REVIEW_PENDING`
+- T04：`PASS · LOCAL_MERGE_VERIFIED`
 - `T04_WORKSPACE_ID=wks_4df65fc3acb78a41`
 - `T04_WORKER_AGENT_ID=667c97c9-18d0-404d-aca4-e9f18453b563`
+- `T04_ARCHITECT_AGENT_ID=8d95474b-e07e-43c7-bc7f-92928fe91e71`
 - `T04_BRANCH=codex/d02-t04-llm-calls`
 - `T04_BASE_SHA=c4c9587dda59aa967bb65d087cb1aff4f643fa9e`
 - `T04_WORKTREE=/Users/noahshen/.paseo/worktrees/0eapmc43/codex-d02-t04-llm-calls`
 - T04 新 worktree 已完成 `npm ci`（93 packages、0 vulnerabilities）与精确 toolchain 校验；真实 User Context 不在 worktree，公开合成 Context 存在。
+- `T04_WORKER_VERDICT=REVIEW`；`T04_LEAD_REVIEW=APPROVED`；`T04_ARCHITECT_REVIEW=APPROVED`
+- Lead 与 Architect 批准并核对一致的 exact SHA-256：`README.md=79ee0a8e5f4d1a4865140a3f70089005aa5c89b338b89113de88a7465228bbff`；`src/llm/llm-calls.ts=d1afd2bd80715bd213bd65815751a99fdc54266972fae6451408081c5bc0f85a`；`tests/llm/llm-calls.test.ts=2a98345af8b33a9f7f306384aeeb5b160fcbdc5c49afae04904dd491bd6f9137`；`tests/fixtures/stub-llm.ts=bbf353887c8f25ac4d4fcbc5838bf19160fc1d83c2dbcbefff980f459d29e1e2`。
+- `T04_CANDIDATE_SHA=f105f4031919d20b8bc3ae4eb6f53d6c9df97a22`
+- `T04_APPROVED_TREE=f622486d5fbcf96781d4d6feab46295614be5a6d`
+- `T04_MERGE_SHA=2f96f676d54623b8194e58e3b25bde595c17497c`
+- `T04_MERGE_TREE=cb1df1ec17f1cf36f7bb8e678c66e9d37b506e08`
 - `T04_REMOTE_CI=NOT_RUN`；`T04_REAL_LLM=NOT_RUN`
+- Lead 定向 T04 为 1/1 文件、11/11 测试通过；候选与合并后完整 `npm run verify` 均为 24/24 文件、136/136 测试通过，typecheck/build/SIGINT+SIGTERM smoke/database smoke/71-file format check 全部通过。
+- Architect 独立核对 candidate SHA/tree、四文件 hash、clean worktree、`git diff --check`、toolchain、typecheck 与定向 11/11 均通过；完整阅读生产、Stub 与 11 项测试，采纳 Lead full verify 证据，本轮未独立重跑全量。
+- Typed call 只复用 T01 的 operation/Prompt 来源、T02 的 response/reference/Schema 与 T03 的 `TextCompletionClient`；每方法固定 operation，输入 taskData/references/signal 在首个 await 前快照，load/completion/parse 各一次，Prompt 失败不发 completion，completion 错误原样上抛，校验失败不重试。
+- System content 只含本次原始 instructions、固定标签和 T02 当前 Schema；动态指令 sentinel 只作为 user JSON 普通数据，Knowledge 的合成 User Context 只进入独立 `user_context` 字段。PMT-13 两轮重新读盘；Stub 使用固定队列、只读请求快照和稳定耗尽错误，仅位于 test fixture。
+- T04 parser 计数测试通过 `importOriginal` 包装真实 `parseLlmResponse`，保留实际返回与校验行为；非法输出、合法空/否定结果继续证明真实解析路径，不是假阳性。
+- T04 以精确四路径 stage 后提交，并用 `--no-ff` 合入 local main；未 push。
+- D02 本地集成 Gate：`LEAD_VERIFIED · ARCHITECT_FINAL_REVIEW_PENDING`
+- `D02_CLEAN_SNAPSHOT_SOURCE=2f96f676d54623b8194e58e3b25bde595c17497c`
+- 从 merge commit 通过 `git archive` 创建不含 `.git/node_modules/dist/coverage` 的干净快照；真实 `config/prompt/user-context.md` 不在快照。`npm ci` 安装 93 packages、0 vulnerabilities，`package.json`/`package-lock.json` 摘要安装前后不变。
+- 干净快照 `npm run verify` 为 24/24 文件、136/136 测试通过，精确 Node `v26.13.1` / npm `11.20.0`、typecheck/build/SIGINT+SIGTERM smoke/database smoke/71-file format check 全部通过。
+- 干净快照分别执行 T01～T04 定向测试：PromptRepository 7/7、response validators 10/10、Chat Completions client 18/18、typed calls 11/11，共 46/46。
+- 快照内 `config/prompts/` 恰有六个 Markdown；五份功能 Prompt 摘要分别为 `event-analysis=9b05c4b13fd413b7b303183546aa92b02ca4a7359ac26f3dd88b5cb28fad86c3`、`event-search=e75b656c7cb69c93d6c77af47c0e254f0c6386da74c6d2156221109abfd2d746`、`knowledge-analysis=037eceafb9e927a31b57668ab85f3bafd4b410ef9b6118590ec1f00577aa0512`、`processing-route=98a34e833c64a3399b160004b12e2985b77b8d06fd2153fd800424988c3796c4`、`topic-matching=040a083e1b413a30f7d21a3c161fbb1c8edc47f0cb45006aeb36b6438c20e12b`，均与 Plan/迁移前基线一致；公开合成 `user-context.md=d588452ae01621d49315cf670c9176f71f39370879d23c4b68fba64a6f0205ba` 明确标注为非真实背景、非私有文件派生。
+- 最终 operation→Prompt、response/reference、Schema 与 typed call 映射未出现第二套来源；生成 Schema 独立对象计数 processing-route 1/1、event-search 2/2、event-analysis 5/5、knowledge-analysis 3/3、topic-matching 1/1，全部 strict。D02 diff 未修改 `package.json`/锁文件、数据库、CI 或配置脚本；生产 `src` 无 Stub，D02 测试不读取真实 Context、不访问数据库或真实网络。
+- 临时干净快照 `/private/tmp/pis-d02-gate.l3lqis` 在证据采集后已按精确路径删除。`D02_REMOTE_CI=NOT_RUN`；真实 OpenAI-compatible Provider、PMT-11/12 模型语义、完整 Runtime 两次预算、业务落库均 `NOT_RUN`。
+- `D02_PUSH=NOT_RUN`；`D02_FINAL_PASS=NOT_ISSUED`。远程 CI 未授权/未运行前不得宣布整个里程碑验收完成。
 
 ## 下一步
 
-等待 T04 Worker 完成通知，不以轮询代替验收。候选返回后由 Lead 审核 typed call 的固定 operation/请求组合/输入快照/单次 Prompt+completion+parse、Stub 确定性、敏感泄露矩阵、白名单边界及定向/full verify，再交 Architect 轻量复核；未复核不合并且不提前完成 D02 集成 Gate。禁止 push。
+将 T04 merge、干净快照与本地集成证据交 Architect 终验。Architect 批准后记录本地集成 Gate 结论并删除 D02 推进心跳；不得 push、不得启动 D03，也不得以未运行远程 CI 宣布 D02 最终验收完成。
