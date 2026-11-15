@@ -2,6 +2,10 @@
 
 ## 当前状态
 
+- 最新远程验收：D01 最终提交 `5bf17f5b2b21783746b7d1144a1212e73aa24847` 已按负责人授权推送至 origin/main；[GitHub Actions #43716255990](https://github.com/NoahShen/pis/actions/runs/43716255990) 整体 Success，verify 作业通过。D01 ubuntu-latest CI 更新为 PASS；下文 NOT_RUN 为推送前历史状态。未逐行下载远程日志，其他平台不外推。
+- 后续阶段：已准备 [D02 Intent](../D02/intent.md)，待负责人 G1 审批；尚未移动 Prompt 或启动 D02 开发。
+
+
 - 前置：D00 修复后基线 `8f56810` 已确认，已 push，远程 [CI #1](https://github.com/NoahShen/pis/actions/runs/43690265810) 成功。
 - Intent v0.1：APPROVED。负责人在措辞修订后明确回复“好的，没问题了，继续下一步”。
 - Spec v0.1：APPROVED，Architect 完成 G2，见 [spec.md](spec.md)。
