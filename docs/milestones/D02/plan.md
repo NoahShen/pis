@@ -1,7 +1,7 @@
 # D02 Plan · Prompt、LLM 客户端与严格 Schema
 
 > 版本：v0.2 · 2026-11-15
-> 状态：**REVIEW · G3 v0.1 意见已修订，待 Architect 复评；用户执行批准仍为 PENDING**
+> 状态：**APPROVED · Architect G3 v0.2 复评通过；用户执行及 User Context 公开授权仍为 PENDING**
 > 起草：Paseo Lead（仅规划）
 > 依据：[Intent v0.1](intent.md)（APPROVED）、[Spec v0.1](spec.md)（APPROVED）、[技术实现设计 v1.0](../../PIS_技术实现设计_v1.0.md) §3、§17、[测试设计 v0.2](../../PIS_V1_测试用例设计_v0.2.md) §4.12。
 > 代码基线：`0fcc52bb0708b1888dbfa872b3a4907eaeb6218c`（D02 Spec 提交）。
@@ -651,7 +651,7 @@ D02 只有四卡、本地集成 Gate 和经授权运行的远程 CI 全部通过
 | Stub/真实 User Context 混入测试 | Stub 仅 tests fixture；全部合成数据和临时目录 | 阻断 T04，生产 `src` 不保留测试替身 |
 | 新增依赖或协议扩张 | 文件/依赖 diff 审计；只允现有 Zod/原生 fetch | 回滚依赖和协议改动，不在本卡扩范围 |
 
-**当前实际状态**：Plan v0.2 为 `REVIEW`，G3 v0.1 已提出 CHANGES_REQUIRED 并已修订，G3 复评尚未进行。`USER_EXECUTION_APPROVAL=PENDING`、`USER_CONTEXT_PUBLIC_GIT_APPROVAL=PENDING`；Prompt 迁移、`npm ci`、代码实现、定向测试、full verify、干净快照、push、远程 CI、真实 Provider 和任何 Worker 执行均为 `NOT_RUN`。T01～T04 保持 `NOT_STARTED`。
+**当前实际状态**：Plan v0.2 已获 Architect G3 APPROVED；上轮六项规划问题已解决，此结论不代表实现或测试通过。`USER_EXECUTION_APPROVAL=PENDING`、`USER_CONTEXT_PUBLIC_GIT_APPROVAL=PENDING`；Prompt 迁移、`npm ci`、代码实现、定向测试、full verify、干净快照、push、远程 CI、真实 Provider 和任何 Worker 执行均为 `NOT_RUN`。T01～T04 保持 `NOT_STARTED`。
 
 ## 10. G3 记录
 
@@ -659,4 +659,5 @@ D02 只有四卡、本地集成 Gate 和经授权运行的远程 CI 全部通过
 | --- | --- | --- |
 | Lead Plan v0.1 · 2026-11-15 | `REVIEW` | 已固定四卡文件边界、operation/Prompt 映射、五类 Schema/引用、错误分类、HTTP 协议、typed calls、测试与 Gate；等待 Architect G3 |
 | Architect G3 v0.1 · 2026-11-15 | `CHANGES_REQUIRED` | 要求补充跨 worktree 文件移交与 User Context 单独公开授权、typed call 输入快照、fetch/read/cleanup 全生命周期有界、修正 User Context 消息位置、worktree `npm ci`、远程 CI 待 push 授权门禁 |
-| Lead Plan v0.2 · 2026-11-15 | `REVIEW` | 已逐项修订上述 6 类问题；未执行任务，等待 Architect G3 复评 |
+| Lead Plan v0.2 · 2026-11-15 | `REVIEW` | 已逐项修订上述 6 类问题；未执行任务，提交 Architect G3 复评 |
+| Architect G3 v0.2 | `APPROVED` | 已复核文件移交及恢复、公开授权、请求与引用快照、fetch/read/cleanup 有界、消息位置、干净安装与远程 CI 边界；上轮阻塞项已解决。用户执行及 User Context 公开授权仍为 PENDING，不委派 Worker |
