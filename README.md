@@ -1,6 +1,6 @@
 # PIS
 
-PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00 的构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施，以及 D01 的 SQLite 连接与初始化基础。数据库尚未接入 HTTP 服务启动流程。
+PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00 的构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施，以及 D01 的 SQLite 连接、冻结 schema、同步事务与 Event FTS 维护基础。数据库尚未接入 HTTP 服务启动流程。
 
 ## 先决版本
 
@@ -47,6 +47,8 @@ npm run format
 冻结 DDL 的唯一权威来源是数据库设计文档；`src/database/schema.sql` 是可运行副本，并由测试校验其内容与文档唯一 SQL 代码块一致。`npm run build` 在 TypeScript 编译后只复制该 SQL 资源到 `dist/database/schema.sql`，生产模块从自身位置加载它，不依赖当前工作目录或 `docs/`。
 
 `initializeDatabase(db)` 负责一次性建立冻结的 11 张业务表、显式索引和 `event_search` FTS5 表；连接级 WAL、外键与 busy timeout 在 DDL 事务前配置。该函数可对当前冻结结构重复执行并保留已有数据，但**不是迁移器**：它不升级或修复历史 schema。
+
+`event_search` 是可丢弃重存的派生索引，不是业务事实。只能通过 `refreshEventSearch(db, eventId)` 刷新单个 Event，或通过 `rebuildEventSearch(db)` 全量重建；不要直接写入或依赖 SQL 触发器自动同步。后续业务事务修改 Event、Event Update 或确认 Entity alias 时，必须在同一短事务内显式调用刷新函数。D01 不提供自动挂接；索引构建失败时，业务事务与旧索引应一起回滚。
 
 ## 配置
 
@@ -99,7 +101,7 @@ curl --fail-with-body \
 
 ## 当前范围与未决项
 
-D00 范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify 健康端点、Pino 安全日志、环境配置校验和可测试的启停生命周期。D01 当前提供 better-sqlite3 连接与冻结 schema 初始化基础；事务、时间存取和 Event FTS 维护仍由后续任务完成。
+D00 范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify 健康端点、Pino 安全日志、环境配置校验和可测试的启停生命周期。D01 当前提供 better-sqlite3 连接、冻结 schema 初始化、同步事务基础、TEXT 时间存取和 Event FTS 刷新/重建基础。
 
 当前不包含业务 API、RSS 抓取、LLM 调用、任务队列、Prompt 加载或 PM2 部署配置。`/api/*` 和 `/feeds/*` 尚未实现。
 
