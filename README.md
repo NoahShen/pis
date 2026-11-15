@@ -88,6 +88,12 @@ export LOG_LEVEL=info
 
 显式空字符串不会使用默认值。配置错误时进程在监听前以非零状态退出，错误信息不包含配置原值。启动成功时日志会记录实际监听地址与端口；使用 `PORT=0` 时请以 ready 日志中的端口为准。
 
+### Chat Completions 调用配置
+
+`createChatCompletionsClient()` 的 `endpoint`、`apiKey` 和 `model` 由调用方显式提供，不使用环境变量、默认 endpoint、默认密钥或默认模型。endpoint 必须使用 HTTP(S)，生产环境使用 HTTPS；HTTP 仅允许 `localhost`、`127.0.0.1` 或 `[::1]` 测试地址，且所有 endpoint 均禁止 userinfo。
+
+客户端只发送一次非流式请求，不重试。默认总超时为 60 秒、响应上限为 2 MiB；错误和安全日志不包含 endpoint query、apiKey、model、Prompt、响应正文或底层 cause。
+
 ## 启动、健康检查与关闭
 
 先构建并启动：
