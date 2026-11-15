@@ -10,7 +10,7 @@
 - Spec v0.1：APPROVED，Architect 于 2026-11-15 完成 G2 复核，见 `spec.md` §9。
 - Plan v0.3：`APPROVED`，Architect 独立 G3 复核通过；用户已于 2026-11-15 明确确认“按这份 Plan 启动 D00 开发”。
 - G3 记录更正：Architect Round 1 的真实结论为 `CHANGES_REQUIRED`；v0.2 中所谓“Architect 第 2 轮复核”实为 Lead 自查，已撤销错误归因。
-- Git：`origin` 为 `git@github.com:NoahShen/pis.git`；本地 `main` 文档基线为 `e708f65f852ceb10472ee04140470c0c99bcb384`，T01 集成 merge 为 `9c3b886d25224205dc383ffba1d1d7cd838028b0`，T02 集成 merge 为 `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b`，尚未推送。
+- Git：`origin` 为 `git@github.com:NoahShen/pis.git`；本地 `main` 文档基线为 `e708f65f852ceb10472ee04140470c0c99bcb384`，T01 集成 merge 为 `9c3b886d25224205dc383ffba1d1d7cd838028b0`，T02 集成 merge 为 `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b`，T03 集成 merge 为 `14cc5d59cfc914cef83df5c791db70561e6e55a3`，T04 集成 merge 为 `1c7e8f8f3c38204cce1d6b34ea494938360a812d`；尚未推送。
 - Lead：已委派 `5904a3c3-e232-4f7b-b675-929f9ddac3fb`。
 - T01 Worker：`4fe4ad6f-9495-45da-a47d-6526cf8f8304`，已通过 Paseo `codex-worker` profile 完成实现并回报 REVIEW 证据。
 - T02 Worker：`a2960bcf-2df0-4e8a-a6bc-f3e80ea8f727`，已通过 Paseo `codex-worker` profile 完成实现并回报 REVIEW 证据；Lead 独立审核无 BLOCKER，Architect 已批准并合入本地 `main`。
@@ -20,26 +20,26 @@
 - T01 隔离工作区：`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t01-typescript-bootstrap`；branch `d00-t01-typescript-bootstrap`；base `e708f65f852ceb10472ee04140470c0c99bcb384`；task commit `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`；merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0`。
 - T02 隔离工作区：workspace `wks_e0c1d33b7f583305`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t02-deterministic-test-facilities`；branch `d00-t02-deterministic-test-facilities`；base `ed5ebb006b109261624c8c68829166cbd97c6852`；task commit `47a138f5f1285c34af038dfd59eb521b75d3cf5f`；merge commit `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b`。
 - T03 隔离工作区：workspace `wks_ae6cb03545d25b12`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t03-fastify-server-lifecycle`；branch `d00-t03-fastify-server-lifecycle`；base `d13aa340bbb40617a4617bcea92df8a25f2211ac`；初始 task commit `0b60d214e44ee4105a4c700230c31b7d36a32251`；已批准 review-fix commit `09368ceee86ea480aab9101f8cdd6ea1f9fee957`；merge commit `14cc5d59cfc914cef83df5c791db70561e6e55a3`。
-- T04 隔离工作区：workspace `wks_99e8875665327b35`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t04-verification-ci-readme`；branch `d00-t04-verification-ci-readme`；base `c0856178048b5faba370ba2c3d71a2fa9954ae42`；原 task commit `45fb982e69c9d4b45f72fd6599c1348de105445b`；review-fix commits `e92e339e1e908ddcedb35d2ea242b2821668789f`、`eb86f01651984e962fa9e19c65075bf22b6cd906`；Architect 已批准最终 HEAD `eb86f01651984e962fa9e19c65075bf22b6cd906`；Worker `54587538-09e7-40dd-a630-2b97972d5b40`。
+- T04 隔离工作区：workspace `wks_99e8875665327b35`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t04-verification-ci-readme`；branch `d00-t04-verification-ci-readme`；base `c0856178048b5faba370ba2c3d71a2fa9954ae42`；原 task commit `45fb982e69c9d4b45f72fd6599c1348de105445b`；review-fix commits `e92e339e1e908ddcedb35d2ea242b2821668789f`、`eb86f01651984e962fa9e19c65075bf22b6cd906`；Architect 批准最终 HEAD `eb86f01`；merge commit `1c7e8f8f3c38204cce1d6b34ea494938360a812d`；Worker `54587538-09e7-40dd-a630-2b97972d5b40`。
 
 | 任务 ID | 状态 | 基线/提交 | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
 | D00-T01 | PASS | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`; merge `9c3b886d25224205dc383ffba1d1d7cd838028b0` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T02 | PASS | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f`; merge `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` | Lead 独立审核与 Architect 复核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T03 | PASS | base `d13aa340bbb40617a4617bcea92df8a25f2211ac`; work `09368ceee86ea480aab9101f8cdd6ea1f9fee957`; merge `14cc5d59cfc914cef83df5c791db70561e6e55a3` | Lead 独立审核、Architect 复核及合并树复验通过：typecheck、10 文件/44 测试、build、真实信号/端口/超时 smoke 通过；format/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
-| D00-T04 | IN_PROGRESS | base `c0856178048b5faba370ba2c3d71a2fa9954ae42`; approved work `eb86f01651984e962fa9e19c65075bf22b6cd906` | Lead 与 Architect 独立审核通过：typecheck、11 文件/49 测试、build、4 项真实 smoke、39 文件 format 均通过；待 merge 与 fresh checkout 集成复验 | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 仅 T04 format/README/CI/verify 范围；远程 CI 与 push NOT_RUN |
+| D00-T04 | PASS | base `c0856178048b5faba370ba2c3d71a2fa9954ae42`; work `eb86f01651984e962fa9e19c65075bf22b6cd906`; merge `1c7e8f8f3c38204cce1d6b34ea494938360a812d` | Lead/Architect 独立审核及 fresh checkout 复验通过：`npm ci`、typecheck、11 文件/49 测试、build、4 项真实 smoke、39 文件 format 全部通过；锁文件与 tracked tree clean | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；push、远程 CI 与非 Linux/Windows 平台 NOT_RUN |
 
 ## 待处理事项
 
 - T01 已由 Architect 批准并以 merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0` 合入本地 `main`；项目外精确工具链已落实。
 - T02 `47a138f5f1285c34af038dfd59eb521b75d3cf5f` 已由 Lead 独立审核、Architect 复核批准，并以 merge commit `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` 合入本地 `main`。
 - T03 `09368ce` 已由 Lead 独立审核、Architect 复核批准，并以 merge commit `14cc5d59cfc914cef83df5c791db70561e6e55a3` 合入本地 `main`；合并树复验通过，未推送。
-- T04 最终 HEAD `eb86f016` 已由 Lead 与 Architect 独立审核并批准，无 BLOCKER；下一步记录本复核、以 `--no-ff` 合并，再在新的干净 checkout 中执行最终集成验证并回填 PASS。
+- T04 最终 HEAD `eb86f016` 已由 Lead 与 Architect 独立审核并批准，以 `--no-ff` merge `1c7e8f8` 合入本地 `main`；全新 clone 的 `npm ci` 与聚合 verify 通过，T04 已标记 PASS。
 - Prompt 实际目录 `config/prompt/` 与设计约定 `config/prompts/` 不一致；最迟 D02-T01 前对齐，当前不阻塞 D00。
 
 ## 下一可执行步骤
 
-提交本 Architect 复核记录后，以 `--no-ff` 合并已批准的 `eb86f01651984e962fa9e19c65075bf22b6cd906`；从集成基线建立新的干净 checkout，执行 `npm ci` 与 `npm run verify`，回填 merge commit、环境和输出证据后将 T04 标记 PASS，再交 Architect 完成 D00 里程碑最终验收。不推送、不扩大 D01 范围。
+将本 T04 merge 与 fresh checkout 集成证据提交回 `main` 并交 Architect 完成 D00 里程碑最终验收。Architect 确认前不自标 D00 完成；不推送、不扩大 D01 范围。
 
 ## 验证证据
 
@@ -125,11 +125,20 @@
 - 唯一新增依赖为 `prettier@3.10.1`，锁文件 v3 与根包 `0.1.0` 一致，`git diff --check` 通过。批准 Lead 记录复核、以 `--no-ff` 合并，并在新的干净 checkout 中执行最终集成验证；Architect 未自行修改 docs/code、未 merge/push。
 - 当时 NOT_RUN：merge、fresh checkout 集成验证、push、远程 CI；非 Linux/Windows 平台未执行。
 
+### D00-T04 集成与 fresh checkout 复验
+
+- Lead 先提交 Architect 复核记录 `53e909389966b49dcced18acb09f9b1402d35482`，再以 `--no-ff` merge commit `1c7e8f8f3c38204cce1d6b34ea494938360a812d` 合入已批准的 `eb86f01651984e962fa9e19c65075bf22b6cd906`；父提交为 `53e9093` 与 `eb86f016`。合并相对 first parent 仅引入审核过的 17 个 T04 路径，合并树相对 `eb86f016` 仅多 progress 文档。
+- 从集成 commit `1c7e8f8f3c38204cce1d6b34ea494938360a812d` 新建 fresh clone；初始 `git status` clean，Node `v26.13.1`、npm `11.20.0`，HEAD 精确等于该 merge commit。
+- fresh checkout 按锁文件执行 `npm ci` 退出 0：added 90 packages、audited 91 packages、0 vulnerabilities；npm 仅提示 `fsevents@2.3.3` 的 install script 未纳入 allowScripts，未执行该脚本，不影响本次验证。安装前后无 tracked changes。
+- fresh checkout 执行 `npm run verify` 退出 0：工具链校验、typecheck、11 文件/49 测试、生产 build、SIGINT/SIGTERM/端口占用/关闭超时四项真实 smoke、39 文件 format 检查全部通过。SIGINT/SIGTERM 自然退出 0、释放实际端口且无敏感输出；悬挂关闭在 5 秒预算后自然退出 1。
+- 验证后 `git status` 仍 clean，`git diff --exit-code` 通过，`package-lock.json` SHA-256 仍为 `9cb11937e1b684b8e5738017ad5b0a268d498977386cf6f77071d3ab76237859`。临时 clone 在证据采集后删除。
+- 结论：T04 标记 PASS；D00 里程碑最终验收待 Architect 基于本记录、merge commit 与 fresh checkout 证据完成。push、远程 CI、非 Linux/Windows 平台仍为 NOT_RUN。
+
 ### 限制与未执行项
 
 - 本机仅实测 darwin-arm64；`scripts/verify-toolchain.mjs` 的 Windows 路径分支为代码审阅，未实际运行。
-- T03 smoke 与合并树验证已通过；T04 的 format 检查与聚合 verify 已由 Lead、Architect 在任务分支独立通过。merge、fresh checkout 复验和远程 CI 在 T04 复核时仍为 NOT_RUN。
-- T04 远程 GitHub Actions 与 push 未执行；本地仅实测 darwin-arm64，未运行 Linux/Windows。按用户要求不推送、不将范围扩大到 D01。
+- T03 smoke 与合并树验证已通过；T04 的 format 检查与聚合 verify 已由 Lead、Architect 在任务分支独立通过，并以 fresh checkout 在 merge commit 上再次通过；T04 已标记 PASS。
+- T04 远程 GitHub Actions 与 push 未执行；本地仅实测 darwin-arm64，未运行 Linux/Windows。按用户要求不推送、不将范围扩大到 D01；D00 最终验收由 Architect 完成。
 - Plan/Spec 未明确 `package.json#name`；T01 使用 `pis`，作为非阻塞事实交 Architect 在复核时确认。
 - Architect 对 D00-T01 `8a18ded` 的设计一致性复核：APPROVED（2026-11-15）。检查全部 10 个文件差异、依赖锁文件及 Lead 验证证据：strict/NodeNext、纯生产构建、版本约束及最小依赖均符合 Spec/Plan，无 BLOCKER。`package.json#name=pis` 属于范围内的常规命名，认可。复核未重复运行已通过的命令；跨平台运行和后续任务测试仍为 NOT_RUN。
 - T01 merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0` 以 `--no-ff` 建立，Architect 审核记录 commit `a29baa5` 保留在 `main` 历史中；merge 仅引入 T01 的 10 个已审核文件。
