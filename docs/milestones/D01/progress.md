@@ -27,6 +27,9 @@
 - D01-T04 Lead 独立复核：固定 Node `26.13.1` / npm `11.20.0`；UTC 与 Asia/Shanghai 定向均 1 file / 10 tests，full `npm run verify` exit 0，20 files / 90 tests、两次 build、5 项 process smoke、database smoke、60 文件格式检查全通过。源码/测试仅 4 文件；无 trigger、skip/only、`@ts-ignore`、额外生产 API、LLM 或候选排序。未确认 alias 真实存在于 Contents title/body、但不在确认 alias 表，错误拼接 Contents 文本会导致精确全文失败。
 - D01-T04 Architect 复核：首轮判定 `CHANGES_REQUIRED`，唯一 blocker 原“未确认别名”否定断言无实际 fixture、恒真；Worker 以 `94cf7e3` 补齐 Contents 原始候选、确认 alias 表空查询及同一 alias 的索引查询计划后，Architect 最终裁决 `APPROVED`，无 Blocker/Warning，Candidate `94cf7e3` 可合并。
 - D01-T04 合并与合并后复验：local `--no-ff` merge commit `618d86a88934a029730217ffe5dd9894d5ce5702`，4 个功能文件与批准候选逐字节一致。合并后 main clean `npm ci` 93 packages、0 vulnerabilities，`npm run verify` exit 0：20 files / 90 tests、typecheck、两次 build、5 项 process smoke（端口 `61870` / `61876`）、database smoke、60 文件格式检查全通过。T04 标记 `PASS`；DB-11、DB-14 仅接受本卡初始范围，业务事务显式调用 FTS 的集成及完整候选召回/排序仍 `NOT_RUN`。
+- D01 集成 Gate Lead 验证：基线 `f6667676392f8bd3d26278ca302c6c7d8850ae01` / tree `5e7038355a9936d2d30f6adc0b17edea51277de4`，`git archive` 生成 83 个 tracked files 的独立快照 `/private/tmp/pis-d01-integration.UIczF1/tree`，archive SHA-256 `aa995b8fa94139908d587a4133e93f06d2a74101002d76ce53f9093ab4ef61b5`；初始快照无 `node_modules/dist/coverage/config`。精确 PATH 下 `verify:toolchain=0`（Node `26.13.1` / npm `11.20.0`）、clean `npm ci=0`（93 packages、0 vulnerabilities）、唯一一次 `npm run verify=0`（20 files / 90 tests、两次 build、5 项 process smoke 端口 `56904` / `56907`、database smoke、60 文件格式检查）。
+- D01 集成 Gate 数据库/派生边界：UTC 与 Asia/Shanghai 独立聚焦均 `9 files / 33 tests`、exit 0；真实锁进程 UTC PID `13210`（attempted +2 ms、released +52 ms、exit +15 ms）与 Asia/Shanghai PID `13285`（+2 ms、+51 ms、+13 ms）均 awaiting→release→success、exit 0。darwin-arm64（Darwin `25.6.0` / macOS `26.6.2` / Node `26.13.1`）实测；native prebuild 为 Mach-O arm64。compiled probe 得到 12 张非 shadow 表（11 业务 + `event_search` 虚拟 FTS5）、5 张 FTS shadow tables、11 个显式索引、0 个触发器、0 FK 违规，fresh DB 中 Event/Update/Alias/派生索引均 0 行。`src/database/schema.sql` 与 `dist/database/schema.sql` 严格一致（7,213 bytes、SHA-256 `49d4b31e671a9b543010ddd53cfd7c232f8044364795207e8f4182608bcc481b`）；除 `event-search.ts` 外无生产 FTS 调用者，检索 API/候选排序仍属后续。
+- D01 集成 Gate tracked/config 审计：验证后快照与 archive reference 排除生成目录后 `diff=0`，`package-lock.json` 未变化、无遗留 DB/WAL/SHM；`cd9212a..f666767` 仅 README、progress、event-search 实现/测试及 faulty fixture，未改 spec/plan/schema 或 tracked config。local main tracked clean，既有 6 个 untracked `config/prompt/*.md` 未进入快照。remote ubuntu-latest CI 与跨平台执行仍 `NOT_RUN`，未 push。Lead 结论 `INTEGRATION_REVIEW`，交 Architect 独立复核，不自行宣布整个 D01 `APPROVED`/`PASS`。
 
 | 任务 | 状态 | 实现与测试证据 |
 |---|---|---|
@@ -34,7 +37,8 @@
 | D01-T02 | PASS | base `d3ad3a4`; work `e444036`; merge `d5b3202`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
 | D01-T03 | PASS | base `1f81584`; work `47e2868`; merge `5c529e8`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN`；DB-09/10/12 仅接受本卡基础范围 |
 | D01-T04 | PASS | base `cd9212a`; work `94cf7e3`; merge `618d86a`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN`；DB-11/14 仅接受本卡初始范围 |
+| D01 集成 Gate | INTEGRATION_REVIEW | clean tracked snapshot `f666767`；Lead 验证 exit 0、双 TZ 各 33 tests；remote CI/跨平台 `NOT_RUN`；等待 Architect 独立验收 |
 
 ## 下一步
 
-T04 已按 Worker 候选、Lead 独立验证、Architect `APPROVED`、local merge、合并后 clean-install full verify 顺序完成。D01 四卡均已合并，下一步由 Architect 按 Plan §8 执行 D01 集成 Gate；在集成 Gate 完成前不宣称整个 D01 里程碑 PASS。心跳保持停止，不 push。
+Lead 已按 Plan §8 完成 clean tracked snapshot、精确工具链、一次 full verify、双时区数据库聚焦、锁进程、schema/派生边界和 tracked/config 审计，状态为 `INTEGRATION_REVIEW`。下一步提交 Architect `8d95474b-e07e-43c7-bc7f-92928fe91e71` 独立复核；Architect 给出最终结论前不宣称整个 D01 里程碑 `APPROVED`/`PASS`。心跳保持运行，不 push。
