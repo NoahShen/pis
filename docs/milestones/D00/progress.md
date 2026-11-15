@@ -28,7 +28,7 @@
 | D00-T01 | PASS | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`; merge `9c3b886d25224205dc383ffba1d1d7cd838028b0` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T02 | PASS | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f`; merge `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` | Lead 独立审核与 Architect 复核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T03 | PASS | base `d13aa340bbb40617a4617bcea92df8a25f2211ac`; work `09368ceee86ea480aab9101f8cdd6ea1f9fee957`; merge `14cc5d59cfc914cef83df5c791db70561e6e55a3` | Lead 独立审核、Architect 复核及合并树复验通过：typecheck、10 文件/44 测试、build、真实信号/端口/超时 smoke 通过；format/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
-| D00-T03-FIX-01 | REVIEW | docs base `f0626ec32399696c6288f3922147496c2d0480c1`；work `01048babc37bc07d6a38e95ec4b61fe5698ede19` | 修复 listen pending 时信号导致 ready 永久 pending、main 永久等待及迟到 listen 虚假 ready；Lead/Architect 独立审核均 `PASS`，待 merge 与 fresh checkout 复验 | 8d95474b-e07e-43c7-bc7f-92928fe91e71 | PLAN + IMPLEMENTATION APPROVED；INTEGRATION PENDING | 未 merge/push；远程 CI `NOT_RUN` |
+| D00-T03-FIX-01 | PASS | docs base `f0626ec32399696c6288f3922147496c2d0480c1`；work `01048babc37bc07d6a38e95ec4b61fe5698ede19`；merge `9ac31ff312009032cb56967299abded2330fbca5` | 修复 listen pending 时信号导致 ready 永久 pending、main 永久等待及迟到 listen 虚假 ready；Lead/Architect 独立审核及 fresh clone `npm ci`+verify 通过，5 项真实 smoke 含 late-resource close | 8d95474b-e07e-43c7-bc7f-92928fe91e71 | APPROVED | 已合入本地 main；未 push；远程 CI `NOT_RUN` |
 | D00-T04 | PASS | base `c0856178048b5faba370ba2c3d71a2fa9954ae42`; work `eb86f01651984e962fa9e19c65075bf22b6cd906`; merge `1c7e8f8f3c38204cce1d6b34ea494938360a812d` | Lead/Architect 独立审核及 fresh checkout 复验通过：`npm ci`、typecheck、11 文件/49 测试、build、4 项真实 smoke、39 文件 format 全部通过；锁文件与 tracked tree clean | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；push、远程 CI 与非 Linux/Windows 平台 NOT_RUN |
 
 ## 待处理事项
@@ -169,6 +169,14 @@ D00 已完成并获 Architect 最终批准，等待项目负责人决定是否�
 - Architect 确认 primary Fastify close 完成后使用底层 `app.server.close` 清理后来绑定的 server 可接受，避免重复执行 Fastify hooks；remaining deadline 以及 late cleanup 失败经 `lateCloseFailure` 复用现有 `forceExit(1)` 的控制流在该边界内可接受。
 - Architect 在 fix worktree 使用精确工具链独立执行 `npm run verify`，命令退出 0：11 文件/57 测试、生产 build、5 项真实进程 smoke、40 文件 format；核对 HEAD 精确为 `01048ba`，worktree clean。
 - Architect 授权 Lead 记录本复核并仅将 `01048ba` 以 `--no-ff` 合入当前 local main；随后执行 fresh checkout `npm ci` 与 `npm run verify`，提交最终证据供 Architect 确认修复后的 D00 基线。不得 push、改无关代码或恢复心跳。
+
+#### 合并与 fresh checkout 集成验证
+
+- Lead 仅将获准提交 `01048ba` 以 `--no-ff` 合入 local main，生成 merge commit `9ac31ff312009032cb56967299abded2330fbca5`；父提交为 `3d3c9bb623d65e0ecd3ad4a0f6a4093ba60fd195` 与 `01048babc37bc07d6a38e95ec4b61fe5698ede19`。合并相对批准工作提交仅有 progress 文档差异，`src/`、`tests/`、`scripts/`、`package.json`、`package-lock.json` 均无额外变化。
+- fresh clone 路径 `/private/tmp/pis-t03-fix-01.4zvQKu/clone`，HEAD 与 tree 分别精确为 `9ac31ff312009032cb56967299abded2330fbca5`、`3028f93f1d794f3be1d3eafeba1dea7e5bfeb63b`，`git status` tracked tree clean，锁文件无差异。
+- fresh clone 在 Node `26.13.1`/npm `11.20.0` 下执行 `npm ci` 成功（90 packages；仅有未批准的 fsevents install-script warning，无安装失败），随后 `npm run verify` 退出 0：11 文件/57 测试、生产 build、5 项真实进程 smoke、40 文件 format 全部通过。
+- fresh clone 的 5 项 smoke 覆盖 SIGINT、SIGTERM、占用端口 listen failure、hanging close 超时及 signal-before-listen late-resource close；最后一项自然退出 0、无伪 ready、无敏感输出。
+- 结论：`D00-T03-FIX-01 PASS`，无 BLOCKER。最终 local main 基线为 merge tree `3028f93`，本记录 commit 及其后的 docs-only 最终确认提交不改功能树；等待 Architect 确认修复后的 D00 基线。未 push，远程 CI 与 Linux/Windows 平台仍为 `NOT_RUN`。
 
 ### 限制与未执行项
 
