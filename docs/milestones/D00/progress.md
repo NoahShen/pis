@@ -14,27 +14,30 @@
 - Lead：已委派 `5904a3c3-e232-4f7b-b675-929f9ddac3fb`。
 - T01 Worker：`4fe4ad6f-9495-45da-a47d-6526cf8f8304`，已通过 Paseo `codex-worker` profile 完成实现并回报 REVIEW 证据。
 - T02 Worker：`a2960bcf-2df0-4e8a-a6bc-f3e80ea8f727`，已通过 Paseo `codex-worker` profile 完成实现并回报 REVIEW 证据；Lead 独立审核无 BLOCKER，Architect 已批准并合入本地 `main`。
+- T03 Worker：`909ce093-9a1a-4986-98b5-5725a45381b1`，已通过 Paseo `codex-worker` profile 在独立工作区启动；不复用 T01/T02 Worker。
 - `USER_CONFIRMATION`：`APPROVED`（2026-11-15）。
 - 项目外工具链：`/Users/noahshen/.local/share/pis/toolchains/node-v26.13.1-darwin-arm64`。从 `nodejs.org` 官方下载 `node-v26.13.1-darwin-arm64.tar.xz`，实际 SHA-256 为 `af6202f5370a3a5209e85dc543758dfd9f44c8726626a236730cd603a67a8559`；实测 Node `v26.13.1`、npm `11.20.0`，未修改系统默认（仍为 Node `v26.7.0`、npm `12.0.2`）。
 - T01 隔离工作区：`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t01-typescript-bootstrap`；branch `d00-t01-typescript-bootstrap`；base `e708f65f852ceb10472ee04140470c0c99bcb384`；task commit `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`；merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0`。
 - T02 隔离工作区：workspace `wks_e0c1d33b7f583305`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t02-deterministic-test-facilities`；branch `d00-t02-deterministic-test-facilities`；base `ed5ebb006b109261624c8c68829166cbd97c6852`；task commit `47a138f5f1285c34af038dfd59eb521b75d3cf5f`；merge commit `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b`。
+- T03 隔离工作区：workspace `wks_ae6cb03545d25b12`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t03-fastify-server-lifecycle`；branch `d00-t03-fastify-server-lifecycle`；base `d13aa340bbb40617a4617bcea92df8a25f2211ac`。
 
 | 任务 ID | 状态 | 基线/提交 | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
 | D00-T01 | PASS | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`; merge `9c3b886d25224205dc383ffba1d1d7cd838028b0` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T02 | PASS | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f`; merge `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` | Lead 独立审核与 Architect 复核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
-| D00-T03 | NOT_STARTED | base `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | T02 已合入，等待 Lead 派发新 Worker |
+| D00-T03 | IN_PROGRESS | base `d13aa340bbb40617a4617bcea92df8a25f2211ac` | RUNNING | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | Worker `909ce093-9a1a-4986-98b5-5725a45381b1` 正在独立分支实现 |
 | D00-T04 | NOT_STARTED | — | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 等待门禁及 T03 |
 
 ## 待处理事项
 
 - T01 已由 Architect 批准并以 merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0` 合入本地 `main`；项目外精确工具链已落实。
 - T02 `47a138f5f1285c34af038dfd59eb521b75d3cf5f` 已由 Lead 独立审核、Architect 复核批准，并以 merge commit `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` 合入本地 `main`。
+- T03 已从 T02 合入后的 `d13aa340bbb40617a4617bcea92df8a25f2211ac` 建立独立 branch/worktree，并由新的 Paseo Worker 执行；旧 Worker 不继续执行。
 - Prompt 实际目录 `config/prompt/` 与设计约定 `config/prompts/` 不一致；最迟 D02-T01 前对齐，当前不阻塞 D00。
 
 ## 下一可执行步骤
 
-从 T02 集成基线 `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` 创建新的独立 T03 branch/worktree，并使用新的 Paseo `codex-worker` 严格按 Plan 派发。
+等待 T03 Worker `909ce093-9a1a-4986-98b5-5725a45381b1` 完成或请求权限；收到回调后由 Lead 独立审核，不轮询。T03 完成前保持 T04 `NOT_STARTED`。
 
 ## 验证证据
 
