@@ -46,15 +46,27 @@
 - Architect 独立定向测试为 1/1 文件、10/10 通过；合并后 Lead 再次执行完整 verify，仍为 22/22 文件、107/107 测试通过。Architect 本轮未独立重跑 full verify，采纳 Lead 证据。
 - Lead 已核对全部 object 节点使用 strict Schema，operation 对象节点数依次为 processing-route 1、event-search 2、event-analysis 5、knowledge-analysis 3、topic-matching 1；错误输出只含 operation/code。
 - Architect 非阻断建议：generated-schema 测试中 NEW_EVENT `event_id` 缺失断言应检查 `properties.event_id`；当前生产 strict Schema 与真实 parse 拒绝用例已覆盖实际行为，为保持批准 hash 未改，留待未来测试编辑时修正。
-- T03：`DELEGATED · WORKER_RUNNING · REVIEW_PENDING`
+- T03：`PASS · LOCAL_MERGE_VERIFIED`
 - `T03_WORKSPACE_ID=wks_89d69f846b642d0e`
 - `T03_WORKER_AGENT_ID=52936b02-f06e-4983-9a00-8174c77ed103`
+- `T03_ARCHITECT_AGENT_ID=8d95474b-e07e-43c7-bc7f-92928fe91e71`
 - `T03_BRANCH=codex/d02-t03-chat-completions-client`
 - `T03_BASE_SHA=b86c534f8f322b6925f1a262b96e371aad68d283`
 - `T03_WORKTREE=/Users/noahshen/.paseo/worktrees/0eapmc43/codex-d02-t03-chat-completions-client`
 - T03 新 worktree 已完成 `npm ci`（93 packages、0 vulnerabilities）与精确 toolchain 校验；真实 User Context 不在 worktree。
+- `T03_WORKER_VERDICT=REVIEW`；`T03_LEAD_REVIEW=APPROVED`；`T03_ARCHITECT_REVIEW=APPROVED`
+- Architect 批准并核对一致的 exact SHA-256：`src/llm/chat-completions-client.ts=f31c214fc3089f8ae5360c3bb63e6f06b0c83557571a6dd67d88d9a61b923d7b`；`tests/llm/chat-completions-client.test.ts=73e89aaaddc08fe7960597088e56f1562ab34389e9f63c51f3fbe0c761646fec`；`README.md=ae28750c7e7681dd148e2dbb317a65d606b3f85cd4db73f58dae6b24a78e04ea`。
+- `T03_CANDIDATE_SHA=24b29c0b3361d1b98fa37101897af536f7085576`
+- `T03_APPROVED_TREE=d2ec0c9cb1fca8f9f25d1ef94257ff1c2767b1ac`
+- `T03_MERGE_SHA=b1ec279adce23c00d72cc4032445bdf7ac2d8450`
+- `T03_MERGE_TREE=cd158c8e78852baa47e6dc5d82c0623b09edfbdd`
+- `T03_REMOTE_CI=NOT_RUN`；`T03_REAL_LLM=NOT_RUN`
+- Lead 定向 `npm test -- tests/llm/chat-completions-client.test.ts` 为 1/1 文件、18/18 测试通过；候选与合并后完整 `npm run verify` 均为 23/23 文件、125/125 测试通过，typecheck/build/SIGINT+SIGTERM smoke/database smoke/68-file format check 全部通过。
+- Architect 独立 `verify:toolchain`、定向 18/18 测试与 `git diff --check` 均通过，完整阅读源码、测试和 README diff；采纳 Lead full verify 证据，本轮未独立重跑全量。
+- Endpoint 校验以 WHATWG `URL` 规范化后的 protocol/hostname/username/password 为安全边界；仅因 URL 会擦除显式空 userinfo，额外窄拒绝 `https://@host`/`https://:@host`，并覆盖 host 大小写、IPv4/IPv6 等价形式及 path/query/fragment 中 `@`。
+- T03 以精确三路径 stage 后提交，并用 `--no-ff` 合入 local main；未 push。
 - T04：`NOT_STARTED`。
 
 ## 下一步
 
-等待 T03 Worker 完成通知，不以轮询代替验收。候选返回后由 Lead 审核请求/envelope/总预算竞速/实际字节上限/cancel 有界清理/错误泄露矩阵、白名单边界及定向/full verify，再交 Architect 轻量复核；未复核不合并、不派发 T04。禁止 push。
+委派全新 Worker 执行 T04。T04 必须使用隔离 workspace，审查通过前不得合并，也不得提前完成最终验收；禁止 push。
