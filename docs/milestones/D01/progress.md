@@ -17,14 +17,15 @@
 - D01-T02 Lead 独立审核：clean `npm ci` 后定向 verbose `2 files / 9 tests` 全通过；`npm run verify` 全量 `15 files / 70 tests`、typecheck、两次 fresh build、原 5 项进程 smoke、compiled database smoke、50 文件格式检查均通过。权威数据库设计仅 1 个 SQL block，docs/source 规范化一致，source/dist 严格字节一致；schema 7,213 bytes、SHA-256 `49d4b31e671a9b543010ddd53cfd7c232f8044364795207e8f4182608bcc481b`。compiled probe 实测 WAL、`foreign_keys=1`、`busy_timeout=5000`、11 业务表 + `event_search`、11 显式索引、JSON array、trigram MATCH 与空 FK check。Candidate `e44403675db0975b76f89a5ac341f74b79551a33` 仅含 9 个 T02 白名单文件，T01/config/CI/docs 无改动，工作树 clean。
 - D01-T02 Architect 复核：Agent `877174d6-70ee-46d4-8f0d-fbeab0d66a75` 对 Candidate `e444036` 结论 `APPROVED`。Architect 独立运行 `npm run verify` 最终 exit 0，15 files / 70 tests、build、原 5 项 smoke、database smoke、50 文件格式检查全通过；首轮仅因受限沙箱 `listen EPERM` 失败，获批后完整重跑通过。确认 DB-13 三类多态表悬空目标、DDL 单事务、连接 PRAGMA 拆分、失败全回滚、build copy 与 cleanup 均符合 Plan。
 - D01-T02 合并：Lead 以 `--no-ff` 将 Architect 批准的 Candidate 合入 local `main`，merge SHA `d5b3202067435de6737765bbafed4c1dbbf00015`。合并后 clean-install 工作区 full verify 再次 exit 0，结果与批准候选一致；未 push，Linux/远程 CI/跨平台仍为 `NOT_RUN`。
+- D01-T03 Worker：Agent `451e6624-6ada-40a6-92ed-00c95b0f47ff`，Workspace `wks_01810f4dc9742102`，Worktree `/Users/noahshen/.paseo/worktrees/0eapmc43/d01-t03-transactions-time`，Branch `feat/d01-t03-transactions-time`，Base SHA `1f81584f344859c8f0655ff3883acb8c426c5b38`。Worker 使用 `codex-worker` profile，严格限制在 T03 七个白名单文件；尚未提交、合并或标记 PASS。
 
 | 任务 | 状态 | 实现与测试证据 |
 |---|---|---|
 | D01-T01 | PASS | base `74e25b6`; work `cec9cf4`; merge `bc57283`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
 | D01-T02 | PASS | base `d3ad3a4`; work `e444036`; merge `d5b3202`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
-| D01-T03 | NOT_STARTED | 未实现，NOT_RUN |
+| D01-T03 | IN_PROGRESS | Worker `451e6624` 已启动；实现同步事务、错误分类、独立锁进程与时间存取 |
 | D01-T04 | NOT_STARTED | 未实现，NOT_RUN |
 
 ## 下一步
 
-T02 已按 Lead 独立验证、Architect `APPROVED`、local merge、合并后复验顺序完成。下一步按 Plan 启动 D01-T03 Worker；心跳保持停止，不 push。
+T02 已按 Lead 独立验证、Architect `APPROVED`、local merge、合并后复验顺序完成。D01-T03 Worker 已启动；等待候选后由 Lead 独立审核，再交 Architect 复核。心跳保持停止，不 push。
