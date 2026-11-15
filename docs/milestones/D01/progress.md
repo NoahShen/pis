@@ -23,14 +23,18 @@
 - D01-T03 Architect 复核：明确裁决 `APPROVED`，Candidate `47e28686b895e11c5c263fff596cdf0ec391c7d3` 可合并，无 BLOCKER。Architect 独立双 TZ 定向各 4 files / 10 tests，锁 PID `79290` / `79417` 正常；四个专用类型负例移除抑制后均为 TS2345，证明 async、Promise、显式 union、条件混合 union 在调用点拒绝。thenable 运行时测试的抑制移除后为外层 `void` 归因的 TS2322，已实际消费且不承担类型拒绝证明，判定为非产品缺陷、非阻塞。
 - D01-T03 合并与合并后复验：local `--no-ff` merge commit `5c529e871ad67160f992cebf771a2b3a217a4be0`。合并后 main 重新 clean `npm ci` 93 packages，`npm run verify` exit 0：19 files / 80 tests、typecheck、两次 build、5 项 process smoke（端口 `61666` / `61753`）、database smoke、57 文件格式检查全通过。T03 标记 `PASS`；DB-09 仅基础事务、DB-10 TEXT 基础、DB-12 busy/分类基础，六业务阶段故障注入与 Runtime 重试仍 `NOT_RUN`。
 - D01-T04 Worker：Agent `f403be79-6d10-42f4-8f29-18cb0bd9d96d`，Workspace `wks_de4991969e47a6d1`，Worktree `/Users/noahshen/.paseo/worktrees/0eapmc43/feat-d01-t04-event-fts`，Branch `feat/d01-t04-event-fts`，Base SHA `cd9212a70ff2c088f6bbaff23f49136061682a1e`。使用 `codex-worker` profile，严格限制为 event-search 实现/测试、faulty DB fixture、README 共 4 个白名单文件；尚未提交、合并或标记 PASS。
+- D01-T04 Worker 候选：最终 commit `94cf7e3db9ca154130ee988e5613e6107d4d2dc8`，由实现 `0130278`、补强 caller transaction/错误白名单测试 `7bf194e`、补齐未确认 alias fixture `94cf7e3` 三个逐步候选组成。相对 base 只改 4 个白名单文件，+751/−2 行，worktree clean。Worker 报告 UTC/Asia-Shanghai 定向各 1 file / 10 tests、full verify 20 files / 90 tests 通过。
+- D01-T04 Lead 独立复核：固定 Node `26.13.1` / npm `11.20.0`；UTC 与 Asia/Shanghai 定向均 1 file / 10 tests，full `npm run verify` exit 0，20 files / 90 tests、两次 build、5 项 process smoke、database smoke、60 文件格式检查全通过。源码/测试仅 4 文件；无 trigger、skip/only、`@ts-ignore`、额外生产 API、LLM 或候选排序。未确认 alias 真实存在于 Contents title/body、但不在确认 alias 表，错误拼接 Contents 文本会导致精确全文失败。
+- D01-T04 Architect 复核：首轮判定 `CHANGES_REQUIRED`，唯一 blocker 原“未确认别名”否定断言无实际 fixture、恒真；Worker 以 `94cf7e3` 补齐 Contents 原始候选、确认 alias 表空查询及同一 alias 的索引查询计划后，Architect 最终裁决 `APPROVED`，无 Blocker/Warning，Candidate `94cf7e3` 可合并。
+- D01-T04 合并与合并后复验：local `--no-ff` merge commit `618d86a88934a029730217ffe5dd9894d5ce5702`，4 个功能文件与批准候选逐字节一致。合并后 main clean `npm ci` 93 packages、0 vulnerabilities，`npm run verify` exit 0：20 files / 90 tests、typecheck、两次 build、5 项 process smoke（端口 `61870` / `61876`）、database smoke、60 文件格式检查全通过。T04 标记 `PASS`；DB-11、DB-14 仅接受本卡初始范围，业务事务显式调用 FTS 的集成及完整候选召回/排序仍 `NOT_RUN`。
 
 | 任务 | 状态 | 实现与测试证据 |
 |---|---|---|
 | D01-T01 | PASS | base `74e25b6`; work `cec9cf4`; merge `bc57283`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
 | D01-T02 | PASS | base `d3ad3a4`; work `e444036`; merge `d5b3202`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
 | D01-T03 | PASS | base `1f81584`; work `47e2868`; merge `5c529e8`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN`；DB-09/10/12 仅接受本卡基础范围 |
-| D01-T04 | IN_PROGRESS | 唯一 Worker 已启动；Event FTS 确定性聚合、增量刷新、全量重建和故障回滚尚未提交 |
+| D01-T04 | PASS | base `cd9212a`; work `94cf7e3`; merge `618d86a`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN`；DB-11/14 仅接受本卡初始范围 |
 
 ## 下一步
 
-T03 已按 Lead 独立验证、Architect `APPROVED`、local merge、合并后 full verify 顺序完成。T04 唯一 Worker 正在实现 Event FTS 白名单；心跳保持停止，不 push。
+T04 已按 Worker 候选、Lead 独立验证、Architect `APPROVED`、local merge、合并后 clean-install full verify 顺序完成。D01 四卡均已合并，下一步由 Architect 按 Plan §8 执行 D01 集成 Gate；在集成 Gate 完成前不宣称整个 D01 里程碑 PASS。心跳保持停止，不 push。
