@@ -96,6 +96,6 @@ D00 当前范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify
 
 当前不包含数据库、业务 API、RSS 抓取、LLM 调用、任务队列、Prompt 加载或 PM2 部署配置。`/api/*` 和 `/feeds/*` 尚未实现。
 
-Prompt 目录与权威设计当前存在待对齐项：现有目标路径为 `config/prompts/`，而设计文档使用 `config/prompt/`。该事项由 D02-T01 前处理，D00 不修改 Prompt。
+Prompt 目录与权威设计当前存在待对齐项：当前实际路径为 `config/prompt/`，权威设计目标为 `config/prompts/`。该事项应在 D02-T01 前对齐，D00 不修改 Prompt。
 
 工程已配置 GitHub Actions，在拉取请求、推送到 `main` 和手动触发时执行与本地一致的门禁。**远程 CI 尚未实际运行，状态为 `NOT_RUN`；本地通过不能替代远程执行证据。**

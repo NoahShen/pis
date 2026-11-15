@@ -15,16 +15,21 @@ const DEFAULT_PROJECT_ROOT = path.resolve(
   "..",
 );
 
-const DIRECTORY_TARGETS = ["src", "tests", "scripts", ".github"];
-const FILE_TARGETS = [
+const DIRECTORY_EXTENSIONS = new Map([
+  ["src", new Set([".ts"])],
+  ["tests", new Set([".ts", ".mjs"])],
+  ["scripts", new Set([".mjs"])],
+]);
+const FILE_TARGETS = new Set([
   "package.json",
   "tsconfig.json",
   "tsconfig.build.json",
   "tsconfig.test.json",
   "vitest.config.ts",
   "README.md",
-];
-const DEFAULT_TARGET_PATHS = [...DIRECTORY_TARGETS, ...FILE_TARGETS];
+  ".github/workflows/ci.yml",
+]);
+const DEFAULT_TARGET_PATHS = [...DIRECTORY_EXTENSIONS.keys(), ...FILE_TARGETS];
 
 export class FormatScopeError extends Error {
   constructor(message) {
@@ -50,14 +55,47 @@ function isWithin(parent, candidate) {
 }
 
 /** @param {string} relativePath */
-function isAllowedRelativePath(relativePath) {
-  return (
-    FILE_TARGETS.includes(relativePath) ||
-    DIRECTORY_TARGETS.some(
-      (directory) =>
-        relativePath === directory || relativePath.startsWith(`${directory}/`),
-    )
+function isAllowedFile(relativePath) {
+  if (
+    FILE_TARGETS.has(relativePath) ||
+    /^tsconfig(?:\.[^/]+)?\.json$/.test(relativePath)
+  ) {
+    return true;
+  }
+
+  for (const [directory, extensions] of DIRECTORY_EXTENSIONS) {
+    if (
+      relativePath.startsWith(`${directory}/`) &&
+      extensions.has(path.posix.extname(relativePath))
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/** @param {string} relativePath */
+function isAllowedDirectory(relativePath) {
+  return [...DIRECTORY_EXTENSIONS.keys()].some(
+    (directory) =>
+      relativePath === directory || relativePath.startsWith(`${directory}/`),
   );
+}
+
+/** @param {string} relativePath */
+function isAllowedExplicitCandidate(relativePath) {
+  return isAllowedFile(relativePath) || isAllowedDirectory(relativePath);
+}
+
+/** @param {string} rootDirectory @param {string} absolutePath */
+async function isIgnored(rootDirectory, absolutePath) {
+  const result = await prettier.getFileInfo(absolutePath, {
+    ignorePath: path.join(rootDirectory, ".prettierignore"),
+    withNodeModules: true,
+  });
+
+  return result.ignored;
 }
 
 /** @param {string} absolutePath @param {string} relativePath */
@@ -74,16 +112,48 @@ async function assertNoSymbolicLink(absolutePath, relativePath) {
 
 /**
  * @param {string} rootDirectory
+ * @param {string} relativeDirectory
+ * @param {Set<string>} files
+ */
+async function collectDirectoryFiles(rootDirectory, relativeDirectory, files) {
+  const absoluteDirectory = path.join(rootDirectory, relativeDirectory);
+  const entries = await readdir(absoluteDirectory, { withFileTypes: true });
+  entries.sort((left, right) => left.name.localeCompare(right.name, "en"));
+
+  for (const entry of entries) {
+    const relativePath = `${relativeDirectory}/${entry.name}`;
+    const absolutePath = path.join(rootDirectory, relativePath);
+    const stats = await assertNoSymbolicLink(absolutePath, relativePath);
+
+    if (stats.isDirectory()) {
+      if (!(await isIgnored(rootDirectory, absolutePath))) {
+        await collectDirectoryFiles(rootDirectory, relativePath, files);
+      }
+      continue;
+    }
+
+    if (!stats.isFile()) {
+      throw new FormatScopeError(
+        `Format target must be a regular file or directory: ${relativePath}`,
+      );
+    }
+
+    if (
+      isAllowedFile(relativePath) &&
+      !(await isIgnored(rootDirectory, absolutePath))
+    ) {
+      files.add(relativePath);
+    }
+  }
+}
+
+/**
+ * @param {string} rootDirectory
  * @param {string} relativeTarget
  * @param {Set<string>} files
  */
 async function collectFiles(rootDirectory, relativeTarget, files) {
   const normalizedTarget = toPosixPath(relativeTarget);
-  if (!isAllowedRelativePath(normalizedTarget)) {
-    throw new FormatScopeError(
-      `Format target is out of scope: ${normalizedTarget}`,
-    );
-  }
 
   const absoluteTarget = path.resolve(rootDirectory, normalizedTarget);
   if (!isWithin(rootDirectory, absoluteTarget)) {
@@ -95,7 +165,7 @@ async function collectFiles(rootDirectory, relativeTarget, files) {
   const resolvedRelativeTarget = toPosixPath(
     path.relative(rootDirectory, absoluteTarget),
   );
-  if (!isAllowedRelativePath(resolvedRelativeTarget)) {
+  if (!isAllowedExplicitCandidate(resolvedRelativeTarget)) {
     throw new FormatScopeError(
       `Format target is out of scope: ${normalizedTarget}`,
     );
@@ -115,26 +185,28 @@ async function collectFiles(rootDirectory, relativeTarget, files) {
   }
 
   if (stats.isFile()) {
-    files.add(normalizedTarget);
+    if (!isAllowedFile(resolvedRelativeTarget)) {
+      throw new FormatScopeError(
+        `Format target is out of scope: ${resolvedRelativeTarget}`,
+      );
+    }
+    if (await isIgnored(rootDirectory, absoluteTarget)) {
+      throw new FormatScopeError(
+        `Format target is ignored: ${resolvedRelativeTarget}`,
+      );
+    }
+
+    files.add(resolvedRelativeTarget);
     return;
   }
 
-  if (!stats.isDirectory()) {
+  if (!stats.isDirectory() || !isAllowedDirectory(resolvedRelativeTarget)) {
     throw new FormatScopeError(
       `Format target must be a regular file or directory: ${normalizedTarget}`,
     );
   }
 
-  const entries = await readdir(absoluteTarget, { withFileTypes: true });
-  entries.sort((left, right) => left.name.localeCompare(right.name, "en"));
-
-  for (const entry of entries) {
-    await collectFiles(
-      rootDirectory,
-      `${normalizedTarget}/${entry.name}`,
-      files,
-    );
-  }
+  await collectDirectoryFiles(rootDirectory, resolvedRelativeTarget, files);
 }
 
 /**

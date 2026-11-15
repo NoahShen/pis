@@ -30,9 +30,12 @@ describe("format scope", () => {
     await withProject(
       [
         "src/nested/value.ts",
+        "src/generated.json",
         "tests/fixture.mjs",
+        "tests/output.snap",
         "scripts/tool.mjs",
         ".github/workflows/ci.yml",
+        ".github/extra.yml",
         "package.json",
         "tsconfig.json",
         "tsconfig.build.json",
@@ -58,6 +61,9 @@ describe("format scope", () => {
           "vitest.config.ts",
         ]);
         expect(targets).not.toContain("docs/ignored.md");
+        expect(targets).not.toContain("src/generated.json");
+        expect(targets).not.toContain("tests/output.snap");
+        expect(targets).not.toContain(".github/extra.yml");
         expect(targets).not.toContain("package-lock.json");
       },
     );
@@ -69,6 +75,9 @@ describe("format scope", () => {
         [],
         ["docs/plan.md"],
         ["../outside.ts"],
+        ["src/generated.json"],
+        ["tests/output.snap"],
+        [".github/extra.yml"],
         [""],
       ]) {
         await expect(
@@ -76,6 +85,36 @@ describe("format scope", () => {
         ).rejects.toBeInstanceOf(FormatScopeError);
       }
     });
+  });
+
+  it("format target collection applies .prettierignore", async () => {
+    await withProject(
+      [
+        "src/included.ts",
+        "src/ignored.ts",
+        "tests/included.mjs",
+        "tests/ignored.mjs",
+      ],
+      async (projectRoot) => {
+        await writeFile(
+          path.join(projectRoot, ".prettierignore"),
+          "src/ignored.ts\ntests/ignored.mjs\n",
+        );
+
+        const targets = await collectFormatTargets({
+          projectRoot,
+          targetPaths: ["src", "tests"],
+        });
+
+        expect(targets).toEqual(["src/included.ts", "tests/included.mjs"]);
+        await expect(
+          collectFormatTargets({
+            projectRoot,
+            targetPaths: ["src/ignored.ts"],
+          }),
+        ).rejects.toThrow("ignored");
+      },
+    );
   });
 
   it("format target collection rejects missing paths and symbolic links", async () => {
