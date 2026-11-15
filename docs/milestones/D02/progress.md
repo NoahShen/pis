@@ -46,8 +46,15 @@
 - Architect 独立定向测试为 1/1 文件、10/10 通过；合并后 Lead 再次执行完整 verify，仍为 22/22 文件、107/107 测试通过。Architect 本轮未独立重跑 full verify，采纳 Lead 证据。
 - Lead 已核对全部 object 节点使用 strict Schema，operation 对象节点数依次为 processing-route 1、event-search 2、event-analysis 5、knowledge-analysis 3、topic-matching 1；错误输出只含 operation/code。
 - Architect 非阻断建议：generated-schema 测试中 NEW_EVENT `event_id` 缺失断言应检查 `properties.event_id`；当前生产 strict Schema 与真实 parse 拒绝用例已覆盖实际行为，为保持批准 hash 未改，留待未来测试编辑时修正。
-- T03：`READY_TO_DELEGATE`；T04：`NOT_STARTED`。
+- T03：`DELEGATED · WORKER_RUNNING · REVIEW_PENDING`
+- `T03_WORKSPACE_ID=wks_89d69f846b642d0e`
+- `T03_WORKER_AGENT_ID=52936b02-f06e-4983-9a00-8174c77ed103`
+- `T03_BRANCH=codex/d02-t03-chat-completions-client`
+- `T03_BASE_SHA=b86c534f8f322b6925f1a262b96e371aad68d283`
+- `T03_WORKTREE=/Users/noahshen/.paseo/worktrees/0eapmc43/codex-d02-t03-chat-completions-client`
+- T03 新 worktree 已完成 `npm ci`（93 packages、0 vulnerabilities）与精确 toolchain 校验；真实 User Context 不在 worktree。
+- T04：`NOT_STARTED`。
 
 ## 下一步
 
-基于 T02 merge SHA 新建 T03 独立 worktree/分支，执行 bootstrap 后启动全新 Worker；T03 只修改 `src/llm/chat-completions-client.ts`、`tests/llm/chat-completions-client.test.ts`、`README.md`（仅调用配置与安全边界），随后沿用 Worker `REVIEW`→Lead G3→Architect 轻量复核→候选合并流程。禁止 push，T04 不得提前启动。
+等待 T03 Worker 完成通知，不以轮询代替验收。候选返回后由 Lead 审核请求/envelope/总预算竞速/实际字节上限/cancel 有界清理/错误泄露矩阵、白名单边界及定向/full verify，再交 Architect 轻量复核；未复核不合并、不派发 T04。禁止 push。
