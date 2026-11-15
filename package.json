@@ -34,12 +34,14 @@
     "verify": "npm run verify:toolchain && npm run typecheck && npm test && npm run build && npm run smoke && npm run format:check"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
     "@types/node": "26.6.6",
     "prettier": "3.10.1",
     "typescript": "7.0.2",
     "vitest": "5.1.0"
   },
   "dependencies": {
+    "better-sqlite3": "13.2.0",
     "fastify": "5.12.8",
     "pino": "10.4.0",
     "zod": "4.6.7"
