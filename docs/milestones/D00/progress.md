@@ -28,7 +28,7 @@
 | D00-T01 | PASS | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`; merge `9c3b886d25224205dc383ffba1d1d7cd838028b0` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T02 | PASS | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f`; merge `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` | Lead 独立审核与 Architect 复核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T03 | PASS | base `d13aa340bbb40617a4617bcea92df8a25f2211ac`; work `09368ceee86ea480aab9101f8cdd6ea1f9fee957`; merge `14cc5d59cfc914cef83df5c791db70561e6e55a3` | Lead 独立审核、Architect 复核及合并树复验通过：typecheck、10 文件/44 测试、build、真实信号/端口/超时 smoke 通过；format/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
-| D00-T03-FIX-01 | REVIEW | base 候选 `1a44d432051d7d08d4576e5eba794afac24df122`（代码树仍等于历史批准 `ced57136af9b152892d07e1a156d962af2e25441`）；work pending | 修复 listen pending 时信号导致 ready 永久 pending、main 永久等待及迟到 listen 虚假 ready；最小计划已获 Architect 批准，实现/独立复验 pending | 8d95474b-e07e-43c7-bc7f-92928fe91e71 | PLAN APPROVED；实现审批 PENDING | 未 merge/push；远程 CI `NOT_RUN` |
+| D00-T03-FIX-01 | REVIEW | docs base `f0626ec32399696c6288f3922147496c2d0480c1`；work `01048babc37bc07d6a38e95ec4b61fe5698ede19` | 修复 listen pending 时信号导致 ready 永久 pending、main 永久等待及迟到 listen 虚假 ready；Lead 独立审核 `PASS`，待 Architect 代码复核 | 8d95474b-e07e-43c7-bc7f-92928fe91e71 | PLAN APPROVED；LEAD REVIEW PASS；IMPLEMENTATION APPROVAL PENDING | 未 merge/push；远程 CI `NOT_RUN` |
 | D00-T04 | PASS | base `c0856178048b5faba370ba2c3d71a2fa9954ae42`; work `eb86f01651984e962fa9e19c65075bf22b6cd906`; merge `1c7e8f8f3c38204cce1d6b34ea494938360a812d` | Lead/Architect 独立审核及 fresh checkout 复验通过：`npm ci`、typecheck、11 文件/49 测试、build、4 项真实 smoke、39 文件 format 全部通过；锁文件与 tracked tree clean | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；push、远程 CI 与非 Linux/Windows 平台 NOT_RUN |
 
 ## 待处理事项
@@ -152,7 +152,15 @@ D00 已完成并获 Architect 最终批准，等待项目负责人决定是否�
 - 发现：在 `1a44d432051d7d08d4576e5eba794afac24df122` 上独立复现，当前代码树仍等于 `ced5713`。`app.listen` 未 settle 时收到首个 SIGINT/SIGTERM，现有关闭流程会成功 settle `completed`，但 `ready` 永远 pending；信号监听已移除，`main` 因而永久等待 `ready`。迟到 listen resolve/reject 还可能在已关闭后产生虚假 ready/日志或把 ready 改为 listen_error。现有 12 项 lifecycle 测试全部通过，未覆盖该竞态。
 - 最小修复计划已获 Architect `APPROVED`。功能范围仅 `src/lifecycle.ts`、`tests/lifecycle.test.ts`、`tests/fixtures/pending-listen-entry.mjs` 和 `scripts/smoke.mjs`；本 progress 仅追加追踪与证据。不得修改依赖、CI、formatter、README 或其他业务代码。
 - 计划行为：首个关闭信号立即稳定拒绝尚未成功的 `ready`，沿用既有 close+flush 共享 5 秒预算并确保 `completed` 最终 settle；迟到 listen resolve/reject 被安全消费，不产生伪 ready，迟到建立的 listening 资源在剩余预算内再关闭；`main` 对信号先于 ready 的成功关闭以退出码 0 结束，真正 listen failure 仍为非零。重复信号、正常 ready、close/flush 错误与超时映射不得弱化。
-- Worker、task SHA、命令退出码、smoke 证据及独立审核均 pending；未 merge、未 push，远程 CI 仍为 `NOT_RUN`。
+
+#### Lead 独立审核
+
+- Worker `da37e3f1-b802-4d12-9eb4-cefa79c8cef3`，workspace `wks_8e115b4d9b5617b7`，branch `d00-t03-lifecycle-fix-01`；work commit `01048babc37bc07d6a38e95ec4b61fe5698ede19`，父提交为 `f0626ec32399696c6288f3922147496c2d0480c1`。
+- 提交仅改 4 个授权路径：`src/lifecycle.ts`、`tests/lifecycle.test.ts`、新文件 `tests/fixtures/pending-listen-entry.mjs`、`scripts/smoke.mjs`；合计 +623/−4，`git diff --check` 通过，worktree clean。未改依赖、CI、formatter、README、业务配置或 progress。
+- 静态审核确认：ready 与 completed 均一次性 settle；首个信号先拒绝待定 ready，重复信号复用 primary close；late listen resolve/reject 不改变 ready/completed 或产生 listen_error；late listening 在首信号剩余预算内由 `server.close` 释放，失败按白名单记录并回调非零退出。primary close+flush 共享预算和 ready 后既有路径未重写。
+- Lead 在精确 Node `26.13.1`/npm `11.20.0` PATH 独立执行 `npm run verify` 退出 0：11 文件/57 测试、生产 build、5 项真实 smoke、40 文件 format 全部通过。聚焦 lifecycle 连续复跑 5 次，每次 20/20 通过。
+- 额外捕获真实 pending-listen fixture 事件顺序：`pending-listen → shutdown(closed, forced=false) → late-listening → late-closed`；自然退出 0、无外部 kill、stderr 为空，证明 late bind 实际发生并被释放，而非 primary close 回调误报。
+- 结论：Lead 独立审核 `PASS`，无 BLOCKER；不自行标记最终 PASS。工作分支未 merge/push，等待 Architect 独立复核；远程 CI 仍为 `NOT_RUN`。
 
 ### 限制与未执行项
 
