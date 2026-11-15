@@ -20,14 +20,14 @@
 - T01 隔离工作区：`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t01-typescript-bootstrap`；branch `d00-t01-typescript-bootstrap`；base `e708f65f852ceb10472ee04140470c0c99bcb384`；task commit `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`；merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0`。
 - T02 隔离工作区：workspace `wks_e0c1d33b7f583305`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t02-deterministic-test-facilities`；branch `d00-t02-deterministic-test-facilities`；base `ed5ebb006b109261624c8c68829166cbd97c6852`；task commit `47a138f5f1285c34af038dfd59eb521b75d3cf5f`；merge commit `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b`。
 - T03 隔离工作区：workspace `wks_ae6cb03545d25b12`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t03-fastify-server-lifecycle`；branch `d00-t03-fastify-server-lifecycle`；base `d13aa340bbb40617a4617bcea92df8a25f2211ac`；初始 task commit `0b60d214e44ee4105a4c700230c31b7d36a32251`；已批准 review-fix commit `09368ceee86ea480aab9101f8cdd6ea1f9fee957`；merge commit `14cc5d59cfc914cef83df5c791db70561e6e55a3`。
-- T04 隔离工作区：workspace `wks_99e8875665327b35`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t04-verification-ci-readme`；branch `d00-t04-verification-ci-readme`；base `c0856178048b5faba370ba2c3d71a2fa9954ae42`；Worker 待派发。
+- T04 隔离工作区：workspace `wks_99e8875665327b35`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t04-verification-ci-readme`；branch `d00-t04-verification-ci-readme`；base `c0856178048b5faba370ba2c3d71a2fa9954ae42`；Worker `54587538-09e7-40dd-a630-2b97972d5b40`。
 
 | 任务 ID | 状态 | 基线/提交 | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
 | D00-T01 | PASS | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`; merge `9c3b886d25224205dc383ffba1d1d7cd838028b0` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T02 | PASS | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f`; merge `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` | Lead 独立审核与 Architect 复核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T03 | PASS | base `d13aa340bbb40617a4617bcea92df8a25f2211ac`; work `09368ceee86ea480aab9101f8cdd6ea1f9fee957`; merge `14cc5d59cfc914cef83df5c791db70561e6e55a3` | Lead 独立审核、Architect 复核及合并树复验通过：typecheck、10 文件/44 测试、build、真实信号/端口/超时 smoke 通过；format/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
-| D00-T04 | IN_PROGRESS | base `c0856178048b5faba370ba2c3d71a2fa9954ae42` | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 新 Worker 派发中；仅 T04 format/README/CI/verify 范围 |
+| D00-T04 | IN_PROGRESS | base `c0856178048b5faba370ba2c3d71a2fa9954ae42` | RUNNING | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | Worker `54587538-09e7-40dd-a630-2b97972d5b40` 执行；仅 T04 format/README/CI/verify 范围 |
 
 ## 待处理事项
 
