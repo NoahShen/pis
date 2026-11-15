@@ -2,6 +2,16 @@
 
 更新时间：2026-11-15。
 
+## 最新状态：远程基线与 CI（2026-11-15）
+
+- 用户授权推送并验证 GitHub Actions 后提交 D01 Intent。`git push -u origin main` 成功，`git ls-remote origin refs/heads/main` 确认远程为 `8f5681081507a738d072fd9c965f037e7facebd0`。
+- 修复后 D00 基线 `8f56810` 已获 Architect CONFIRMED，功能代码与批准的 `01048ba` 一致。
+- [GitHub Actions CI #1](https://github.com/NoahShen/pis/actions/runs/43690265810)：由该提交 push 触发，2026-11-15 07:30 UTC 启动；整体 **Success**，`verify` 作业成功（25 秒），总耗时 29 秒。工作流在 `ubuntu-latest` 执行精确工具链检查、`npm ci` 与 `npm run verify`。
+- 证据为 GitHub 运行详情页的实际状态及对应提交；未认证页面不开放逐步日志，本记录不宣称已下载或逐行审查远程日志。唯一 annotation 为 Ubuntu runner 镜像迁移 notice，非失败。
+- D00 的远程 CI 状态更新为 **PASS**；Windows 仍 NOT_RUN。下文历史记录中的“未 push / CI NOT_RUN”为当时状态，不覆盖此最新记录。
+- D01 Intent v0.1 已提交负责人 G1 审批，见 [D01 Intent](../D01/intent.md)；尚未进入 Spec、Plan 或正式开发。心跳保持停止，原有未跟踪 `config/` 未提交。
+
+
 ## 当前基线与门禁
 
 - Architect：独立审核方；已于 2026-11-15 完成 v0.3 的 G3 复核。
@@ -42,7 +52,7 @@
 
 ## 下一可执行步骤
 
-D00 已完成并获 Architect 最终批准，等待项目负责人决定是否启动下一里程碑。当前不推送、不扩大 D01 范围；若后续启动 D02-T01，必须先对齐 `config/prompt/` 与 `config/prompts/`。
+D00 已完成并获 Architect 最终批准，修复后基线 `8f56810` 已推送且远程 CI 成功。下一步由项目负责人审核 D01 Intent v0.1，通过 G1 后再制定 Spec；当前不启动 D01 正式开发。若后续启动 D02-T01，必须先对齐 `config/prompt/` 与 `config/prompts/`。
 
 ## 验证证据
 
