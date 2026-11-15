@@ -1,7 +1,7 @@
 # D02 Spec · Prompt 与 LLM 基础
 
-> 版本：v0.1 草案
-> 状态：REVIEW · Provider 协议待负责人确认，G2 尚未通过
+> 版本：v0.1
+> 状态：APPROVED · Architect G2 审核通过，负责人已确认 Provider 协议
 > 依据：[Intent v0.1](intent.md)，负责人已通过 G1。
 > 前置：D01 `5bf17f5` 已推送，远程 CI Success。
 
@@ -53,15 +53,18 @@ P-03 外层严格为 `{results:[上述分支]}`；空结果合法。confirmed_al
 - 输出 Schema 的字段说明由代码产生，不在 Markdown 维护可执行 Schema 副本。供应商原生结构化输出不取代本地校验；是否使用其原生能力按 §5 确认后的协议决定。
 - 不允许模型调用执行 SQL、外部工具或应用代码。模型返回是待校验文本，不执行 tool call。
 
-## 5. HTTP 协议待确认与已确定边界
+## 5. HTTP 协议与调用边界
 
-### 5.1 唯一 G2 待确认项
+### 5.1 已确认：OpenAI-compatible Chat Completions（非流式）
 
-技术设计 §1.2 明确 Provider 实际配置尚未决定；当前配置目录只有六份 Prompt，没有可据以选定协议的模型配置。
+负责人明确确认“先采用 OpenAI-compatible Chat Completions（非流式）”。首个实现只支持该协议，不同时实现 Responses、Anthropic Messages 或多个 Provider 适配层。
 
-建议首个实现采用 **OpenAI-compatible Chat Completions**：显式完整 endpoint URL，Bearer 鉴权，非流式请求，model + messages，读取 `choices[0].message.content`。使用文本 JSON + 本地严格校验作为基础，不默认代理支持原生 json_schema 模式。不同时实现 Responses、Anthropic Messages 或多个 Provider 适配层。
-
-此建议尚未获得负责人批准。若选择其他协议，修改本节的请求、响应和鉴权契约后再通过 G2；不得让 Worker 自行猜测。确认协议即可推进，暂不需要真实密钥。
+- 向配置的完整 endpoint URL 发起 POST，不自动补 `/v1/chat/completions`。请求头为 `Authorization: Bearer <apiKey>` 与 `Content-Type: application/json`。
+- 请求体包含 `model`、`stream:false`、`messages`。首条 system 消息为本次读取的功能指令及由代码生成的输出结构要求；user 消息用 JSON 明确包含动态任务数据，Knowledge 另以独立字段携带 User Context，其他四类不带此字段。不从动态数据生成 role 或请求配置。
+- 不发送 tools、tool_choice 或流式参数；不默认供应商支持 `response_format: json_schema`。基础模式要求文本 JSON 并严格本地校验，未来原生结构化输出适配另行明确。
+- 成功 HTTP 响应须为 JSON 对象，`choices[0].message.content` 必须为非空字符串；拒绝 null、数组、多模态内容、工具调用及明确 refusal。`choices[0].finish_reason` 须为 `stop`，截断或工具调用结果作为响应协议错误，不当作有效业务输出。其他供应商元数据可忽略，不应用业务 Schema 的严格字段规则校验整个 envelope。
+- 提取 content 后按 §3 解析完整业务 JSON 并校验。供应商响应正文不进入日志或异常消息。
+- endpoint、密钥和具体模型由部署时显式提供；当前固定测试不需要真实供应商或密钥。
 
 ### 5.2 各协议共用行为
 
@@ -86,7 +89,8 @@ PMT-11 指令注入防护与 PMT-12 模型稳定性涉及真实语义，未运�
 ## 7. G2 与下一步
 
 - Intent G1：APPROVED。
-- 本 Spec：REVIEW；已核对五个功能 Prompt 和技术契约，Provider 协议仍待负责人选择。
-- 协议确认后由 Architect 完成 G2，再通过新的 Paseo Lead 会话制定文件级 Plan，明确目录迁移、版本管理、类型接口及任务范围。
+- 本 Spec：APPROVED；Architect 核对五个功能 Prompt、技术契约及负责人确认的非流式 Chat Completions 协议，G2 通过。
+- 协议批准依据：负责人明确回复“先采用 OpenAI-compatible Chat Completions（非流式）”。实际 endpoint/model/密钥仍为部署配置，不作为固定测试前置。
+- 下一步通过新的 Paseo Lead 会话制定文件级 Plan，明确目录迁移、版本管理、类型接口及任务范围。
 - Plan 完成后提交负责人审核，明确批准执行前不得派 Worker。
 - 当前不移动 Prompt、不安装新增依赖、不调用真实模型、不创建心跳。
