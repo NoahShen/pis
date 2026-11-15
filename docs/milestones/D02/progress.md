@@ -65,8 +65,15 @@
 - Architect 独立 `verify:toolchain`、定向 18/18 测试与 `git diff --check` 均通过，完整阅读源码、测试和 README diff；采纳 Lead full verify 证据，本轮未独立重跑全量。
 - Endpoint 校验以 WHATWG `URL` 规范化后的 protocol/hostname/username/password 为安全边界；仅因 URL 会擦除显式空 userinfo，额外窄拒绝 `https://@host`/`https://:@host`，并覆盖 host 大小写、IPv4/IPv6 等价形式及 path/query/fragment 中 `@`。
 - T03 以精确三路径 stage 后提交，并用 `--no-ff` 合入 local main；未 push。
-- T04：`NOT_STARTED`。
+- T04：`DELEGATED · WORKER_RUNNING · REVIEW_PENDING`
+- `T04_WORKSPACE_ID=wks_4df65fc3acb78a41`
+- `T04_WORKER_AGENT_ID=667c97c9-18d0-404d-aca4-e9f18453b563`
+- `T04_BRANCH=codex/d02-t04-llm-calls`
+- `T04_BASE_SHA=c4c9587dda59aa967bb65d087cb1aff4f643fa9e`
+- `T04_WORKTREE=/Users/noahshen/.paseo/worktrees/0eapmc43/codex-d02-t04-llm-calls`
+- T04 新 worktree 已完成 `npm ci`（93 packages、0 vulnerabilities）与精确 toolchain 校验；真实 User Context 不在 worktree，公开合成 Context 存在。
+- `T04_REMOTE_CI=NOT_RUN`；`T04_REAL_LLM=NOT_RUN`
 
 ## 下一步
 
-委派全新 Worker 执行 T04。T04 必须使用隔离 workspace，审查通过前不得合并，也不得提前完成最终验收；禁止 push。
+等待 T04 Worker 完成通知，不以轮询代替验收。候选返回后由 Lead 审核 typed call 的固定 operation/请求组合/输入快照/单次 Prompt+completion+parse、Stub 确定性、敏感泄露矩阵、白名单边界及定向/full verify，再交 Architect 轻量复核；未复核不合并且不提前完成 D02 集成 Gate。禁止 push。
