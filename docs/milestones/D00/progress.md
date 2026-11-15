@@ -22,7 +22,7 @@
 | 任务 ID | 状态 | 基线/提交 | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
 | D00-T01 | PASS | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`; merge `9c3b886d25224205dc383ffba1d1d7cd838028b0` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
-| D00-T02 | REVIEW | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f` | Lead 独立审核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | PENDING | 等待 Architect 复核；未合并、未推送 |
+| D00-T02 | REVIEW | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f` | Lead 独立审核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | Architect 已批准；待 Lead 合并后记录 PASS，未推送 |
 | D00-T03 | NOT_STARTED | — | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 等待门禁及 T02 |
 | D00-T04 | NOT_STARTED | — | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 等待门禁及 T03 |
 
@@ -34,7 +34,7 @@
 
 ## 下一可执行步骤
 
-将 T02 branch、base/work SHA、17 文件差异和 Lead 验证证据交 Architect 独立复核。未经 Architect 复核不得合并、不得标 PASS、不得推进 T03。
+Lead 合并已获 Architect 批准的 T02 `47a138f`，记录实际 merge commit/PASS，再创建新的 Paseo Worker 按 Plan 派发 T03。
 
 ## 验证证据
 
@@ -67,6 +67,12 @@
 - Plan 指定的九个可定位 Case 名称均逐字存在并通过；Clock/FakeClock 覆盖 defensive Date、显式推进；ID 覆盖精确序列、持续耗尽失败和 Node `randomUUID` 委托；临时目录覆盖成功/失败清理与原异常重抛。
 - `npm run build` 退出 0；`dist` 仅含 `dist/id/crypto-id-generator.js`、`dist/id/id-generator.js`、`dist/time/clock.js`、`dist/time/format-time.js`、`dist/time/system-clock.js`、`dist/version.js`，不含 tests、fixtures 或测试配置。
 - Node ESM 直接导入全部生产产物退出 0：`APP_VERSION=0.1.0`，`formatTimestamp(2025-03-10T18:30:00.000Z)=2025-03-11T02:30:00.000+08:00`，连续 UUID 为字符串且不同，SystemClock 返回 Date。
+
+### D00-T02 Architect 复核
+
+- 日期：2026-11-15；结论：APPROVED；目标 commit：`47a138f5f1285c34af038dfd59eb521b75d3cf5f`。
+- 依据：Spec §3 / Plan T02。检查生产接口、实现、全部新增测试及 TS/Vitest 配置差异，对照 Lead 独立验证和锁文件核验记录；Clock/ID 注入、固定偏移时间、临时目录清理与构建隔离符合范围，无 BLOCKER。
+- 已有 5 文件/9 测试、双 TZ、重复执行、类型检查及构建证据充分，复核未重复执行相同命令。批准 Lead 合并，实际合并前保持 REVIEW；下一任务为 T03，smoke/CI 仍 NOT_RUN。
 
 ### 限制与未执行项
 
