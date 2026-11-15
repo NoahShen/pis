@@ -30,6 +30,7 @@ export interface StartServerDependencies {
   logger: Logger;
   signalSource?: SignalSource;
   shutdownTimeoutMs?: number;
+  lateCloseFailure?: () => void;
 }
 
 export interface StartServerResult {
@@ -52,6 +53,13 @@ class OperationTimeoutError extends Error {
   constructor() {
     super("operation timed out");
     this.name = "OperationTimeoutError";
+  }
+}
+
+class ShutdownBeforeReadyError extends Error {
+  constructor() {
+    super("Server shutdown before ready");
+    this.name = "ShutdownBeforeReadyError";
   }
 }
 
@@ -208,13 +216,17 @@ export function startServer({
   logger,
   signalSource = process,
   shutdownTimeoutMs = DEFAULT_SHUTDOWN_TIMEOUT_MS,
+  lateCloseFailure,
 }: StartServerDependencies): StartServerResult {
   const signals: readonly NodeJS.Signals[] = ["SIGINT", "SIGTERM"];
+  const shutdownBeforeReadyError = new ShutdownBeforeReadyError();
   let resolveReady!: (address: { host: string; port: number }) => void;
   let rejectReady!: (error: Error) => void;
   let resolveCompleted!: (result: LifecycleResult) => void;
+  let readySettled = false;
   let completedSettled = false;
   let shutdownStarted = false;
+  let shutdownDeadline = 0;
   let subscribed = false;
 
   const ready = new Promise<{ host: string; port: number }>(
@@ -227,12 +239,68 @@ export function startServer({
     resolveCompleted = resolve;
   });
 
+  const rejectReadyIfPending = (error: Error): boolean => {
+    if (readySettled) {
+      return false;
+    }
+
+    readySettled = true;
+    rejectReady(error);
+    return true;
+  };
+
+  const resolveReadyIfActive = (address: {
+    host: string;
+    port: number;
+  }): boolean => {
+    if (shutdownStarted || readySettled) {
+      return false;
+    }
+
+    readySettled = true;
+    resolveReady(address);
+    return true;
+  };
+
+  const closeLateListeningResource = async (): Promise<void> => {
+    if (!app.server.listening) {
+      return;
+    }
+
+    const budget = createTimeout(Math.max(0, shutdownDeadline - Date.now()));
+
+    try {
+      await withTimeout(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            app.server.close((error) => (error ? reject(error) : resolve()));
+          }),
+        budget.promise,
+      );
+    } catch (error) {
+      logError(
+        logger,
+        "shutdown",
+        error instanceof OperationTimeoutError ? "timeout" : "close_error",
+      );
+      try {
+        lateCloseFailure?.();
+      } catch {
+        safeError("shutdown", "close_error");
+      }
+    } finally {
+      budget.clear();
+    }
+  };
+
   const shutdownHandler = (): void => {
     if (shutdownStarted) {
       return;
     }
 
     shutdownStarted = true;
+    shutdownDeadline = Date.now() + Math.max(0, shutdownTimeoutMs);
+    rejectReadyIfPending(shutdownBeforeReadyError);
     void closeWithTimeoutDetails(app, logger, shutdownTimeoutMs).then(
       (result) => {
         finish({
@@ -271,6 +339,7 @@ export function startServer({
 
     completedSettled = true;
     unsubscribe();
+    rejectReadyIfPending(shutdownBeforeReadyError);
     resolveCompleted(result);
   }
 
@@ -283,26 +352,49 @@ export function startServer({
     try {
       await app.listen({ host: config.host, port: config.port });
     } catch {
+      if (shutdownStarted) {
+        await closeLateListeningResource();
+        return;
+      }
+
       unsubscribe();
       logError(logger, "listen", "listen_error");
       await flushAfterListenFailure(logger, shutdownTimeoutMs);
-      rejectReady(new Error("Server failed to listen"));
+      rejectReadyIfPending(new Error("Server failed to listen"));
       finish({ code: 1, reason: "listen_error", forced: false });
       return;
     }
 
+    if (shutdownStarted) {
+      await closeLateListeningResource();
+      return;
+    }
+
     const address = app.server.address();
+    if (shutdownStarted) {
+      await closeLateListeningResource();
+      return;
+    }
+
     if (!isAddressInfo(address)) {
       unsubscribe();
       logError(logger, "listen", "listen_error");
       await flushAfterListenFailure(logger, shutdownTimeoutMs);
-      rejectReady(new Error("Server did not expose a bound address"));
+      rejectReadyIfPending(new Error("Server did not expose a bound address"));
       finish({ code: 1, reason: "listen_error", forced: false });
       return;
     }
 
     const boundAddress = { host: address.address, port: address.port };
-    resolveReady(boundAddress);
+    if (!resolveReadyIfActive(boundAddress)) {
+      await closeLateListeningResource();
+      return;
+    }
+
+    if (shutdownStarted) {
+      await closeLateListeningResource();
+      return;
+    }
 
     try {
       logger.ready(boundAddress);
@@ -384,12 +476,18 @@ export async function main(deps: MainDependencies = {}): Promise<void> {
     logger,
     signalSource: deps.signalSource,
     shutdownTimeoutMs,
+    lateCloseFailure: () => forceExit(1),
   });
 
   try {
     await server.ready;
   } catch {
-    await server.completed;
+    const result = await server.completed;
+    if (result.code === 0) {
+      process.exitCode = 0;
+      return;
+    }
+
     forceExit(1);
     return;
   }

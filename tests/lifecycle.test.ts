@@ -16,6 +16,21 @@ function isPending(promise: Promise<unknown>): Promise<boolean> {
   ]);
 }
 
+function deferred<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (error: Error) => void;
+} {
+  let resolve!: (value: T) => void;
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, resolve, reject };
+}
+
 async function occupyLoopbackPort(): Promise<{
   port: number;
   close: () => Promise<void>;
@@ -180,6 +195,207 @@ describe("startServer", () => {
       { outcome: "closed", forced: false },
     ]);
     expect(signals.count()).toBe(0);
+  });
+
+  it("rejects pending ready and shares one close when a signal arrives before listen settles", async () => {
+    const listen = deferred<string>();
+    const app = Fastify({ logger: false });
+    const close = vi.fn(async () => undefined);
+    app.listen = () => listen.promise;
+    app.close = close as unknown as FastifyInstance["close"];
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const server = startServer({
+      app,
+      config: { host: "127.0.0.1", port: 0 },
+      logger,
+      signalSource: signals,
+    });
+    const readyOutcome = server.ready.catch((error: unknown) => error);
+
+    expect(await isPending(server.completed)).toBe(true);
+    signals.emit("SIGINT");
+
+    await expect(readyOutcome).resolves.toMatchObject({
+      name: "ShutdownBeforeReadyError",
+      message: "Server shutdown before ready",
+    });
+    await expect(server.completed).resolves.toEqual({
+      code: 0,
+      reason: "closed",
+      forced: false,
+    });
+    expect(close).toHaveBeenCalledExactlyOnceWith();
+    expect(logger.readyEntries).toEqual([]);
+    expect(logger.shutdownEntries).toEqual([
+      { outcome: "closed", forced: false },
+    ]);
+    expect(signals.count()).toBe(0);
+  });
+
+  it("consumes a late listen resolve, closes newly listening resources, and preserves completed", async () => {
+    const listen = deferred<string>();
+    let listening = false;
+    let notifyClosed!: () => void;
+    const closed = new Promise<void>((resolve) => {
+      notifyClosed = resolve;
+    });
+    const app = Fastify({ logger: false });
+    const close = vi.fn(async () => undefined);
+    const serverClose = vi.fn((callback) => {
+      notifyClosed();
+      callback();
+    });
+    const lateCloseFailure = vi.fn();
+    app.listen = () => listen.promise;
+    app.close = close as unknown as FastifyInstance["close"];
+    app.server.close = serverClose as unknown as typeof app.server.close;
+    Object.defineProperty(app.server, "listening", {
+      configurable: true,
+      get: () => listening,
+    });
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const server = startServer({
+      app,
+      config: { host: "127.0.0.1", port: 0 },
+      logger,
+      signalSource: signals,
+      lateCloseFailure,
+    });
+    const readyOutcome = server.ready.catch((error: unknown) => error);
+
+    signals.emit("SIGTERM");
+    await expect(readyOutcome).resolves.toMatchObject({
+      name: "ShutdownBeforeReadyError",
+    });
+    await expect(server.completed).resolves.toEqual({
+      code: 0,
+      reason: "closed",
+      forced: false,
+    });
+
+    listening = true;
+    listen.resolve("http://127.0.0.1:41003");
+    await closed;
+
+    await expect(server.completed).resolves.toEqual({
+      code: 0,
+      reason: "closed",
+      forced: false,
+    });
+    expect(logger.readyEntries).toEqual([]);
+    expect(logger.shutdownEntries).toEqual([
+      { outcome: "closed", forced: false },
+    ]);
+    expect(logger.flushCount).toBe(1);
+    expect(close).toHaveBeenNthCalledWith(1);
+    expect(serverClose).toHaveBeenCalledExactlyOnceWith(expect.any(Function));
+    expect(lateCloseFailure).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed late listen cleanup without changing the primary close result", async () => {
+    const listen = deferred<string>();
+    let listening = false;
+    let notifyClosed!: () => void;
+    const closed = new Promise<void>((resolve) => {
+      notifyClosed = resolve;
+    });
+    const app = Fastify({ logger: false });
+    app.listen = () => listen.promise;
+    app.close = (async () => undefined) as unknown as FastifyInstance["close"];
+    app.server.close = ((callback: (error?: Error) => void) => {
+      notifyClosed();
+      callback(new Error("late close detail"));
+    }) as unknown as typeof app.server.close;
+    Object.defineProperty(app.server, "listening", {
+      configurable: true,
+      get: () => listening,
+    });
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const lateCloseFailure = vi.fn();
+    const server = startServer({
+      app,
+      config: { host: "127.0.0.1", port: 0 },
+      logger,
+      signalSource: signals,
+      lateCloseFailure,
+    });
+    const readyOutcome = server.ready.catch((error: unknown) => error);
+
+    signals.emit("SIGTERM");
+    await readyOutcome;
+    await server.completed;
+    listening = true;
+    listen.resolve("http://127.0.0.1:41004");
+    await closed;
+    await vi.waitFor(() =>
+      expect(lateCloseFailure).toHaveBeenCalledExactlyOnceWith(),
+    );
+
+    await expect(server.completed).resolves.toEqual({
+      code: 0,
+      reason: "closed",
+      forced: false,
+    });
+    expect(logger.readyEntries).toEqual([]);
+    expect(logger.errorEntries).toEqual([
+      { operation: "shutdown", reason: "close_error" },
+    ]);
+  });
+
+  it("consumes a late listen reject without an unhandled rejection or state change", async () => {
+    const listen = deferred<string>();
+    const app = Fastify({ logger: false });
+    const close = vi.fn(async () => undefined);
+    app.listen = () => listen.promise;
+    app.close = close as unknown as FastifyInstance["close"];
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown): void => {
+      unhandled.push(reason);
+    };
+    process.on("unhandledRejection", onUnhandled);
+
+    try {
+      const server = startServer({
+        app,
+        config: { host: "127.0.0.1", port: 0 },
+        logger,
+        signalSource: signals,
+      });
+      const readyOutcome = server.ready.catch((error: unknown) => error);
+
+      signals.emit("SIGINT");
+      await expect(readyOutcome).resolves.toMatchObject({
+        name: "ShutdownBeforeReadyError",
+      });
+      await expect(server.completed).resolves.toEqual({
+        code: 0,
+        reason: "closed",
+        forced: false,
+      });
+
+      listen.reject(new Error("late listen detail"));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(unhandled).toEqual([]);
+      await expect(server.completed).resolves.toEqual({
+        code: 0,
+        reason: "closed",
+        forced: false,
+      });
+      expect(logger.readyEntries).toEqual([]);
+      expect(logger.errorEntries).toEqual([]);
+      expect(logger.shutdownEntries).toEqual([
+        { outcome: "closed", forced: false },
+      ]);
+      expect(close).toHaveBeenCalledExactlyOnceWith();
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
   });
 
   it("flush failure after close resolves forced flush_error", async () => {
@@ -370,6 +586,140 @@ describe("main", () => {
     await running;
     expect(forceExit).not.toHaveBeenCalled();
     expect(process.exitCode).toBe(0);
+  });
+
+  it("graceful signal before a pending listen exits zero without force exit", async () => {
+    const listen = deferred<string>();
+    const app = Fastify({ logger: false });
+    const close = vi.fn(async () => undefined);
+    app.listen = () => listen.promise;
+    app.close = close as unknown as FastifyInstance["close"];
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const forceExit = vi.fn();
+    const running = main({
+      env: { API_TOKEN: "test-token", PORT: "0" },
+      loggerFactory: () => logger,
+      appFactory: () => app,
+      signalSource: signals,
+      forceExit,
+    });
+
+    await vi.waitFor(() => expect(signals.count()).toBe(2));
+    signals.emit("SIGTERM");
+    await expect(running).resolves.toBeUndefined();
+
+    expect(process.exitCode).toBe(0);
+    expect(forceExit).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledExactlyOnceWith();
+    expect(logger.readyEntries).toEqual([]);
+    expect(logger.shutdownEntries).toEqual([
+      { outcome: "closed", forced: false },
+    ]);
+    expect(signals.count()).toBe(0);
+  });
+
+  it("late cleanup failure after graceful shutdown requests a nonzero exit", async () => {
+    const listen = deferred<string>();
+    let listening = false;
+    let notifyClosed!: () => void;
+    const closed = new Promise<void>((resolve) => {
+      notifyClosed = resolve;
+    });
+    const app = Fastify({ logger: false });
+    app.listen = () => listen.promise;
+    app.close = (async () => undefined) as unknown as FastifyInstance["close"];
+    app.server.close = ((callback: (error?: Error) => void) => {
+      notifyClosed();
+      callback(new Error("late close detail"));
+    }) as unknown as typeof app.server.close;
+    Object.defineProperty(app.server, "listening", {
+      configurable: true,
+      get: () => listening,
+    });
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const forceExit = vi.fn();
+    const running = main({
+      env: { API_TOKEN: "test-token", PORT: "0" },
+      loggerFactory: () => logger,
+      appFactory: () => app,
+      signalSource: signals,
+      forceExit,
+    });
+
+    await vi.waitFor(() => expect(signals.count()).toBe(2));
+    signals.emit("SIGTERM");
+    await running;
+    expect(forceExit).not.toHaveBeenCalled();
+
+    listening = true;
+    listen.resolve("http://127.0.0.1:41005");
+    await closed;
+    await vi.waitFor(() =>
+      expect(forceExit).toHaveBeenCalledExactlyOnceWith(1),
+    );
+  });
+
+  it("signal before a pending listen remains nonzero when the primary close fails", async () => {
+    const listen = deferred<string>();
+    const app = Fastify({ logger: false });
+    app.listen = () => listen.promise;
+    app.close = (async () => {
+      throw new Error("primary close detail");
+    }) as unknown as FastifyInstance["close"];
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const forceExit = vi.fn();
+    const running = main({
+      env: { API_TOKEN: "test-token", PORT: "0" },
+      loggerFactory: () => logger,
+      appFactory: () => app,
+      signalSource: signals,
+      forceExit,
+    });
+
+    await vi.waitFor(() => expect(signals.count()).toBe(2));
+    signals.emit("SIGINT");
+    await expect(running).resolves.toBeUndefined();
+
+    expect(forceExit).toHaveBeenCalledExactlyOnceWith(1);
+    expect(logger.shutdownEntries).toEqual([
+      { outcome: "failed", forced: true },
+    ]);
+    expect(logger.errorEntries).toEqual([
+      { operation: "shutdown", reason: "close_error" },
+    ]);
+    expect(logger.readyEntries).toEqual([]);
+  });
+
+  it("signal before a pending listen remains nonzero when close times out", async () => {
+    const listen = deferred<string>();
+    const app = Fastify({ logger: false });
+    app.listen = () => listen.promise;
+    app.close = (() =>
+      new Promise(() => undefined)) as unknown as FastifyInstance["close"];
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const forceExit = vi.fn();
+    const running = main({
+      env: { API_TOKEN: "test-token", PORT: "0" },
+      loggerFactory: () => logger,
+      appFactory: () => app,
+      signalSource: signals,
+      shutdownTimeoutMs: 20,
+      forceExit,
+    });
+
+    await vi.waitFor(() => expect(signals.count()).toBe(2));
+    signals.emit("SIGINT");
+    await expect(running).resolves.toBeUndefined();
+
+    expect(forceExit).toHaveBeenCalledExactlyOnceWith(1);
+    expect(logger.shutdownEntries).toEqual([
+      { outcome: "timeout", forced: true },
+    ]);
+    expect(logger.readyEntries).toEqual([]);
   });
 
   it("missing configuration is rejected before creating an app", async () => {
