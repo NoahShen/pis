@@ -22,14 +22,15 @@
 - D01-T03 Lead 独立复核：clean `npm ci` 为 93 packages；UTC 与 Asia/Shanghai 定向均 4 files / 10 tests，full `npm run verify` 最终 exit 0，19 files / 80 tests、两次 build、5 项 process smoke、database smoke、57 文件格式检查全通过。独立锁进程 PID `76425` / `76451` 均观察到 attempting→释放→success，退出码 0；源码/测试范围仅 7 文件，无 TODO/skip/only、`@ts-ignore`、trigger、CURRENT_TIMESTAMP 或 dist 单测依赖。Lead 结论 `APPROVED_FOR_ARCHITECT_REVIEW`，尚未合并或标记 PASS。
 - D01-T03 Architect 复核：明确裁决 `APPROVED`，Candidate `47e28686b895e11c5c263fff596cdf0ec391c7d3` 可合并，无 BLOCKER。Architect 独立双 TZ 定向各 4 files / 10 tests，锁 PID `79290` / `79417` 正常；四个专用类型负例移除抑制后均为 TS2345，证明 async、Promise、显式 union、条件混合 union 在调用点拒绝。thenable 运行时测试的抑制移除后为外层 `void` 归因的 TS2322，已实际消费且不承担类型拒绝证明，判定为非产品缺陷、非阻塞。
 - D01-T03 合并与合并后复验：local `--no-ff` merge commit `5c529e871ad67160f992cebf771a2b3a217a4be0`。合并后 main 重新 clean `npm ci` 93 packages，`npm run verify` exit 0：19 files / 80 tests、typecheck、两次 build、5 项 process smoke（端口 `61666` / `61753`）、database smoke、57 文件格式检查全通过。T03 标记 `PASS`；DB-09 仅基础事务、DB-10 TEXT 基础、DB-12 busy/分类基础，六业务阶段故障注入与 Runtime 重试仍 `NOT_RUN`。
+- D01-T04 Worker：Agent `f403be79-6d10-42f4-8f29-18cb0bd9d96d`，Workspace `wks_de4991969e47a6d1`，Worktree `/Users/noahshen/.paseo/worktrees/0eapmc43/feat-d01-t04-event-fts`，Branch `feat/d01-t04-event-fts`，Base SHA `cd9212a70ff2c088f6bbaff23f49136061682a1e`。使用 `codex-worker` profile，严格限制为 event-search 实现/测试、faulty DB fixture、README 共 4 个白名单文件；尚未提交、合并或标记 PASS。
 
 | 任务 | 状态 | 实现与测试证据 |
 |---|---|---|
 | D01-T01 | PASS | base `74e25b6`; work `cec9cf4`; merge `bc57283`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
 | D01-T02 | PASS | base `d3ad3a4`; work `e444036`; merge `d5b3202`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
 | D01-T03 | PASS | base `1f81584`; work `47e2868`; merge `5c529e8`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN`；DB-09/10/12 仅接受本卡基础范围 |
-| D01-T04 | NOT_STARTED | 未实现，NOT_RUN |
+| D01-T04 | IN_PROGRESS | 唯一 Worker 已启动；Event FTS 确定性聚合、增量刷新、全量重建和故障回滚尚未提交 |
 
 ## 下一步
 
-T03 已按 Lead 独立验证、Architect `APPROVED`、local merge、合并后 full verify 顺序完成。下一步启动唯一一个 T04 Worker，严格限制 Event FTS 白名单；心跳保持停止，不 push。
+T03 已按 Lead 独立验证、Architect `APPROVED`、local merge、合并后 full verify 顺序完成。T04 唯一 Worker 正在实现 Event FTS 白名单；心跳保持停止，不 push。
