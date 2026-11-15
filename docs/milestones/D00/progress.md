@@ -10,6 +10,7 @@
 - Spec v0.1：APPROVED，Architect 于 2026-11-15 完成 G2 复核，见 `spec.md` §9。
 - Plan v0.3：`APPROVED`，Architect 独立 G3 复核通过；用户已于 2026-11-15 明确确认“按这份 Plan 启动 D00 开发”。
 - G3 记录更正：Architect Round 1 的真实结论为 `CHANGES_REQUIRED`；v0.2 中所谓“Architect 第 2 轮复核”实为 Lead 自查，已撤销错误归因。
+- D00 里程碑：`APPROVED`；Architect 于 2026-11-15 完成最终验收，T01–T04 全部 PASS，批准代码基线为本地 main `ced57136af9b152892d07e1a156d962af2e25441`。
 - Git：`origin` 为 `git@github.com:NoahShen/pis.git`；本地 `main` 文档基线为 `e708f65f852ceb10472ee04140470c0c99bcb384`，T01 集成 merge 为 `9c3b886d25224205dc383ffba1d1d7cd838028b0`，T02 集成 merge 为 `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b`，T03 集成 merge 为 `14cc5d59cfc914cef83df5c791db70561e6e55a3`，T04 集成 merge 为 `1c7e8f8f3c38204cce1d6b34ea494938360a812d`；尚未推送。
 - Lead：已委派 `5904a3c3-e232-4f7b-b675-929f9ddac3fb`。
 - T01 Worker：`4fe4ad6f-9495-45da-a47d-6526cf8f8304`，已通过 Paseo `codex-worker` profile 完成实现并回报 REVIEW 证据。
@@ -35,11 +36,12 @@
 - T02 `47a138f5f1285c34af038dfd59eb521b75d3cf5f` 已由 Lead 独立审核、Architect 复核批准，并以 merge commit `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` 合入本地 `main`。
 - T03 `09368ce` 已由 Lead 独立审核、Architect 复核批准，并以 merge commit `14cc5d59cfc914cef83df5c791db70561e6e55a3` 合入本地 `main`；合并树复验通过，未推送。
 - T04 最终 HEAD `eb86f016` 已由 Lead 与 Architect 独立审核并批准，以 `--no-ff` merge `1c7e8f8` 合入本地 `main`；全新 clone 的 `npm ci` 与聚合 verify 通过，T04 已标记 PASS。
+- Architect 已基于最终 progress、提交链、merge 范围和 fresh checkout 证据完成 D00 里程碑验收：`APPROVED`，无遗留 BLOCKER；批准基线为 `ced5713`。
 - Prompt 实际目录 `config/prompt/` 与设计约定 `config/prompts/` 不一致；最迟 D02-T01 前对齐，当前不阻塞 D00。
 
 ## 下一可执行步骤
 
-将本 T04 merge 与 fresh checkout 集成证据提交回 `main` 并交 Architect 完成 D00 里程碑最终验收。Architect 确认前不自标 D00 完成；不推送、不扩大 D01 范围。
+D00 已完成并获 Architect 最终批准，等待项目负责人决定是否启动下一里程碑。当前不推送、不扩大 D01 范围；若后续启动 D02-T01，必须先对齐 `config/prompt/` 与 `config/prompts/`。
 
 ## 验证证据
 
@@ -133,6 +135,15 @@
 - fresh checkout 执行 `npm run verify` 退出 0：工具链校验、typecheck、11 文件/49 测试、生产 build、SIGINT/SIGTERM/端口占用/关闭超时四项真实 smoke、39 文件 format 检查全部通过。SIGINT/SIGTERM 自然退出 0、释放实际端口且无敏感输出；悬挂关闭在 5 秒预算后自然退出 1。
 - 验证后 `git status` 仍 clean，`git diff --exit-code` 通过，`package-lock.json` SHA-256 仍为 `9cb11937e1b684b8e5738017ad5b0a268d498977386cf6f77071d3ab76237859`。临时 clone 在证据采集后删除。
 - 结论：T04 标记 PASS；D00 里程碑最终验收待 Architect 基于本记录、merge commit 与 fresh checkout 证据完成。push、远程 CI、非 Linux/Windows 平台仍为 NOT_RUN。
+
+### D00 里程碑最终验收
+
+- 日期：2026-11-15；结论：`APPROVED`；批准代码基线与最终验收 commit：`ced57136af9b152892d07e1a156d962af2e25441`。T01–T04 全部 PASS，无遗留 BLOCKER。
+- Architect 独立核对四张任务的 Worker/Lead/Architect 分级审核、提交链与合并范围；T04 merge `1c7e8f8` 的父提交和批准记录一致，仅引入 17 个授权文件。
+- Architect 核对 fresh clone 的 `npm ci` 与 `npm run verify` 证据：精确工具链、typecheck、11 文件/49 测试、生产构建、四项真实启停 smoke、39 文件 format 检查全部通过。
+- 最终 main 相对批准任务提交仅增加验收文档；既存未跟踪 `config/` 未纳入任何提交，D00 代码树未扩大到 D01。
+- 最终 NOT_RUN：远程推送、远程 GitHub Actions、Linux/Windows 本地运行。后续目录约束：当前 Prompt 路径为 `config/prompt/`，设计目标为 `config/prompts/`，最迟 D02-T01 前对齐。
+- Architect 确认 D00 推进心跳已不存在、无需继续运行。本验收后仅追加本 docs 记录，不修改已批准的 `ced5713` 代码树，不 push。
 
 ### 限制与未执行项
 
