@@ -19,7 +19,7 @@
 
 | 任务 ID | 状态 | 基线/提交 | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
-| D00-T01 | REVIEW | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | PENDING | 等待 Architect 复核；未合并、未推送 |
+| D00-T01 | REVIEW | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | Architect 已批准，待 Lead 合并并记录 PASS；未推送 |
 | D00-T02 | NOT_STARTED | — | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 等待门禁及 T01 |
 | D00-T03 | NOT_STARTED | — | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 等待门禁及 T02 |
 | D00-T04 | NOT_STARTED | — | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 等待门禁及 T03 |
@@ -27,13 +27,12 @@
 ## 待处理事项
 
 - `main` 文档基线 `e708f65f852ceb10472ee04140470c0c99bcb384` 与项目外精确工具链均已落实；T01 Worker 已完成，Lead 已审核并提交隔离任务分支。
-- 将 T01 branch、base/work SHA、changed files 与验证证据交 Architect 复核。
-- 未经 Architect 复核不得合并、不得标 PASS、不得派发 T02，本轮不推送远端。
+- Architect 已复核并批准 T01 `8a18ded`；Lead 合并、记录 commit/PASS 后，使用新 Worker 派发 T02。
 - Prompt 实际目录 `config/prompt/` 与设计约定 `config/prompts/` 不一致；最迟 D02-T01 前对齐，当前不阻塞 D00。
 
 ## 下一可执行步骤
 
-等待 Architect 对 T01 任务分支 `8a18ded8d9c409c9a9462cf5b54310b0dc80be27` 做独立复核。T02 在复核与合并前保持 `NOT_STARTED`。
+Lead 合并已获 Architect 批准的 T01 `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`，记录 PASS 及集成基线，再使用新 Paseo Worker 派发 T02。
 
 ## 验证证据
 
@@ -59,4 +58,4 @@
 - 本机仅实测 darwin-arm64；`scripts/verify-toolchain.mjs` 的 Windows 路径分支为代码审阅，未实际运行。
 - `npm test`、Vitest、smoke、format 检查、聚合 verify 与远程 CI 尚未建立或执行，按 Plan 分别属于 T02、T03、T04 和后续 CI 阶段。
 - Plan/Spec 未明确 `package.json#name`；T01 使用 `pis`，作为非阻塞事实交 Architect 在复核时确认。
-- Architect 对 D00-T01 的复核仍为 PENDING；当前状态只能是 branch-only `REVIEW`，不能合并或记录为最终完成。
+- Architect 对 D00-T01 `8a18ded` 的设计一致性复核：APPROVED（2026-11-15）。检查全部 10 个文件差异、依赖锁文件及 Lead 验证证据：strict/NodeNext、纯生产构建、版本约束及最小依赖均符合 Spec/Plan，无 BLOCKER。`package.json#name=pis` 属于范围内的常规命名，认可。复核未重复运行已通过的命令；跨平台运行和后续任务测试仍为 NOT_RUN。Lead 合并前状态保持 REVIEW。
