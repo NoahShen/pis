@@ -25,7 +25,7 @@
 |---|---|---|---|---|---|---|
 | D00-T01 | PASS | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`; merge `9c3b886d25224205dc383ffba1d1d7cd838028b0` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T02 | PASS | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f`; merge `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` | Lead 独立审核与 Architect 复核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
-| D00-T03 | REVIEW | base `d13aa340bbb40617a4617bcea92df8a25f2211ac`; pending `09368ceee86ea480aab9101f8cdd6ea1f9fee957` | Lead 独立审核通过：21 个名称、35/35 repeats、44/44 repeats、shuffle、typecheck、build、ESM import、真实 smoke 均通过；无 BLOCKER | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | PENDING | 等待 Architect 独立复核；未合并 |
+| D00-T03 | REVIEW | base `d13aa340bbb40617a4617bcea92df8a25f2211ac`; pending `09368ceee86ea480aab9101f8cdd6ea1f9fee957` | Lead 独立审核与 Architect 实测：typecheck、10 文件/44 测试、真实信号/端口/超时 smoke 通过；format/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | Architect 已批准；待 Lead 合并并记录 PASS，未推送 |
 | D00-T04 | NOT_STARTED | — | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 等待门禁及 T03 |
 
 ## 待处理事项
@@ -37,7 +37,7 @@
 
 ## 下一可执行步骤
 
-已通知 Architect 独立复核 T03 唯一待审提交 `09368ce`。Architect 批准并合入前，T03 保持 `REVIEW`、T04 保持 `NOT_STARTED`；不得把 Lead 结论替代 Architect 结论。
+Lead 合并已获 Architect 批准的 T03 `09368ce`，记录实际 merge commit/PASS，再创建新的 Paseo Worker 按 Plan 派发 T04。
 
 ## 验证证据
 
@@ -89,6 +89,15 @@
 - 上一轮 BLOCKER 已闭合：`tests/fixtures/forced-exit-entry.mjs` 从编译后的 `dist/server.js` 导入并调用 `main`，未注入 `forceExit`，因此 smoke 覆盖真实默认强制退出路径；`close failure resolves forced code one and production main calls default force exit` 同时直接验证 close 拒绝后的默认 `process.exit(1)`。
 - Lead 结论：`APPROVED`，无 BLOCKER；批准进入 Architect 独立复核。复核批准前不合并，不将本记录视为 Architect 结论。
 - NOT_RUN：Architect 复核、merge、push、远程 CI、T04 format/aggregate verify；非 Linux/Windows 平台运行未执行。上述项目不得表述为 PASS。
+
+### D00-T03 Architect 独立复核
+
+- 日期：2026-11-15；结论：APPROVED；唯一批准代码：`09368ceee86ea480aab9101f8cdd6ea1f9fee957`。无 BLOCKER。
+- 审查范围：配置/鉴权/HTTP/日志/生命周期、真实进程 smoke、测试与依赖变更，依据 Spec §4/§5 与 Plan T03；对 Lead 审核记录和 Worker 自述作区分。
+- 生产鉴权使用 raw header 数量及严格单 Bearer 值校验；配置字段/范围校验，请求与生命周期日志仅输出白名单字段。关闭为单次操作，close/flush 共享 5 秒预算，正常退出自然结束，异常结果进入默认 `process.exit(1)`；模块导入无启动副作用。
+- 前一轮 fixture BLOCKER 闭合：`forced-exit-entry.mjs` 经编译后的 `dist/server.js` 调用生产 `main`，未注入 `forceExit`，真实悬挂 close 在预算后由进程自身退出 1。
+- Architect 在任务分支上实测 `npm run typecheck`、`npm test`、`npm run smoke`：typecheck 退出 0；10 文件/44 测试通过；SIGINT/SIGTERM 自然退出 0 并释放端口，监听失败非零退出，悬挂关闭 5 秒自退 1、无外部强杀，敏感 sentinel 无输出。构建与真实 smoke 由 `npm run smoke` 执行。
+- 批准 Lead 合并及后续 T04 派发；T04、format/aggregate verify、远程 CI 仍 NOT_RUN。首次误在未安装依赖的主工作区运行 typecheck 失败，随后以绝对路径进入任务 worktree 完成有效验证；主工作区失败不是 T03 代码诊断。
 
 ### 限制与未执行项
 
