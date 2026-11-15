@@ -27,18 +27,31 @@ class CaptureStream extends Writable {
 }
 
 describe("structured logger", () => {
-  it("captured logs include ready and shutdown lifecycle metadata", async () => {
+  it("captured logs include ready/shutdown metadata but exclude token, body, query, cookie, prompt and RSS sentinels", async () => {
     const destination = new CaptureStream();
     const logger = createLogger("info", destination);
+    const sentinels = {
+      token: "detector-logger-token",
+      body: "detector-logger-body",
+      query: "detector-logger-query",
+      cookie: "detector-logger-cookie",
+      prompt: "detector-logger-prompt",
+      rss: "https://detector-logger-rss.example/private",
+    };
 
-    logger.ready({ host: "127.0.0.1", port: 3000 });
-    logger.shutdown({ outcome: "closed", forced: false });
+    logger.ready({ host: "127.0.0.1", port: 3000, ...sentinels } as never);
+    logger.shutdown({ outcome: "closed", forced: false, ...sentinels } as never);
     await logger.flush();
 
     expect(destination.lines()).toMatchObject([
       { event: "ready", host: "127.0.0.1", port: 3000, pid: process.pid },
       { event: "shutdown", outcome: "closed", forced: false },
     ]);
+
+    const output = JSON.stringify(destination.lines());
+    for (const sentinel of Object.values(sentinels)) {
+      expect(output).not.toContain(sentinel);
+    }
   });
 
   it("writes stable event fields, includes request id, and redacts credentials", async () => {

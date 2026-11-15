@@ -22,30 +22,36 @@ afterEach(async () => {
 });
 
 describe("Bearer authentication", () => {
-  it.each(["Bearer correct-token", "bearer correct-token", "BEARER correct-token"])(
-    "accepts case-insensitive Bearer scheme: %s",
-    (authorization) => {
+  it("isBearerAuthorized accepts case-insensitive scheme and exact case-sensitive token", () => {
+    for (const authorization of [
+      "Bearer correct-token",
+      "bearer correct-token",
+      "BEARER correct-token",
+    ]) {
       expect(isBearerAuthorized(authorization, "correct-token")).toBe(true);
-    },
-  );
+    }
 
-  it.each([
-    undefined,
-    "",
-    "correct-token",
-    "Basic correct-token",
-    "Bearer",
-    "Bearer ",
-    "Bearer  correct-token",
-    "Bearer correct-token extra",
-    "Bearer\tcorrect-token",
-    "Bearer wrong-token",
-    "Bearer correct-token ",
-  ])("rejects malformed or incorrect credential %j", (authorization) => {
-    expect(isBearerAuthorized(authorization, "correct-token")).toBe(false);
+    expect(isBearerAuthorized("Bearer Correct-Token", "correct-token")).toBe(false);
   });
 
-  it("isBearerAuthorized rejects token length difference and other mismatches", () => {
+  it("isBearerAuthorized rejects missing, malformed, extra-field and empty-token values", () => {
+    for (const authorization of [
+      undefined,
+      "",
+      "correct-token",
+      "Basic correct-token",
+      "Bearer",
+      "Bearer ",
+      "Bearer  correct-token",
+      "Bearer correct-token extra",
+      "Bearer\tcorrect-token",
+      "Bearer correct-token ",
+    ]) {
+      expect(isBearerAuthorized(authorization, "correct-token")).toBe(false);
+    }
+  });
+
+  it("isBearerAuthorized rejects token length difference and other mismatches as 401", () => {
     expect(isBearerAuthorized("Bearer shorter", "longer-token")).toBe(false);
     expect(isBearerAuthorized("Bearer longer-token", "shorter")).toBe(false);
     expect(isBearerAuthorized("Bearer correct-token", "correct-Token")).toBe(false);

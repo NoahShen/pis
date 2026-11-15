@@ -112,7 +112,7 @@ describe("startServer", () => {
     }
   });
 
-  it("shutdown timeout includes log flush in the shared budget and resolves forced code one", async () => {
+  it("shutdown timeout includes log flush in the shared 5000ms budget and resolves forced code one", async () => {
     vi.useFakeTimers();
     try {
       const app = Fastify({ logger: false });
@@ -131,13 +131,12 @@ describe("startServer", () => {
         config: { host: "127.0.0.1", port: 0 },
         logger,
         signalSource: signals,
-        shutdownTimeoutMs: 25,
       });
 
       await expect(server.ready).resolves.toEqual({ host: "127.0.0.1", port: 41001 });
       signals.emit("SIGTERM");
       signals.emit("SIGINT");
-      await vi.advanceTimersByTimeAsync(25);
+      await vi.advanceTimersByTimeAsync(5_000);
 
       await expect(server.completed).resolves.toEqual({
         code: 1,
@@ -204,7 +203,7 @@ describe("startServer", () => {
 });
 
 describe("closeWithTimeout", () => {
-  it("close failure resolves forced code one", async () => {
+  it("close failure resolves forced code one and production main calls default force exit", async () => {
     const app = Fastify({ logger: false });
     app.addHook("preClose", async () => {
       throw new Error("close failed");
@@ -217,6 +216,42 @@ describe("closeWithTimeout", () => {
       { operation: "shutdown", reason: "close_error" },
     ]);
     expect(logger.flushCount).toBe(1);
+
+    const productionApp = {
+      listen: async () => "http://127.0.0.1:41002",
+      server: {
+        address: () => ({ address: "127.0.0.1", family: "IPv4", port: 41002 }),
+      },
+      close: async () => {
+        throw new Error("production close failed");
+      },
+    } as unknown as FastifyInstance;
+    const productionLogger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const processExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation((() => undefined) as never);
+
+    try {
+      const running = main({
+        env: { API_TOKEN: "test-token", PORT: "0" },
+        loggerFactory: () => productionLogger,
+        appFactory: () => productionApp,
+        signalSource: signals,
+      });
+
+      await vi.waitFor(() => expect(productionLogger.readyEntries).toHaveLength(1));
+      signals.emit("SIGINT");
+      await running;
+
+      expect(processExit).toHaveBeenCalledExactlyOnceWith(1);
+      expect(productionLogger.errorEntries).toContainEqual({
+        operation: "shutdown",
+        reason: "close_error",
+      });
+    } finally {
+      processExit.mockRestore();
+    }
   });
 
   it("flush must finish inside the remaining shared budget", async () => {
@@ -309,7 +344,7 @@ describe("main", () => {
     const signals = new FakeSignals();
     const forceExit = vi.fn();
     const running = main({
-      env: { API_TOKEN: "test-token" },
+      env: { API_TOKEN: "test-token", PORT: "0" },
       loggerFactory: () => logger,
       appFactory: () => app,
       signalSource: signals,
@@ -321,26 +356,6 @@ describe("main", () => {
     await running;
     expect(forceExit).not.toHaveBeenCalled();
     expect(process.exitCode).toBe(0);
-  });
-
-  it("shutdown failure production main calls default force exit", async () => {
-    const app = hangingCloseApp();
-    const logger = new CapturedLogger();
-    const signals = new FakeSignals();
-    const forceExit = vi.fn();
-    const running = main({
-      env: { API_TOKEN: "test-token" },
-      loggerFactory: () => logger,
-      appFactory: () => app,
-      signalSource: signals,
-      shutdownTimeoutMs: 5,
-      forceExit,
-    });
-
-    await vi.waitFor(() => expect(logger.readyEntries).toHaveLength(1));
-    signals.emit("SIGINT");
-    await running;
-    expect(forceExit).toHaveBeenCalledExactlyOnceWith(1);
   });
 
   it("missing configuration is rejected before creating an app", async () => {

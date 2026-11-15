@@ -47,9 +47,8 @@ describe("loadConfig", () => {
     });
   });
 
-  it.each([undefined, "", "token with space", "line\nbreak"])(
-    "loadConfig rejects missing, empty, whitespace-containing API_TOKEN without echoing its value: %j",
-    (apiToken) => {
+  it("loadConfig rejects missing, empty, whitespace-containing API_TOKEN without echoing its value", () => {
+    for (const apiToken of [undefined, "", "token with space", "line\nbreak"]) {
       let error: unknown;
 
       try {
@@ -62,27 +61,33 @@ describe("loadConfig", () => {
       expect(error).toMatchObject({ path: "API_TOKEN" });
       expect(String(error)).not.toContain("token with space");
       expect(String(error)).not.toContain("line");
-    },
-  );
-
-  it.each(["", "-1", "65536", "1.5", " 3000", "3000 ", "1e3", "abc"])(
-    "rejects invalid PORT %j",
-    (port) => {
-      expect(() => loadConfig({ API_TOKEN: "token", PORT: port })).toThrowError(
-        expect.objectContaining({ path: "PORT" }),
-      );
-    },
-  );
-
-  it.each(["", " info", "verbose", "INFO"])("rejects invalid LOG_LEVEL %j", (logLevel) => {
-    expect(() =>
-      loadConfig({ API_TOKEN: "token", LOG_LEVEL: logLevel }),
-    ).toThrowError(expect.objectContaining({ path: "LOG_LEVEL" }));
+    }
   });
 
-  it.each(["", " host", "host "])("rejects invalid HOST %j", (host) => {
-    expect(() => loadConfig({ API_TOKEN: "token", HOST: host })).toThrowError(
-      expect.objectContaining({ path: "HOST" }),
-    );
+  it("loadConfig rejects empty or whitespace-padded HOST, invalid PORT and invalid LOG_LEVEL without echoing inputs", () => {
+    const invalidValues = [
+      ["HOST", ["", " host", "host "]],
+      ["PORT", ["", "-1", "65536", "1.5", " 3000", "3000 ", "1e3", "abc"]],
+      ["LOG_LEVEL", ["", " info", "verbose", "INFO"]],
+    ] as const;
+    const safeReasons = {
+      HOST: "must be non-empty without surrounding whitespace",
+      PORT: "must be a decimal integer from 0 to 65535",
+      LOG_LEVEL: "must be one of fatal, error, warn, info, debug, trace, silent",
+    } as const;
+
+    for (const [path, values] of invalidValues) {
+      for (const value of values) {
+        let error: unknown;
+
+        try {
+          loadConfig({ API_TOKEN: "token", [path]: value });
+        } catch (caught) {
+          error = caught;
+        }
+
+        expect(error).toMatchObject({ path, reason: safeReasons[path] });
+      }
+    }
   });
 });

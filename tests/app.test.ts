@@ -44,15 +44,14 @@ describe("application", () => {
     expect(response.json()).toEqual({ status: "ok" });
   });
 
-  it.each([
-    ["missing", undefined],
-    ["wrong token", "Bearer wrong-token"],
-    ["malformed scheme", `Basic ${API_TOKEN}`],
-    ["empty token", "Bearer "],
-    ["extra field", `Bearer ${API_TOKEN} extra`],
-  ])(
-    "GET /health unauthorized variants return exact 401 body and WWW-Authenticate: %s",
-    async (_name, authorization) => {
+  it("GET /health unauthorized variants return exact 401 body and WWW-Authenticate", async () => {
+    for (const authorization of [
+      undefined,
+      "Bearer wrong-token",
+      `Basic ${API_TOKEN}`,
+      "Bearer ",
+      `Bearer ${API_TOKEN} extra`,
+    ]) {
       const { app } = createApp();
       const response = await app.inject({
         method: "GET",
@@ -65,8 +64,8 @@ describe("application", () => {
       expect(response.statusCode).toBe(401);
       expect(response.headers["www-authenticate"]).toBe("Bearer");
       expect(response.json()).toEqual({ error: "unauthorized" });
-    },
-  );
+    }
+  });
 
   it("unregistered API and feed paths return 404 with no side effects", async () => {
     const { app, logger } = createApp();
