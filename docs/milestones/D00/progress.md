@@ -19,25 +19,25 @@
 - 项目外工具链：`/Users/noahshen/.local/share/pis/toolchains/node-v26.13.1-darwin-arm64`。从 `nodejs.org` 官方下载 `node-v26.13.1-darwin-arm64.tar.xz`，实际 SHA-256 为 `af6202f5370a3a5209e85dc543758dfd9f44c8726626a236730cd603a67a8559`；实测 Node `v26.13.1`、npm `11.20.0`，未修改系统默认（仍为 Node `v26.7.0`、npm `12.0.2`）。
 - T01 隔离工作区：`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t01-typescript-bootstrap`；branch `d00-t01-typescript-bootstrap`；base `e708f65f852ceb10472ee04140470c0c99bcb384`；task commit `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`；merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0`。
 - T02 隔离工作区：workspace `wks_e0c1d33b7f583305`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t02-deterministic-test-facilities`；branch `d00-t02-deterministic-test-facilities`；base `ed5ebb006b109261624c8c68829166cbd97c6852`；task commit `47a138f5f1285c34af038dfd59eb521b75d3cf5f`；merge commit `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b`。
-- T03 隔离工作区：workspace `wks_ae6cb03545d25b12`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t03-fastify-server-lifecycle`；branch `d00-t03-fastify-server-lifecycle`；base `d13aa340bbb40617a4617bcea92df8a25f2211ac`；初始 task commit `0b60d214e44ee4105a4c700230c31b7d36a32251`；唯一待审 review-fix commit `09368ceee86ea480aab9101f8cdd6ea1f9fee957`。
+- T03 隔离工作区：workspace `wks_ae6cb03545d25b12`；`/Users/noahshen/.paseo/worktrees/0eapmc43/d00-t03-fastify-server-lifecycle`；branch `d00-t03-fastify-server-lifecycle`；base `d13aa340bbb40617a4617bcea92df8a25f2211ac`；初始 task commit `0b60d214e44ee4105a4c700230c31b7d36a32251`；已批准 review-fix commit `09368ceee86ea480aab9101f8cdd6ea1f9fee957`；merge commit `14cc5d59cfc914cef83df5c791db70561e6e55a3`。
 
 | 任务 ID | 状态 | 基线/提交 | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
 | D00-T01 | PASS | base `e708f65f852ceb10472ee04140470c0c99bcb384`; work `8a18ded8d9c409c9a9462cf5b54310b0dc80be27`; merge `9c3b886d25224205dc383ffba1d1d7cd838028b0` | Lead 定向验证通过；后续任务设施 NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T02 | PASS | base `ed5ebb006b109261624c8c68829166cbd97c6852`; work `47a138f5f1285c34af038dfd59eb521b75d3cf5f`; merge `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` | Lead 独立审核与 Architect 复核通过：typecheck、全量测试、双 TZ、shuffle repeat、build、ESM import 均通过；后续 smoke/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
-| D00-T03 | REVIEW | base `d13aa340bbb40617a4617bcea92df8a25f2211ac`; pending `09368ceee86ea480aab9101f8cdd6ea1f9fee957` | Lead 独立审核与 Architect 实测：typecheck、10 文件/44 测试、真实信号/端口/超时 smoke 通过；format/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | Architect 已批准；待 Lead 合并并记录 PASS，未推送 |
+| D00-T03 | PASS | base `d13aa340bbb40617a4617bcea92df8a25f2211ac`; work `09368ceee86ea480aab9101f8cdd6ea1f9fee957`; merge `14cc5d59cfc914cef83df5c791db70561e6e55a3` | Lead 独立审核、Architect 复核及合并树复验通过：typecheck、10 文件/44 测试、build、真实信号/端口/超时 smoke 通过；format/CI NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | APPROVED | 已合入本地 main；未推送 |
 | D00-T04 | NOT_STARTED | — | NOT_RUN | 5904a3c3-e232-4f7b-b675-929f9ddac3fb | — | 等待门禁及 T03 |
 
 ## 待处理事项
 
 - T01 已由 Architect 批准并以 merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0` 合入本地 `main`；项目外精确工具链已落实。
 - T02 `47a138f5f1285c34af038dfd59eb521b75d3cf5f` 已由 Lead 独立审核、Architect 复核批准，并以 merge commit `d8172e39da5356cadfd40e6a806ccdbbdc74aa2b` 合入本地 `main`。
-- T03 已以最新 `09368ce` 进入 REVIEW；上一轮 fixture blocker 已由真实 smoke 的 default-main 路径证据闭合，Lead 独立审核无新 BLOCKER。等待 Architect 复核，复核前不合入。
+- T03 `09368ce` 已由 Lead 独立审核、Architect 复核批准，并以 merge commit `14cc5d59cfc914cef83df5c791db70561e6e55a3` 合入本地 `main`；合并树复验通过，未推送。
 - Prompt 实际目录 `config/prompt/` 与设计约定 `config/prompts/` 不一致；最迟 D02-T01 前对齐，当前不阻塞 D00。
 
 ## 下一可执行步骤
 
-Lead 合并已获 Architect 批准的 T03 `09368ce`，记录实际 merge commit/PASS，再创建新的 Paseo Worker 按 Plan 派发 T04。
+创建新的 Paseo Worker，从 T03 merge commit `14cc5d59cfc914cef83df5c791db70561e6e55a3` 派发 T04（format、README、聚合 verify、CI 配置）；T04 完成后由 Lead 审核并交 Architect 复核，不自行标最终 PASS。
 
 ## 验证证据
 
@@ -88,7 +88,7 @@ Lead 合并已获 Architect 批准的 T03 `09368ce`，记录实际 merge commit/
 - `npm run build` 退出 0；`dist` 仅含生产模块，不含 tests/fixtures/测试配置；Node ESM 导入 `dist/server.js` 成功且未启动监听。`npm run smoke` 退出 0：SIGINT 与 SIGTERM 均自然退出 0、捕获 `shutdown closed/forced:false` 并释放实际端口；占用端口产生有界 listen failure；悬挂 close 在 5 秒预算后以 code 1 退出且 `signal === null`。
 - 上一轮 BLOCKER 已闭合：`tests/fixtures/forced-exit-entry.mjs` 从编译后的 `dist/server.js` 导入并调用 `main`，未注入 `forceExit`，因此 smoke 覆盖真实默认强制退出路径；`close failure resolves forced code one and production main calls default force exit` 同时直接验证 close 拒绝后的默认 `process.exit(1)`。
 - Lead 结论：`APPROVED`，无 BLOCKER；批准进入 Architect 独立复核。复核批准前不合并，不将本记录视为 Architect 结论。
-- NOT_RUN：Architect 复核、merge、push、远程 CI、T04 format/aggregate verify；非 Linux/Windows 平台运行未执行。上述项目不得表述为 PASS。
+- 当时 NOT_RUN：Architect 复核、merge、push、远程 CI、T04 format/aggregate verify；非 Linux/Windows 平台运行未执行。Architect 复核与 merge 随后已完成，见下一条。
 
 ### D00-T03 Architect 独立复核
 
@@ -98,11 +98,13 @@ Lead 合并已获 Architect 批准的 T03 `09368ce`，记录实际 merge commit/
 - 前一轮 fixture BLOCKER 闭合：`forced-exit-entry.mjs` 经编译后的 `dist/server.js` 调用生产 `main`，未注入 `forceExit`，真实悬挂 close 在预算后由进程自身退出 1。
 - Architect 在任务分支上实测 `npm run typecheck`、`npm test`、`npm run smoke`：typecheck 退出 0；10 文件/44 测试通过；SIGINT/SIGTERM 自然退出 0 并释放端口，监听失败非零退出，悬挂关闭 5 秒自退 1、无外部强杀，敏感 sentinel 无输出。构建与真实 smoke 由 `npm run smoke` 执行。
 - 批准 Lead 合并及后续 T04 派发；T04、format/aggregate verify、远程 CI 仍 NOT_RUN。首次误在未安装依赖的主工作区运行 typecheck 失败，随后以绝对路径进入任务 worktree 完成有效验证；主工作区失败不是 T03 代码诊断。
+- Lead 先提交 Architect progress 记录 `332e6e1e605d1225e5a3a9c353274140c725a66c`，再以 `--no-ff` merge commit `14cc5d59cfc914cef83df5c791db70561e6e55a3` 合入已批准的 `09368ce`；父提交为 `332e6e1e605d1225e5a3a9c353274140c725a66c` 与 `09368ceee86ea480aab9101f8cdd6ea1f9fee957`，仅引入审核过的 16 个 T03 文件。
+- 合并树相对 `09368ce` 仅多 progress 文档，生产代码无差异。主工作区按锁文件 `npm ci` 后，`npm run typecheck`、`npm test`（10 文件/44 测试）、`npm run build`、`npm run smoke` 均退出 0；首次因主工作区尚未安装依赖而 typecheck 失败，安装后重跑通过，不构成代码诊断。T03 标记 PASS。
 
 ### 限制与未执行项
 
 - 本机仅实测 darwin-arm64；`scripts/verify-toolchain.mjs` 的 Windows 路径分支为代码审阅，未实际运行。
-- T03 smoke 已独立执行并通过；format 检查、聚合 verify 与远程 CI 仍为 NOT_RUN，按 Plan 分别属于 T04 和后续 CI 阶段。
+- T03 smoke 与合并树验证已通过；format 检查、聚合 verify、T04 与远程 CI 仍为 NOT_RUN，按 Plan 分别属于 T04 和后续 CI 阶段。
 - Plan/Spec 未明确 `package.json#name`；T01 使用 `pis`，作为非阻塞事实交 Architect 在复核时确认。
 - Architect 对 D00-T01 `8a18ded` 的设计一致性复核：APPROVED（2026-11-15）。检查全部 10 个文件差异、依赖锁文件及 Lead 验证证据：strict/NodeNext、纯生产构建、版本约束及最小依赖均符合 Spec/Plan，无 BLOCKER。`package.json#name=pis` 属于范围内的常规命名，认可。复核未重复运行已通过的命令；跨平台运行和后续任务测试仍为 NOT_RUN。
 - T01 merge commit `9c3b886d25224205dc383ffba1d1d7cd838028b0` 以 `--no-ff` 建立，Architect 审核记录 commit `a29baa5` 保留在 `main` 历史中；merge 仅引入 T01 的 10 个已审核文件。
