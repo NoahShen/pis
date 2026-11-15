@@ -13,14 +13,15 @@
 - D01-T01 Worker：Agent `23389e56-c3d9-4ac4-bd75-3fb5a7178c38`，Workspace `wks_c62575d3444027e7`，Worktree `/Users/noahshen/.paseo/worktrees/0eapmc43/d01-t01-native-database`，Branch `feat/d01-t01-native-database`，Base SHA `74e25b694d797b1146d2ec2ef7b01ec9558dee6e`。候选 commit `cec9cf4f96adf6e01944592f7b31a361d1bd31e3` 仅含 T01 六个白名单文件；Architect `8d95474b-e07e-43c7-bc7f-92928fe91e71` 唯一批准该候选。
 - D01-T01 Lead 独立验证：精确 Node `v26.13.1` / npm `11.20.0` / `darwin-arm64`；clean `npm ci` 安装 93 packages、0 vulnerabilities；定向测试 `4/4`；full verify 全量 `13 files / 61 tests`、build、5 项 smoke、44 文件格式检查均通过；compiled ESM probe exit 0，实测 `wal`、`foreign_keys=1`、`busy_timeout=5000`。实际 `better-sqlite3@13.2.0`、`@types/better-sqlite3@9.6.0`、SQLite `3.54.1` 和随包 `prebuilds/darwin-arm64.node` 已核对；Linux CI/跨平台仍为 `NOT_RUN`。
 - D01-T01 合并：Architect 对候选复核 `APPROVED`；Lead 以 `--no-ff` 合入 local `main`，merge SHA `bc5728324e09d4a1473909d51d075d6a95b565ba`。合并后六个功能文件与批准候选逐字节一致；未 push。
+- D01-T02 Worker：Agent `62a577b1-5193-4afc-891d-3b65fe4db92b`，Workspace `wks_c39a954e6171fef5`，Worktree `/Users/noahshen/.paseo/worktrees/0eapmc43/d01-t02-schema`，Branch `feat/d01-t02-schema`，Base SHA `d3ad3a478e4dbea1196bd3475f2efdcf8d661504`。Worker 使用 `codex-worker` profile，严格限制在 T02 十个文件；尚未提交、合并或标记 PASS。
 
 | 任务 | 状态 | 实现与测试证据 |
 |---|---|---|
 | D01-T01 | PASS | base `74e25b6`; work `cec9cf4`; merge `bc57283`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
-| D01-T02 | NOT_STARTED | 未实现，NOT_RUN |
+| D01-T02 | IN_PROGRESS | 已委派 Agent `62a577b1-5193-4afc-891d-3b65fe4db92b`；等待 Worker 实施与自测 |
 | D01-T03 | NOT_STARTED | 未实现，NOT_RUN |
 | D01-T04 | NOT_STARTED | 未实现，NOT_RUN |
 
 ## 下一步
 
-从 T01 合并基线的 local `main` 创建独立 worktree，委派新的 Worker 执行 D01-T02 冻结 DDL、构建资源与数据库约束；T02 未通过 Worker、Lead、Architect 审核前不得合并、标 PASS 或启动 T03。心跳保持停止，不 push。
+Lead 等待 D01-T02 Worker 完成后独立审核冻结 DDL、构建资源、约束测试与 compiled database smoke 证据，再交 Architect 复核。Worker 回报前不提交/合并候选，不启动 T03，不标 PASS；心跳保持停止，不 push。
