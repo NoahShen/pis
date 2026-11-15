@@ -63,9 +63,11 @@ const environmentSchema = z.object({
     .refine((value) => !WHITESPACE.test(value), {
       message: "must not contain whitespace",
     }),
-  LOG_LEVEL: z.enum(LOG_LEVELS, {
-    message: "must be one of fatal, error, warn, info, debug, trace, silent",
-  }).optional(),
+  LOG_LEVEL: z
+    .enum(LOG_LEVELS, {
+      message: "must be one of fatal, error, warn, info, debug, trace, silent",
+    })
+    .optional(),
 });
 
 const CONFIG_PATHS = new Set<ConfigPath>([
@@ -94,7 +96,8 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
 
   return {
     host: result.data.HOST ?? DEFAULT_HOST,
-    port: result.data.PORT === undefined ? DEFAULT_PORT : Number(result.data.PORT),
+    port:
+      result.data.PORT === undefined ? DEFAULT_PORT : Number(result.data.PORT),
     apiToken: result.data.API_TOKEN,
     logLevel: result.data.LOG_LEVEL ?? DEFAULT_LOG_LEVEL,
   };

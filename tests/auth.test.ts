@@ -10,9 +10,13 @@ function buildAuthApp(token = "correct-token") {
   const app = Fastify({ logger: false });
   apps.push(app);
 
-  app.get("/protected", { preHandler: createBearerPreHandler(token) }, async () => ({
-    status: "ok",
-  }));
+  app.get(
+    "/protected",
+    { preHandler: createBearerPreHandler(token) },
+    async () => ({
+      status: "ok",
+    }),
+  );
 
   return app;
 }
@@ -31,7 +35,9 @@ describe("Bearer authentication", () => {
       expect(isBearerAuthorized(authorization, "correct-token")).toBe(true);
     }
 
-    expect(isBearerAuthorized("Bearer Correct-Token", "correct-token")).toBe(false);
+    expect(isBearerAuthorized("Bearer Correct-Token", "correct-token")).toBe(
+      false,
+    );
   });
 
   it("isBearerAuthorized rejects missing, malformed, extra-field and empty-token values", () => {
@@ -54,7 +60,9 @@ describe("Bearer authentication", () => {
   it("isBearerAuthorized rejects token length difference and other mismatches as 401", () => {
     expect(isBearerAuthorized("Bearer shorter", "longer-token")).toBe(false);
     expect(isBearerAuthorized("Bearer longer-token", "shorter")).toBe(false);
-    expect(isBearerAuthorized("Bearer correct-token", "correct-Token")).toBe(false);
+    expect(isBearerAuthorized("Bearer correct-token", "correct-Token")).toBe(
+      false,
+    );
   });
 
   it("returns 401 for missing, malformed and incorrect credentials", async () => {

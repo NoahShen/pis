@@ -56,9 +56,7 @@ describe("application", () => {
       const response = await app.inject({
         method: "GET",
         url: "/health",
-        ...(authorization === undefined
-          ? {}
-          : { headers: { authorization } }),
+        ...(authorization === undefined ? {} : { headers: { authorization } }),
       });
 
       expect(response.statusCode).toBe(401);
@@ -145,7 +143,9 @@ describe("application", () => {
     const response = await app.inject({ method: "GET", url: "/health" });
 
     expect(response.statusCode).toBe(401);
-    expect(logger.requestEntries).toMatchObject([{ path: "/health", status: 401 }]);
+    expect(logger.requestEntries).toMatchObject([
+      { path: "/health", status: 401 },
+    ]);
   });
 
   it("keeps logging failures out of the request/response path", async () => {
@@ -181,8 +181,8 @@ describe("module import boundary", () => {
     const serverModule = await import("../src/server.js");
 
     expect(serverModule.main).toBeTypeOf("function");
-    expect(process.listenerCount("SIGINT") + process.listenerCount("SIGTERM")).toBe(
-      signalCount,
-    );
+    expect(
+      process.listenerCount("SIGINT") + process.listenerCount("SIGTERM"),
+    ).toBe(signalCount);
   });
 });

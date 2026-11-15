@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const EXPECTED_NODE = "26.13.1";
 const EXPECTED_NPM = "11.20.0";
+const EXPECTED_PACKAGE_NAME = "pis";
+const EXPECTED_PACKAGE_VERSION = "0.1.0";
+const EXPECTED_LOCKFILE_VERSION = 3;
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -18,6 +21,22 @@ function fail(message) {
 function assertEqual(actual, expected, label) {
   if (actual !== expected) {
     fail(`${label} must be ${expected}; found ${String(actual)}`);
+  }
+}
+
+function assertNonEmptyString(value, label) {
+  if (typeof value !== "string" || value.length === 0) {
+    fail(`${label} must be a non-empty string`);
+  }
+}
+
+async function readJson(relativePath) {
+  const contents = await readFile(path.join(projectRoot, relativePath), "utf8");
+
+  try {
+    return JSON.parse(contents);
+  } catch {
+    fail(`${relativePath} must contain valid JSON`);
   }
 }
 
@@ -51,9 +70,13 @@ function readNpmVersion() {
   return { path: npmCliPath, version: result.stdout.trim() };
 }
 
-const packageJson = JSON.parse(
-  await readFile(path.join(projectRoot, "package.json"), "utf8"),
-);
+assertEqual(process.versions.node, EXPECTED_NODE, "runtime Node version");
+
+const npm = readNpmVersion();
+assertEqual(npm.version, EXPECTED_NPM, "runtime npm version");
+
+const packageJson = await readJson("package.json");
+const packageLock = await readJson("package-lock.json");
 const nvmVersion = (
   await readFile(path.join(projectRoot, ".nvmrc"), "utf8")
 ).trim();
@@ -61,10 +84,41 @@ const nodeVersionFile = (
   await readFile(path.join(projectRoot, ".node-version"), "utf8")
 ).trim();
 
-assertEqual(process.versions.node, EXPECTED_NODE, "runtime Node version");
+assertNonEmptyString(packageJson.name, "package.json name");
+assertNonEmptyString(packageJson.version, "package.json version");
+assertEqual(packageJson.name, EXPECTED_PACKAGE_NAME, "package.json name");
+assertEqual(
+  packageJson.version,
+  EXPECTED_PACKAGE_VERSION,
+  "package.json version",
+);
+assertEqual(packageLock.name, packageJson.name, "package-lock name");
+assertEqual(packageLock.version, packageJson.version, "package-lock version");
+assertEqual(
+  packageLock.lockfileVersion,
+  EXPECTED_LOCKFILE_VERSION,
+  "package-lock lockfileVersion",
+);
 
-const npm = readNpmVersion();
-assertEqual(npm.version, EXPECTED_NPM, "runtime npm version");
+const lockRootPackage = packageLock.packages?.[""];
+if (typeof lockRootPackage !== "object" || lockRootPackage === null) {
+  fail('package-lock packages[""] must be an object');
+}
+assertNonEmptyString(lockRootPackage.name, 'package-lock packages[""] name');
+assertNonEmptyString(
+  lockRootPackage.version,
+  'package-lock packages[""] version',
+);
+assertEqual(
+  lockRootPackage.name,
+  packageJson.name,
+  'package-lock packages[""] name',
+);
+assertEqual(
+  lockRootPackage.version,
+  packageJson.version,
+  'package-lock packages[""] version',
+);
 
 assertEqual(packageJson.type, "module", "package.json type");
 assertEqual(packageJson.engines?.node, EXPECTED_NODE, "engines.node");

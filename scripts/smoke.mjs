@@ -130,9 +130,7 @@ async function waitForExit(state, timeoutMs, label) {
       new Promise((_resolve, reject) => {
         timer = setTimeout(() => {
           reject(
-            new Error(
-              `${label} exceeded ${timeoutMs}ms\n${outputFor(state)}`,
-            ),
+            new Error(`${label} exceeded ${timeoutMs}ms\n${outputFor(state)}`),
           );
         }, timeoutMs);
       }),
@@ -173,7 +171,9 @@ async function waitForReady(state) {
     await delay(20);
   }
 
-  fail(`server did not become ready within ${STARTUP_TIMEOUT_MS}ms\n${outputFor(state)}`);
+  fail(
+    `server did not become ready within ${STARTUP_TIMEOUT_MS}ms\n${outputFor(state)}`,
+  );
 }
 
 async function terminateAfterFailure(state) {
@@ -197,13 +197,16 @@ async function fetchWithTimeout(url, options) {
 }
 
 async function exerciseHttp(port) {
-  const health = await fetchWithTimeout(`http://127.0.0.1:${port}/health?query=${QUERY_SENTINEL}`, {
-    headers: {
-      authorization: `Bearer ${API_TOKEN}`,
-      cookie: `session=${COOKIE_SENTINEL}`,
-      "x-rss-url": RSS_SENTINEL,
+  const health = await fetchWithTimeout(
+    `http://127.0.0.1:${port}/health?query=${QUERY_SENTINEL}`,
+    {
+      headers: {
+        authorization: `Bearer ${API_TOKEN}`,
+        cookie: `session=${COOKIE_SENTINEL}`,
+        "x-rss-url": RSS_SENTINEL,
+      },
     },
-  });
+  );
   assert(health.status === 200, `health returned HTTP ${health.status}`);
   assert(
     (health.headers.get("content-type") ?? "").includes("application/json"),
@@ -227,7 +230,10 @@ async function exerciseHttp(port) {
       body: BODY_SENTINEL,
     },
   );
-  assert(missing.status === 404, `unregistered path returned HTTP ${missing.status}`);
+  assert(
+    missing.status === 404,
+    `unregistered path returned HTTP ${missing.status}`,
+  );
 }
 
 async function assertPortReleased(port) {
@@ -239,7 +245,9 @@ async function assertPortReleased(port) {
       probe.listen(port, "127.0.0.1", resolve);
     });
   } catch (error) {
-    fail(`port ${port} was not released: ${error instanceof Error ? error.message : String(error)}`);
+    fail(
+      `port ${port} was not released: ${error instanceof Error ? error.message : String(error)}`,
+    );
   } finally {
     await new Promise((resolve) => {
       if (!probe.listening) {
@@ -254,7 +262,10 @@ async function assertPortReleased(port) {
 function assertNoSensitiveOutput(state) {
   const output = `${state.stdout}\n${state.stderr}`;
   for (const sentinel of SENSITIVE_SENTINELS) {
-    assert(!output.includes(sentinel), `captured output contained sensitive sentinel ${sentinel}`);
+    assert(
+      !output.includes(sentinel),
+      `captured output contained sensitive sentinel ${sentinel}`,
+    );
   }
 }
 
@@ -267,22 +278,37 @@ async function runSignalScenario(signal) {
     await exerciseHttp(ready.port);
     assert(state.child.kill(signal), `could not send ${signal}`);
 
-    const exit = await waitForExit(state, NORMAL_EXIT_TIMEOUT_MS, `${signal} shutdown`);
-    assert(exit.code === 0, `${signal} exit code was ${String(exit.code)} (${String(exit.signal)})`);
-    assert(exit.signal === null, `${signal} terminated with signal ${exit.signal}`);
+    const exit = await waitForExit(
+      state,
+      NORMAL_EXIT_TIMEOUT_MS,
+      `${signal} shutdown`,
+    );
+    assert(
+      exit.code === 0,
+      `${signal} exit code was ${String(exit.code)} (${String(exit.signal)})`,
+    );
+    assert(
+      exit.signal === null,
+      `${signal} terminated with signal ${exit.signal}`,
+    );
     await assertPortReleased(ready.port);
 
     const shutdown = findEntry(
       jsonLines(state.stdout),
       (entry) => entry?.event === "shutdown",
     );
-    assert(shutdown !== undefined, `${signal} smoke did not capture a shutdown event`);
+    assert(
+      shutdown !== undefined,
+      `${signal} smoke did not capture a shutdown event`,
+    );
     assert(
       shutdown.outcome === "closed" && shutdown.forced === false,
       `${signal} smoke captured an unexpected shutdown event: ${JSON.stringify(shutdown)}`,
     );
     assertNoSensitiveOutput(state);
-    console.log(`Smoke passed: ${signal} exited 0, released port ${ready.port}, and emitted no sensitive output`);
+    console.log(
+      `Smoke passed: ${signal} exited 0, released port ${ready.port}, and emitted no sensitive output`,
+    );
   } finally {
     await terminateAfterFailure(state);
   }
@@ -298,7 +324,10 @@ async function runListenFailureScenario() {
       blocker.listen(0, "127.0.0.1", resolve);
     });
     const address = blocker.address();
-    assert(address !== null && typeof address !== "string", "could not acquire a loopback port");
+    assert(
+      address !== null && typeof address !== "string",
+      "could not acquire a loopback port",
+    );
 
     state = spawnCaptured(serverEntry, {
       API_TOKEN,
@@ -309,8 +338,14 @@ async function runListenFailureScenario() {
       NORMAL_EXIT_TIMEOUT_MS,
       "listen-failure exit",
     );
-    assert(exit.code === 1, `listen-failure exit code was ${String(exit.code)} (${String(exit.signal)})`);
-    assert(exit.signal === null, `listen failure terminated with signal ${exit.signal}`);
+    assert(
+      exit.code === 1,
+      `listen-failure exit code was ${String(exit.code)} (${String(exit.signal)})`,
+    );
+    assert(
+      exit.signal === null,
+      `listen failure terminated with signal ${exit.signal}`,
+    );
 
     const entries = jsonLines(state.stdout);
     assert(
@@ -321,9 +356,14 @@ async function runListenFailureScenario() {
       entries,
       (entry) => entry?.event === "error" && entry?.operation === "listen",
     );
-    assert(error?.reason === "listen_error", "listen failure did not emit listen_error metadata");
+    assert(
+      error?.reason === "listen_error",
+      "listen failure did not emit listen_error metadata",
+    );
     assertNoSensitiveOutput(state);
-    console.log("Smoke passed: occupied port produced a bounded nonzero listen failure");
+    console.log(
+      "Smoke passed: occupied port produced a bounded nonzero listen failure",
+    );
   } finally {
     await terminateAfterFailure(state);
     await new Promise((resolve) => blocker.close(() => resolve()));
@@ -340,8 +380,14 @@ async function runForcedExitScenario() {
       FORCED_EXIT_TIMEOUT_MS,
       "forced-exit child",
     );
-    assert(exit.code === 1, `forced-exit child exited with ${String(exit.code)} (${String(exit.signal)})`);
-    assert(exit.signal === null, `forced-exit child was not self-terminated: ${exit.signal}`);
+    assert(
+      exit.code === 1,
+      `forced-exit child exited with ${String(exit.code)} (${String(exit.signal)})`,
+    );
+    assert(
+      exit.signal === null,
+      `forced-exit child was not self-terminated: ${exit.signal}`,
+    );
 
     const shutdown = findEntry(
       jsonLines(state.stdout),
@@ -352,7 +398,9 @@ async function runForcedExitScenario() {
       `forced-exit child did not log a forced timeout: ${JSON.stringify(shutdown)}`,
     );
     assertNoSensitiveOutput(state);
-    console.log("Smoke passed: hanging close reached the 5s budget and exited 1 without external kill");
+    console.log(
+      "Smoke passed: hanging close reached the 5s budget and exited 1 without external kill",
+    );
   } finally {
     await terminateAfterFailure(state);
   }
@@ -365,6 +413,8 @@ try {
   await runForcedExitScenario();
   console.log("Smoke verification passed.");
 } catch (error) {
-  console.error(error instanceof Error ? (error.stack ?? error.message) : String(error));
+  console.error(
+    error instanceof Error ? (error.stack ?? error.message) : String(error),
+  );
   process.exitCode = 1;
 }
