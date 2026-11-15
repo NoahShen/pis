@@ -14,14 +14,16 @@
 - D01-T01 Lead 独立验证：精确 Node `v26.13.1` / npm `11.20.0` / `darwin-arm64`；clean `npm ci` 安装 93 packages、0 vulnerabilities；定向测试 `4/4`；full verify 全量 `13 files / 61 tests`、build、5 项 smoke、44 文件格式检查均通过；compiled ESM probe exit 0，实测 `wal`、`foreign_keys=1`、`busy_timeout=5000`。实际 `better-sqlite3@13.2.0`、`@types/better-sqlite3@9.6.0`、SQLite `3.54.1` 和随包 `prebuilds/darwin-arm64.node` 已核对；Linux CI/跨平台仍为 `NOT_RUN`。
 - D01-T01 合并：Architect 对候选复核 `APPROVED`；Lead 以 `--no-ff` 合入 local `main`，merge SHA `bc5728324e09d4a1473909d51d075d6a95b565ba`。合并后六个功能文件与批准候选逐字节一致；未 push。
 - D01-T02 Worker：Agent `62a577b1-5193-4afc-891d-3b65fe4db92b`，Workspace `wks_c39a954e6171fef5`，Worktree `/Users/noahshen/.paseo/worktrees/0eapmc43/d01-t02-schema`，Branch `feat/d01-t02-schema`，Base SHA `d3ad3a478e4dbea1196bd3475f2efdcf8d661504`。Worker 使用 `codex-worker` profile，严格限制在 T02 十个文件；尚未提交、合并或标记 PASS。
+- D01-T02 Lead 独立审核：clean `npm ci` 后定向 verbose `2 files / 9 tests` 全通过；`npm run verify` 全量 `15 files / 70 tests`、typecheck、两次 fresh build、原 5 项进程 smoke、compiled database smoke、50 文件格式检查均通过。权威数据库设计仅 1 个 SQL block，docs/source 规范化一致，source/dist 严格字节一致；schema 7,213 bytes、SHA-256 `49d4b31e671a9b543010ddd53cfd7c232f8044364795207e8f4182608bcc481b`。compiled probe 实测 WAL、`foreign_keys=1`、`busy_timeout=5000`、11 业务表 + `event_search`、11 显式索引、JSON array、trigram MATCH 与空 FK check。Candidate `e44403675db0975b76f89a5ac341f74b79551a33` 仅含 9 个 T02 白名单文件，T01/config/CI/docs 无改动，工作树 clean。
+- D01-T02 Architect 复核：Agent `877174d6-70ee-46d4-8f0d-fbeab0d66a75` 已启动，独立审核 Candidate `e444036`；复核结果前不得合并或标 PASS。
 
 | 任务 | 状态 | 实现与测试证据 |
 |---|---|---|
 | D01-T01 | PASS | base `74e25b6`; work `cec9cf4`; merge `bc57283`；Lead 独立复验与 Architect `APPROVED`；darwin-arm64 实测通过，Linux/跨平台 `NOT_RUN` |
-| D01-T02 | IN_PROGRESS | 已委派 Agent `62a577b1-5193-4afc-891d-3b65fe4db92b`；等待 Worker 实施与自测 |
+| D01-T02 | IN_PROGRESS | Worker 已交付；Lead 验证已通过并形成 Candidate `e444036`；等待 Architect `877174d6` 复核 |
 | D01-T03 | NOT_STARTED | 未实现，NOT_RUN |
 | D01-T04 | NOT_STARTED | 未实现，NOT_RUN |
 
 ## 下一步
 
-Lead 等待 D01-T02 Worker 完成后独立审核冻结 DDL、构建资源、约束测试与 compiled database smoke 证据，再交 Architect 复核。Worker 回报前不提交/合并候选，不启动 T03，不标 PASS；心跳保持停止，不 push。
+Lead 已独立验证 Candidate `e444036` 并交 Architect `877174d6` 复核；复核通过后才允许合并，再记录 PASS 与证据。复核前不启动 T03、不标 PASS；心跳保持停止，不 push。
