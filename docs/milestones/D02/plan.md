@@ -1,9 +1,9 @@
 # D02 Plan · Prompt、LLM 客户端与严格 Schema
 
-> 版本：v0.2 · 2026-11-15
-> 状态：**APPROVED · Architect G3 v0.2 复评通过；用户执行及 User Context 公开授权仍为 PENDING**
+> 版本：v0.3 · 2026-11-15
+> 状态：**APPROVED · Architect G3 v0.3 针对性复核通过；执行批准来源为 Plan v0.2 + 用户隐私变更**
 > 起草：Paseo Lead（仅规划）
-> 依据：[Intent v0.1](intent.md)（APPROVED）、[Spec v0.1](spec.md)（APPROVED）、[技术实现设计 v1.0](../../PIS_技术实现设计_v1.0.md) §3、§17、[测试设计 v0.2](../../PIS_V1_测试用例设计_v0.2.md) §4.12。
+> 依据：[Intent v0.2](intent.md)（APPROVED）、[Spec v0.2](spec.md)（APPROVED）、[技术实现设计 v1.0](../../PIS_技术实现设计_v1.0.md) §3、§17、[测试设计 v0.2](../../PIS_V1_测试用例设计_v0.2.md) §4.12。
 > 代码基线：`0fcc52bb0708b1888dbfa872b3a4907eaeb6218c`（D02 Spec 提交）。
 
 ## 1. 执行边界
@@ -13,9 +13,9 @@
 正式派发 Worker 必须同时满足：
 
 1. Architect 完成 G3 并把本文件状态改为 `APPROVED`。
-2. 项目负责人明确批准执行本 Plan；对真实 `user-context.md` 纳入公开 Git 必须单独明确授权。当前 `USER_EXECUTION_APPROVAL=PENDING`、`USER_CONTEXT_PUBLIC_GIT_APPROVAL=PENDING`。
+2. 项目负责人已批准执行 Plan v0.2，并明确拒绝真实 `user-context.md` 进入公开 Git；该隐私变更已由 Architect 针对性复核。当前 `USER_EXECUTION_APPROVAL=APPROVED`、`REAL_USER_CONTEXT_PUBLIC_GIT_APPROVAL=DENIED`、`PUBLIC_CONTEXT_MODE=SYNTHETIC_TEST_ONLY`。旧 `USER_CONTEXT_PUBLIC_GIT_APPROVAL` 已废止，不得继续作为阻塞。
 3. Lead 从 D02 文档基线创建独立任务分支并记录 base SHA。
-4. T01 使用现有精确工具链；Lead 在纳入 Prompt 前完成字节摘要、公开边界复核和跨 worktree 移交。
+4. T01 使用现有精确工具链；Lead 只跨 worktree 原字节移交五份功能 Prompt，真实 User Context 不进入任务 worktree。
 5. T01～T04 严格串行；每卡使用新的 Paseo Worker。Worker 不自行 stage/commit，不宣布 PASS。
 
 任务分支结果只记为 `REVIEW`。只有 Lead 审核、Architect 轻量复核并合并后，才按合并 commit 记录 `PASS`。
@@ -24,9 +24,9 @@
 
 - D02 不新增依赖。使用现有 `zod@4.6.7`、Node 原生 `fetch`/`AbortController`/Web Streams 和 Vitest；不得修改 `package.json`、`package-lock.json` 或安装新包。
 - 执行前显式前置 `/Users/noahshen/.local/share/pis/toolchains/node-v26.13.1-darwin-arm64/bin`，确认 Node `v26.13.1` / npm `11.20.0`。每个不含 `node_modules` 的新 worktree 先运行 `npm ci` 安装现有锁文件依赖，再运行 `npm run verify:toolchain`；`npm ci` 不得改变 `package.json`/锁文件。失败即停止，不改用默认 Node。
-- 当前六个 Prompt 位于未跟踪的 `config/prompt/`。D02-T01 目标路径为 `config/prompts/`；当前 `config/.DS_Store` 已被忽略，不属于版本管理输入。
-- 独立 worktree 不会自动获得主工作区未跟踪文件。获用户执行批准及 `USER_CONTEXT_PUBLIC_GIT_APPROVAL=APPROVED` 后，Lead 先确认 T01 worktree 的 `config/prompts/` 不存在，再创建该目录并仅从主工作区 `config/prompt/` 逐文件原字节复制六份 Markdown，立即复核摘要；目标目录已存在或含任何文件即停止。Worker 不负责跨 worktree 移动、复制或删除源文件；不得带入 `config/.DS_Store` 或其他 config 文件。源 `config/prompt/` 在 T01 合并并验证前保持不动，任务失败时直接丢弃任务分支/worktree 即可恢复。
-- Lead 规划期只读摘要如下；T01 执行时必须重新计算并要求前后完全相同：
+- 当前五份功能 Prompt 和一份真实 User Context 位于未跟踪的 `config/prompt/`。D02-T01 目标路径为 `config/prompts/`；当前 `config/.DS_Store` 已被忽略，不属于版本管理输入。真实 `config/prompt/user-context.md` 保留原位、仅本地私有，不复制到 worktree、不 stage、不进入公开 Git。
+- 独立 worktree 不会自动获得主工作区未跟踪文件。执行已获批准，Lead 先确认 T01 worktree 的 `config/prompts/` 不存在，再创建该目录并仅从主工作区 `config/prompt/` 原字节复制五份功能 Markdown，立即复核摘要；目标目录已存在或含任何文件即停止。公开 `config/prompts/user-context.md` 由 T01 Worker 新建为通用合成测试背景，不是真实文件的迁移或派生版本。Worker 不负责跨 worktree 移动、复制或删除源文件；不得带入 `config/.DS_Store`、真实 User Context 或其他 config 文件。任务失败时直接丢弃任务分支/worktree。
+- Lead 规划期五个功能文件只读摘要如下；T01 执行时必须重新计算并要求复制前后完全相同。真实 User Context 的摘要仅用于本地完整性核对，不要求、也不得用来生成公开测试背景：
 
 | 文件 | SHA-256（规划期） |
 | --- | --- |
@@ -35,33 +35,34 @@
 | `knowledge-analysis.md` | `037eceafb9e927a31b57668ab85f3bafd4b410ef9b6118590ec1f00577aa0512` |
 | `processing-route.md` | `98a34e833c64a3399b160004b12e2985b77b8d06fd2153fd800424988c3796c4` |
 | `topic-matching.md` | `040a083e1b413a30f7d21a3c161fbb1c8edc47f0cb45006aeb36b6438c20e12b` |
-| `user-context.md` | `e00edabebc1388adba8351daed7eb09494299bed37b8f6e177e462513b1d84d5` |
+| `user-context.md`（真实私有，仅摘要） | `e00edabebc1388adba8351daed7eb09494299bed37b8f6e177e462513b1d84d5` |
 
-- 规划期人工公开边界检查只发现概括性的职业/兴趣背景，未发现姓名、邮箱、电话、凭证、Token 或 URL。概括性的职业/兴趣同样是私人背景，“无邮箱/密钥”不等于允许公开。当前文件不得因 G3 或执行批准被推定获准进入 Git；只有负责人单独同意 `USER_CONTEXT_PUBLIC_GIT_APPROVAL` 后，Lead 才可按上述流程移交。未获授权时保留原文并停止 T01 的 User Context 纳入，不自行改写、脱敏或发布。
+- 真实 User Context 的公开状态已是 `DENIED`，不再等待任何公开授权。公开 `config/prompts/user-context.md` 必须是 Worker 独立编写的明确合成测试背景，不含真实职业/兴趣、姓名、邮箱、电话、凭证、Token、URL 或其他可回溯私人信息，也不得通过改写、脱敏或摘要真实文件产生；其摘要不等于真实文件是预期结果。
 
 ## 3. 固定文件边界与依赖图
 
 | 任务 | 独占新增/修改路径 |
 | --- | --- |
-| T01 | `config/prompts/event-analysis.md`、`event-search.md`、`knowledge-analysis.md`、`processing-route.md`、`topic-matching.md`、`user-context.md`（均由 `config/prompt/` 原字节迁移）、`src/prompt/prompt-repository.ts`、`tests/prompt/prompt-repository.test.ts`、`tests/fixtures/prompt-directory.ts`、`README.md`（仅 Prompt 路径/边界） |
+| T01 | `config/prompts/event-analysis.md`、`event-search.md`、`knowledge-analysis.md`、`processing-route.md`、`topic-matching.md`（均由 `config/prompt/` 原字节复制）、`config/prompts/user-context.md`（Worker 新建通用合成测试背景）、`.gitignore`（仅增加精确私有路径）、`src/prompt/prompt-repository.ts`、`tests/prompt/prompt-repository.test.ts`、`tests/fixtures/prompt-directory.ts`、`README.md`（仅 Prompt 路径/边界） |
 | T02 | `src/llm/response-validators.ts`、`tests/llm/response-validators.test.ts`、`tests/fixtures/llm-responses.ts` |
 | T03 | `src/llm/chat-completions-client.ts`、`tests/llm/chat-completions-client.test.ts`、`README.md`（仅调用配置/安全边界） |
 | T04 | `src/llm/llm-calls.ts`、`tests/llm/llm-calls.test.ts`、`tests/fixtures/stub-llm.ts`、`README.md`（仅单次调用/无重试边界） |
 
 共同规则：
 
-- 不使用通配符或 `git add config/`；未来只允许精确 stage 上表六个 Markdown。Worker 本身不得 stage。
-- Prompt 文件只能由 Lead 按 §2 流程从主工作区原字节复制到 T01 worktree 的精确目标路径，不改写、不重排、不 trim、不复制其他 config 文件。Worker 只校验目标六文件摘要。若目标路径已存在、摘要变化或 User Context 公开授权缺失，T01 标 `BLOCKED`。
-- T01 分支合并到主工作区时，目标 `config/prompts/` 与源 `config/prompt/` 路径不同，不允许用主树现有 untracked 内容覆盖分支或反向 stage。Lead 先确认分支与主树源摘要一致，再合并；合并后再次核对六摘要，只有精确一致时才把仅含六文件的源 `config/prompt/` 移出仓库到唯一临时备份并保留至 T01 验证通过。任何摘要差异都先恢复备份并停止，不删除源内容。
+- 不使用通配符或 `git add config/`；只允许精确 stage 五份功能 Prompt、公开合成 `config/prompts/user-context.md`、T01 白名单源码/测试与 `.gitignore`。Worker 本身不得 stage。
+- 五份功能 Prompt 只能由 Lead 按 §2 流程从主工作区原字节复制到 T01 worktree 的精确目标路径，不改写、不重排、不 trim、不复制其他 config 文件。Worker 校验五文件摘要。公开 User Context 必须由 Worker 新写，不能与真实文件存在内容派生关系。若目标功能路径已存在、摘要变化、真实 Context 出现在 worktree 或候选清单，T01 标 `BLOCKED`。
+- T01 分支合并回主工作区时，不允许用主树现有 untracked 内容覆盖分支或反向 stage。Lead 先确认五份功能 Prompt 分支与主树源摘要一致，再合并；合并后再次核对五摘要和合成 Context 公开边界。验证通过后只把五份功能 Prompt 旧源移出到唯一临时备份并保留至集成验证完成。真实 `config/prompt/user-context.md` 永远保留原位，绝不通过整目录移动、删除、清空或 `rm -r config/prompt` 处理。
+- `.gitignore` 只增加精确规则 `/config/prompt/user-context.md`，确保真实私有文件不会被误 stage；不得忽略 `config/prompts/user-context.md`。
 - 后续卡只读复用先前接口/Fixture，不另建第二套 operation、Schema、错误或请求类型。
 - 不修改 `package.json`、锁文件、`tsconfig*.json`、`vitest.config.ts`、格式脚本、CI、数据库、D00/D01 源码或权威 docs。
-- 所有新 `.ts` 自动进入现有 Prettier 白名单；Markdown Prompt 不在格式白名单中，必须保持原字节。
+- 所有新 `.ts` 自动进入现有 Prettier 白名单；五份迁移 Markdown 不在格式白名单中，必须保持原字节。公开合成 `user-context.md` 是新文件，不是真实文件迁移。
 
 依赖图：
 
 ```text
-G3 APPROVED → USER_EXECUTION_APPROVED + USER_CONTEXT_PUBLIC_GIT_APPROVED
-  → T01 Prompt 目录/逐次读取
+G3 v0.3 APPROVED + USER_EXECUTION_APPROVED + REAL_USER_CONTEXT_PUBLIC_GIT_APPROVAL=DENIED + PUBLIC_CONTEXT_MODE=SYNTHETIC_TEST_ONLY
+  → T01 五份功能 Prompt + 合成测试 Context/逐次读取
   → Lead + Architect → merge
   → T02 五类严格 Schema/引用/冲突校验
   → Lead + Architect → merge
@@ -111,6 +112,7 @@ export class PromptRepository {
 | `topic-matching` | `topic-matching.md` | 否 |
 
 - 构造只保存调用方给出的明确根目录并验证其为非空字符串；不解析环境变量、不执行 I/O、不使用 cwd 回退。`load` 每次用固定文件名映射构造路径，不接受外部文件名。
+- 一个实例只对应一个 Prompt 根目录；Knowledge 的 `knowledge-analysis.md` 与 `user-context.md` 都从该根目录读取。本轮不增加公开/私有双根、自动探测或 fallback；部署负责显式提供包含实际运行 Prompt 的单一根目录。
 - `load` 重新读盘，无内存缓存、watcher 或旧值回退。Knowledge 先读功能文件再读 User Context；其余四类绝不读取 `user-context.md`。
 - 返回原始 UTF-8 文本，不 trim、不替换、不拼接私密数据或输出 Schema。空白判定使用 `trim().length === 0`，但返回值仍保留原字节解码文本。
 - 每次 `load` 返回独立快照。之后文件再变，不改变已返回对象；下一次 `load` 必须看到新内容。不承诺两个文件之间存在跨文件原子编辑。
@@ -371,24 +373,28 @@ export function createTypedLlmCalls(
 
 ```yaml
 id: D02-T01
-status: NOT_STARTED
-depends_on: [G3_APPROVED, USER_EXECUTION_APPROVED, USER_CONTEXT_PUBLIC_GIT_APPROVED, EXACT_TOOLCHAIN_READY]
+status: READY_TO_DELEGATE
+depends_on: [G3_V0_3_APPROVED, USER_EXECUTION_APPROVED, REAL_USER_CONTEXT_PUBLIC_GIT_DENIED, SYNTHETIC_PUBLIC_CONTEXT_APPROVED, EXACT_TOOLCHAIN_READY]
 spec_refs: ["D02 Spec §2", "D02 Spec §6"]
 ```
 
 **实现**
 
-1. Lead 前置：再次扫描主工作区六文件与公开边界，确认 `USER_CONTEXT_PUBLIC_GIT_APPROVAL=APPROVED`；在 T01 worktree 创建 `config/prompts/`，仅从主工作区 `config/prompt/` 原字节复制六份 Markdown，不添加 `.DS_Store` 或其他文件。源目录保持不动，复制前后摘要必须与上表完全一致。Worker 到达时目标文件应已存在；Worker 不执行跨 worktree `mv/cp/rm`。
-2. 实现 §4.1。构造不读盘；固定映射只接受 `LlmOperation`。Knowledge 读取两个文件，其他 operation 不构造 User Context 路径。
-3. 使用 `node:fs/promises.readFile(path, "utf8")` 逐次读；仅检查必需内容是否全为空白。错误转换为 §4.1 安全错误，不附底层 message/cause/路径。
-4. 测试只使用 D00 `withTempDirectory()` 和合成 Markdown，不把实际 User Context 放进测试、日志或 Fixture。
-5. README 只说明部署必须向 `PromptRepository` 提供明确 `config/prompts/` 根目录、五类映射、Knowledge 两文件、无缓存/无 watcher，以及 D02 尚未接入启动流程。
+1. Lead 前置：再次确认五份功能文件摘要，在 T01 worktree 创建 `config/prompts/`，仅原字节复制五份功能 Markdown，不复制 `config/prompt/user-context.md`，不添加 `.DS_Store` 或其他文件。Lead 不编写公开测试背景。Worker 到达时五份功能文件应已存在；Worker 不执行跨 worktree `mv/cp/rm`。
+2. Worker 新建 `.gitignore` 精确条目 `/config/prompt/user-context.md`，只忽略私有真实文件，不忽略 `config/prompts/user-context.md`。
+3. Worker 独立编写 `config/prompts/user-context.md`：文件内明确标注为 D02 固定测试用通用合成背景，内容与真实 User Context 无人名、职业、兴趣、地点、组织或其他字段的对应派生关系。不得读取真实正文后改写、脱敏或摘要生成，不要求摘要等于真实文件。该文件只用于公开固定测试。
+4. 实现 §4.1。构造不读盘；固定映射只接受 `LlmOperation`。Knowledge 从同一个显式根目录读取两个文件，其他 operation 不构造 User Context 路径；不增加双根或 fallback。
+5. 使用 `node:fs/promises.readFile(path, "utf8")` 逐次读；仅检查必需内容是否全为空白。错误转换为 §4.1 安全错误，不附底层 message/cause/路径。
+6. 测试只使用 D00 `withTempDirectory()`、公开合成背景和测试内合成 Markdown；绝不读取真实 `config/prompt/user-context.md`，不把实际背景放进测试、日志或 Fixture。
+7. README 只说明部署必须向 `PromptRepository` 提供明确的单一 Prompt 根目录、五类映射、Knowledge 两文件、无缓存/无 watcher、无 fallback，以及 D02 尚未接入启动流程。
 
 **必须验证**
 
 - 固定映射五类；每次 load 读盘，修改后下一次立即看到。
 - Knowledge 读取功能文件与 User Context 两文件，其他四类即使 `user-context.md` 缺失仍成功且不读它。
 - 返回原文不改写；一次快照在后续文件修改后保持原字符串。
+- `.gitignore` 精确忽略 `/config/prompt/user-context.md`，不忽略 `config/prompts/user-context.md`；真实 Context 不在 worktree、未跟踪且不进入候选清单。
+- 公开 `config/prompts/user-context.md` 明确标注为合成测试背景，内容独立编写且不依据真实文件派生；其摘要不要求等于真实文件，固定测试从不读取真实路径。
 - 缺文件、目录冒充文件/读取错误、空白功能文件、空白 User Context、非法 operation 和空目录全部失败且不返回空字符串。
 - 错误不包含临时绝对路径、Prompt 正文或合成私有 sentinel。
 
@@ -414,9 +420,9 @@ npm run verify
 
 **审核证据**
 
-- Lead 移交前后六文件摘要、主工作区源文件与 T01 worktree 目标文件逐一对比、`find config` 快照、公开边界与 User Context 公开授权结论；确认无重复 Markdown、无 `.DS_Store` stage、未改写内容。
+- Lead 移交前后五份功能文件摘要逐一对比；公开合成 Context 的声明/边界审核；`find config` 与候选清单证明真实 Context 未进入 worktree 或 stage、`.gitignore` 只匹配旧私有路径、无 `.DS_Store`。
 - 定向/full verify 退出码与测试数；临时目录在成功和失败后清理。
-- `git diff --name-status` 只含本卡白名单；新增 Prompt 的摘要与主工作区源文件完全相同。
+- `git diff --name-status` 只含本卡白名单；五份功能 Prompt 摘要与主工作区源文件完全相同，公开合成 Context 与真实文件摘要不同且不是其派生版本。
 
 ### D02-T02 · 五类严格响应与引用校验
 
@@ -577,6 +583,7 @@ npm run verify
 
 - 临时目录统一使用现有 `tests/fixtures/temp-directory.ts` 的 `withTempDirectory()`；测试结束删除，不触碰真实 `config/prompts/`。
 - Prompt 测试写入合成 UTF-8 Markdown，失败注入使用缺文件、目录冒文件等真实 fs 行为；不通过修改生产代码增加测试开关。
+- 公开 `config/prompts/user-context.md` 是固定测试可读的通用合成背景，文件头明确标注用途；测试不得解析、读取或比较真实 `config/prompt/user-context.md`。真实文件的摘要不进入断言。
 - T03 不监听 socket。注入 fetch 返回确定的 `Response`/`ReadableStream`；另用永不 settle/忽略 abort 的 fetch Promise、永不 settle 的 cancel Promise 和 reject 的 cancel 验证有界生命周期。所有 body、reader、timer、listener 在测试 finally 或客户端 finally 清理，迟到 rejection 必须被消费。
 - Stub 队列和请求快照只在 `tests/fixtures/`，每个测试新建；不跨测试共享，不写磁盘，不使用真实 endpoint/model/key。
 - 所有测试不联网、不读真实 User Context、不访问数据库、不依赖 `dist`、locale、时区、随机数或测试顺序。
@@ -602,7 +609,7 @@ npm run verify
 2. 逐命令退出码、测试通过/跳过数、可定位测试名。
 3. Case 映射、实际执行平台、`NOT_RUN`、偏离和 blockers。
 4. Prompt 摘要、请求字段、错误 code、字节计数、资源清理等最小证据，不粘贴完整 Prompt、User Context、Token、动态正文或供应商响应。
-5. `git status --short` 与确认未越权修改 docs/config（T01 六个 Prompt 除外）/CI/依赖。
+5. `git status --short` 与确认未越权修改 docs/config（T01 五个功能 Prompt、公开合成 Context 和精确 `.gitignore` 除外）/CI/依赖。
 
 D02 Case 映射：
 
@@ -621,7 +628,7 @@ PMT-03/04/11/12 的模型语义效果不外推；固定 Stub 只证明请求、�
 
 1. 从合并 commit 创建不含 `node_modules/dist/coverage` 的干净快照。
 2. 前置精确工具链，确认 Node/npm 后运行 `npm ci` 和一次 `npm run verify`。
-3. 核对最终 `config/prompts/` 恰有六个预期 Markdown，摘要与迁移前一致；无 `config/prompt/` 重复源、无 `.DS_Store` 纳入。
+3. 核对最终 `config/prompts/` 恰有六个预期 Markdown：五个功能文件摘要与迁移前一致，`user-context.md` 是明确标注且与真实文件无派生关系的合成背景（不要求摘要相同）。确认真实 `config/prompt/user-context.md` 仍仅本地私有、被精确忽略、未出现在任何 Git 候选；旧目录只可在五份功能 Prompt 验证后逐文件处理，绝不整目录移动或删除。
 4. 复核 operation→Prompt 映射、五个 strict Schema、错误分类、请求协议和五 typed call 无第二套类型/映射。
 5. 单独执行 T01～T04 定向测试并保存摘要；确认无真实网络、真实 User Context 测试、数据库访问或测试 Stub 进入 `src`。
 6. 审计 sensitive sentinel：错误、README、测试失败输出不含密钥、Prompt、User Context 或供应商正文。
@@ -634,10 +641,10 @@ D02 只有四卡、本地集成 Gate 和经授权运行的远程 CI 全部通过
 
 | 风险 | 监控/处理 | 回滚 |
 | --- | --- | --- |
-| 未跟踪 Prompt 被整目录误提交 | T01 精确六文件白名单、摘要、`git status`；禁止 `git add config/` | 移除错误 stage，保留原文；不重写 Prompt 迎合 Git |
-| 独立 worktree 缺少主树未跟踪 Prompt | 用户批准后由 Lead 精确原字节复制并双方摘要核验；Worker 不跨 worktree 移动 | 丢弃任务 worktree；主工作区源文件始终保留直至验证完成 |
-| 实际 User Context 以私人背景进入公开 Git | 概括职业/兴趣也按私人内容处理；执行批准中单独要求 `USER_CONTEXT_PUBLIC_GIT_APPROVAL` | 未获单独授权即不纳入 Git；保留原文并 BLOCKED，不自行改写或脱敏 |
-| 目录出现双份 Prompt | Lead 只在 T01 worktree 目标目录建立副本；合并后摘要一致才备份并移出主树旧源 | 丢弃任务分支或恢复主树备份；不覆盖任一不同摘要文件 |
+| 功能 Prompt 或私有 Context 被整目录误提交 | T01 精确白名单、五摘要、`.gitignore` 精确规则、候选清单；禁止 `git add config/` | 移除错误 stage，保留真实原文；阻断任务，不重写 Prompt 迎合 Git |
+| 独立 worktree 缺少主树未跟踪功能 Prompt | Lead 精确原字节复制五文件并双方摘要核验；真实 Context 不进入 worktree | 丢弃任务 worktree；主工作区源文件始终保留直至验证完成 |
+| 真实 User Context 以私人背景进入公开 Git | 公开结论 DENIED；精确忽略旧路径、候选审计、测试不读取真实路径 | 立即移除错误候选并阻断；真实原文保留原位，不从真实文件改写或脱敏生成公开副本 |
+| 目录出现双份功能 Prompt | Lead 只在 T01 worktree 目标目录建立五份功能副本；合并后摘要一致才备份并逐文件移出旧源 | 丢弃任务分支或恢复主树备份；保留真实 Context 与原目录，不覆盖任一不同摘要文件 |
 | Zod 默认 strip 未知字段 | 所有层级 strict object + 额外字段矩阵 | 回滚 Schema，不靠 Prompt 文字补漏 |
 | 模型返回 Markdown/fence 被猜取 | 完整 `JSON.parse`，无修复/提取 | 返回 output JSON 错误，交上层预算 |
 | Event/Topic 引用或 Update 归属写错 | 调用时显式快照，结构化后检查；无数据库查询 | 拒绝整个响应，不部分消费结果 |
@@ -651,7 +658,7 @@ D02 只有四卡、本地集成 Gate 和经授权运行的远程 CI 全部通过
 | Stub/真实 User Context 混入测试 | Stub 仅 tests fixture；全部合成数据和临时目录 | 阻断 T04，生产 `src` 不保留测试替身 |
 | 新增依赖或协议扩张 | 文件/依赖 diff 审计；只允现有 Zod/原生 fetch | 回滚依赖和协议改动，不在本卡扩范围 |
 
-**当前实际状态**：Plan v0.2 已获 Architect G3 APPROVED；上轮六项规划问题已解决，此结论不代表实现或测试通过。`USER_EXECUTION_APPROVAL=PENDING`、`USER_CONTEXT_PUBLIC_GIT_APPROVAL=PENDING`；Prompt 迁移、`npm ci`、代码实现、定向测试、full verify、干净快照、push、远程 CI、真实 Provider 和任何 Worker 执行均为 `NOT_RUN`。T01～T04 保持 `NOT_STARTED`。
+**当前实际状态**：Plan v0.3 已获 Architect G3 针对性复核 APPROVED；执行批准来源为 Plan v0.2 + 本次隐私变更。`USER_EXECUTION_APPROVAL=APPROVED`、`REAL_USER_CONTEXT_PUBLIC_GIT_APPROVAL=DENIED`、`PUBLIC_CONTEXT_MODE=SYNTHETIC_TEST_ONLY`；旧公开授权变量已废止。D02 推进心跳 `b59d1a26` active。文档完成并本地提交后，T01 可委派；T02～T04 仍为 `NOT_STARTED`。代码实现、定向测试、full verify、干净快照、push、远程 CI 和真实 Provider 均为 `NOT_RUN`。
 
 ## 10. G3 记录
 
@@ -661,3 +668,5 @@ D02 只有四卡、本地集成 Gate 和经授权运行的远程 CI 全部通过
 | Architect G3 v0.1 · 2026-11-15 | `CHANGES_REQUIRED` | 要求补充跨 worktree 文件移交与 User Context 单独公开授权、typed call 输入快照、fetch/read/cleanup 全生命周期有界、修正 User Context 消息位置、worktree `npm ci`、远程 CI 待 push 授权门禁 |
 | Lead Plan v0.2 · 2026-11-15 | `REVIEW` | 已逐项修订上述 6 类问题；未执行任务，提交 Architect G3 复评 |
 | Architect G3 v0.2 | `APPROVED` | 已复核文件移交及恢复、公开授权、请求与引用快照、fetch/read/cleanup 有界、消息位置、干净安装与远程 CI 边界；上轮阻塞项已解决。用户执行及 User Context 公开授权仍为 PENDING，不委派 Worker |
+| Lead Plan v0.3 · 2026-11-15 | `REVIEW` | 按用户隐私变更修订：五份功能 Prompt 原字节迁移；真实 User Context 保留本地并精确忽略；公开 Context 仅由 Worker 新建通用合成测试背景；旧目录不整目录删除；运行期单一 Prompt 根目录，无双根/fallback |
+| Architect G3 v0.3 · 2026-11-15 | `APPROVED` | 用户明确拒绝真实 User Context 公开，覆盖旧六文件原字节公开要求。批准五功能原字节迁移、合成测试 Context、精确 `.gitignore`、真实文件不进入候选/测试及 T01 实际委派；不批准 push、合并或 T02 派发 |

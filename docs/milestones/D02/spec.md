@@ -1,8 +1,8 @@
 # D02 Spec · Prompt 与 LLM 基础
 
-> 版本：v0.1
-> 状态：APPROVED · Architect G2 审核通过，负责人已确认 Provider 协议
-> 依据：[Intent v0.1](intent.md)，负责人已通过 G1。
+> 版本：v0.2
+> 状态：APPROVED · Architect G2 v0.2 隐私范围针对性复核通过，负责人已确认 Provider 协议
+> 依据：[Intent v0.2](intent.md)，负责人已通过 G1 并批准 User Context 隐私范围变更。
 > 前置：D01 `5bf17f5` 已推送，远程 CI Success。
 
 ## 1. 范围与权威依据
@@ -17,9 +17,10 @@
 - 每次调用模型前重新读取对应 UTF-8 文件，返回此次请求的文本快照；不缓存内容，不启动 watcher。后续修改不会改变已组装的请求，但影响下一次尝试。
 - Knowledge 调用读取 `knowledge-analysis.md` 和 `user-context.md` 后才可发请求；其他四类不读 User Context。本次快照不承诺两个独立文件编辑操作具备文件系统事务原子性。
 - 读取失败、缺文件或只有空白的功能指令均作为配置错误，不发送 HTTP，不回退旧文本或空指令。原始文本保持原样，不自动 trim、替换或追加私密数据。
-- T01 对齐目录至 `config/prompts/`，六文件字节不变，记录迁移前后摘要，不保留重复副本。Lead Plan 明确主工作区未跟踪文件如何供 Worker 使用，禁止以整目录 git add 纳入无关配置。
-- 按 Intent，在纳入版本管理前核对实际 User Context 的公开边界；发现私密内容时保留原文并报告，不自行发布或修改。此核对不阻塞当前接口设计。
-- 测试使用临时 Markdown 与合成背景，验证连续读盘、错误、仅 Knowledge 读取两文件、同次请求快照以及下一次尝试读取修改后的文件。
+- T01 只把五份功能 Prompt 按原字节对齐至 `config/prompts/`，记录迁移前后摘要，不保留功能 Prompt 重复副本。真实 `config/prompt/user-context.md` 保留原位、仅本地私有，不复制到 worktree、不 stage、不读取正文、不进入公开 Git。旧目录因保留真实文件而不整体删除；合并后只处理五份功能 Prompt 旧源。
+- 真实 User Context 的公开结论为 DENIED。`.gitignore` 增加精确 `/config/prompt/user-context.md`，不得忽略 `config/prompts/user-context.md`。公开同名文件由 T01 Worker 新建为明确标注的通用合成测试背景，不从真实文件派生、改写或脱敏生成，也不要求与真实文件摘要相同。
+- 固定测试仅使用公开合成背景或临时目录，绝不读取真实 `config/prompt/user-context.md`。运行期由部署显式指定单一 Prompt 根目录；Knowledge 从该根目录读取功能指令和 User Context。本轮不增加双根目录、自动探测或 fallback。
+- PromptRepository 测试使用临时 Markdown 与合成背景，验证连续读盘、错误、仅 Knowledge 读取两文件、同次请求快照以及下一次尝试读取修改后的文件。
 
 ## 3. 五类响应校验（T02）
 
@@ -91,6 +92,7 @@ PMT-11 指令注入防护与 PMT-12 模型稳定性涉及真实语义，未运�
 - Intent G1：APPROVED。
 - 本 Spec：APPROVED；Architect 核对五个功能 Prompt、技术契约及负责人确认的非流式 Chat Completions 协议，G2 通过。
 - 协议批准依据：负责人明确回复“先采用 OpenAI-compatible Chat Completions（非流式）”。实际 endpoint/model/密钥仍为部署配置，不作为固定测试前置。
-- 下一步通过新的 Paseo Lead 会话制定文件级 Plan，明确目录迁移、版本管理、类型接口及任务范围。
-- Plan 完成后提交负责人审核，明确批准执行前不得派 Worker。
-- 当前不移动 Prompt、不安装新增依赖、不调用真实模型、不创建心跳。
+- v0.1 当时下一步为通过新的 Paseo Lead 会话制定文件级 Plan；该计划已形成并经 G3 审核，历史结论保留。
+- Plan v0.2 经负责人批准执行；本 v0.2 Spec 与 Plan v0.3 记录随后的 User Context 隐私范围变更，不再等待旧公开授权。
+- 2026-11-15 用户隐私变更：真实 User Context 禁止进入公开 Git，公开文件只允许独立合成测试背景。Architect G2 已做针对性复核并 APPROVED；该变更覆盖 Spec v0.1 中“六文件字节不变迁移”的 User Context 部分，五份功能 Prompt 的原字节要求继续有效。
+- Plan v0.3 的执行批准来源为 Plan v0.2 + 本次隐私变更。真实 User Context 公开状态为 `DENIED`，公开 Context 模式为 `SYNTHETIC_TEST_ONLY`；D02 推进心跳 `b59d1a26` 已 active。

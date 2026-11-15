@@ -2,15 +2,19 @@
 
 ## 当前门禁
 
-- Intent v0.1：APPROVED；负责人回复“没问题，审核过了，继续吧”。
-- Spec v0.1：APPROVED，Architect 已完成 G2；包括读取、校验、单次调用、错误及测试契约。
-- Provider 协议：负责人已明确确认 OpenAI-compatible Chat Completions（非流式）。请求与响应规则见 Spec §5；实际 endpoint/model/密钥由部署提供，固定测试不需要真实调用。
-- Plan v0.2：已按 Architect G3 v0.1 的 `CHANGES_REQUIRED` 修订跨 worktree Prompt 移交、User Context 单独公开授权、typed call 输入快照、HTTP 全生命周期有界、消息位置、worktree `npm ci` 和远程 CI 门禁；状态 `APPROVED`，Architect G3 v0.2 复评通过；仅批准计划，尚未执行或验证代码。
-- USER_EXECUTION_APPROVAL=PENDING；USER_CONTEXT_PUBLIC_GIT_APPROVAL=PENDING。真实 User Context 即使只有概括性职业/兴趣背景，也须负责人单独同意后才可进入公开 Git。
-- T01～T04：NOT_STARTED，未派 Worker。
-- 六份 Prompt 尚未迁移或提交；独立 worktree 的六文件移交将由 Lead 在用户批准后执行，源文件在 T01 验证前保持不动。
-- 心跳未启动；未 push、远程 CI 未运行；本轮只允许本地提交 Plan/Progress。
+- Intent v0.2：APPROVED；保留 v0.1 G1 历史，并记录 2026-11-15 用户批准的 User Context 隐私范围变更。
+- Spec v0.2：APPROVED；Architect G2 已针对隐私变更复核，五个功能 Prompt 原字节要求不变，真实 User Context 不公开。
+- Provider 协议：负责人已明确确认 OpenAI-compatible Chat Completions（非流式）。实际 endpoint/model/密钥由部署提供，固定测试不需要真实调用。
+- Plan v0.3：APPROVED · Architect G3 针对性复核通过；执行批准来源为 Plan v0.2 + 本次用户隐私变更。
+- `USER_EXECUTION_APPROVAL=APPROVED`
+- `REAL_USER_CONTEXT_PUBLIC_GIT_APPROVAL=DENIED`
+- `PUBLIC_CONTEXT_MODE=SYNTHETIC_TEST_ONLY`
+- 旧 `USER_CONTEXT_PUBLIC_GIT_APPROVAL=PENDING` 已废止，不得继续作为阻塞。
+- 真实 `config/prompt/user-context.md` 保留原位、仅本地私有；不复制到 worktree、不 stage、不进入候选、不读取正文用于生成公开文件。旧目录不整目录移动或删除。
+- T01 将新增精确 `.gitignore` 规则 `/config/prompt/user-context.md`，不忽略 `config/prompts/user-context.md`。公开同名文件仅由 T01 Worker 新建明确标注的通用合成测试背景。
+- D02 推进心跳 `b59d1a26` 已 active：`*/10 * * * *`，`Asia/Shanghai`，由当前 Architect 检查推进与分级验收；最终验收后由 Architect 删除。
+- T01：等待本次文档提交后实际委派；T02～T04：`NOT_STARTED`。
 
 ## 下一步
 
-向负责人提交已通过 G3 的 Plan v0.2，等待执行批准与 User Context 是否允许纳入公开 Git的明确决定。USER_EXECUTION_APPROVAL=PENDING，当前不委派 Worker。
+本地提交 Intent/Spec/Plan/Progress，随后从该文档提交创建独立 T01 worktree；Lead 只复制五份功能 Prompt，Worker 新建合成 User Context、`.gitignore`、实现与测试。T01 完成 Lead 审核后交 Architect 复核；未复核不合并、不派发 T02。禁止 push。
