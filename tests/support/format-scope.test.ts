@@ -117,6 +117,22 @@ describe("format scope", () => {
     );
   });
 
+  it("format target collection rejects symbolic link ancestors", async () => {
+    await withProject(["src/value.ts"], async (projectRoot) => {
+      await withTempDirectory(async (outsideRoot) => {
+        await writeFile(path.join(outsideRoot, "value.ts"), "formatted");
+        await symlink(outsideRoot, path.join(projectRoot, "src/linked"), "dir");
+
+        await expect(
+          collectFormatTargets({
+            projectRoot,
+            targetPaths: ["src/linked/value.ts"],
+          }),
+        ).rejects.toThrow("symbolic link");
+      });
+    });
+  });
+
   it("format target collection rejects missing paths and symbolic links", async () => {
     await withProject(["src/value.ts"], async (projectRoot) => {
       await expect(

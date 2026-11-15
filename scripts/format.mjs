@@ -110,6 +110,25 @@ async function assertNoSymbolicLink(absolutePath, relativePath) {
   return stats;
 }
 
+/** @param {string} rootDirectory @param {string} relativeTarget */
+async function assertNoSymbolicLinkComponents(rootDirectory, relativeTarget) {
+  const components = relativeTarget.split("/");
+  let currentRelativePath = "";
+  let stats;
+
+  for (const component of components) {
+    currentRelativePath = currentRelativePath
+      ? `${currentRelativePath}/${component}`
+      : component;
+    stats = await assertNoSymbolicLink(
+      path.join(rootDirectory, currentRelativePath),
+      currentRelativePath,
+    );
+  }
+
+  return stats;
+}
+
 /**
  * @param {string} rootDirectory
  * @param {string} relativeDirectory
@@ -172,8 +191,13 @@ async function collectFiles(rootDirectory, relativeTarget, files) {
   }
 
   let stats;
+  let canonicalTarget;
   try {
-    stats = await assertNoSymbolicLink(absoluteTarget, normalizedTarget);
+    stats = await assertNoSymbolicLinkComponents(
+      rootDirectory,
+      resolvedRelativeTarget,
+    );
+    canonicalTarget = await realpath(absoluteTarget);
   } catch (error) {
     if (error instanceof FormatScopeError) {
       throw error;
@@ -181,6 +205,11 @@ async function collectFiles(rootDirectory, relativeTarget, files) {
 
     throw new FormatScopeError(
       `Format target does not exist: ${normalizedTarget}`,
+    );
+  }
+  if (!isWithin(rootDirectory, canonicalTarget)) {
+    throw new FormatScopeError(
+      `Format target escapes the project root: ${normalizedTarget}`,
     );
   }
 
