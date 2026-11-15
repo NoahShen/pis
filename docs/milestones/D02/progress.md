@@ -99,6 +99,15 @@
 - Architect 独立核对六个 Markdown 与全部摘要、旧私有路径精确 ignore、公开路径不被 ignore、HEAD 无真实私有文件；运行精确 toolchain/typecheck 与四组定向测试 4 files/46 tests 全部通过，并完整复核 operation→Prompt→Schema→typed-call 单链。Architect 采纳 Lead 的干净归档 `npm ci`（93 packages、0 vulnerabilities）与 full verify 24 files/136 tests + build/smokes/71-file format 证据，本轮未重跑 full。
 - `D02_LOCAL_GATE=APPROVED`；`D02_REMOTE_CI=NOT_RUN`；`D02_FINAL_PASS=NOT_ISSUED`。未 push、未启动 D03。
 
+## 远程 CI 与里程碑最终验收
+
+- 项目负责人在本地 Gate 通过后明确回复“授权 push”。Architect 已推送并用 `git ls-remote` 确认远程 main 为 `40d9efeb21e8c94480dbdc644f09be0ac17d7a9f`。
+- [GitHub Actions CI #3](https://github.com/NoahShen/pis/actions/runs/43774672786) 对应上述精确提交，结果为 Success，耗时 29 秒。
+- `D02_PUSH=PASS`；`D02_REMOTE_CI=PASS`；`D02_FINAL_PASS=PASS`。Architect 依据四卡分级审核、本地干净快照集成验证及远程 CI，批准 D02 Prompt/LLM 基础里程碑验收。
+- 上文各卡和本地终验的 `NOT_RUN`、未 push、`NOT_ISSUED` 是当时的历史记录；当前状态以上述最终验收为准。
+- 真实 Provider、PMT-11/12 模型语义、完整 Runtime 重试预算、业务落库仍为 `NOT_RUN`；按已批准 Plan §7～§8 属于后续验证，不作为 D02 确定性基础设施最终 PASS 的附加条件。原“下一步”把这些后续项误列为 D02 阻塞，现予以纠正。
+- D02 心跳已删除，不重建。负责人已授权继续准备 D03，并明确已有 Source 不允许修改 type/url；D03 正式开发仍需三文档门禁及负责人 Plan 执行批准。
+
 ## 下一步
 
-本地集成 Gate 已完成并获 Architect 批准；D02 推进心跳已删除。后续等待项目负责人另行授权 push/远程 CI，并完成后真实 OpenAI-compatible Provider、PMT-11/12 模型语义、完整 Runtime 两次预算与业务落库验证；在此之前不得宣布 D02 最终 PASS，也不得启动 D03。
+准备 D03 Source/Topic 配置与管理 API 的 Intent，记录 type/url 创建后不可修改的负责人决策，再按门禁准备 Spec 和 Lead Plan。

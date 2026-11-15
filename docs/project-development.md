@@ -42,7 +42,9 @@ PIS V1 已确认：
 - 五个功能 Prompt 和一份 User Context 都从 `config/prompts/` 的真实 Markdown 读取；**不引入代码内硬编码副本或启动时不可变缓存**。
 - Published Item 发布资格由 Topic Matching 决定，V1 发布模板不调用 LLM；RSS 是云端静态文件，使用高随机秘密 URL；PIS 自身的 HTTP API 继续使用 Bearer Token。
 
-尚待实施期验证或决策而非 Agent 可擅自定案的项目：Node.js 精确小版本及原生模块兼容；FTS5 trigram 实测；Source `type/url` PATCH 策略；查询 Cursor/错误码；LLM Provider 配置；Gitee Raw / GitHub Pages 最终平台及真实订阅效果。**不相关的未决项不得阻塞前置里程碑**。
+尚待实施期验证或决策而非 Agent 可擅自定案的项目：Node.js 精确小版本及原生模块兼容；FTS5 trigram 实测；查询 Cursor/错误码；LLM Provider 配置；Gitee Raw / GitHub Pages 最终平台及真实订阅效果。**不相关的未决项不得阻塞前置里程碑**。各项已落实的精确版本与验收证据见对应里程碑 progress。
+
+Source `type/url` PATCH 策略已由负责人明确决定：**创建后不可修改**。该决策解决技术设计与测试设计中原有的待定项，影响 D03-T01/T02；由 D03 Spec 固定接口拒绝行为及专项测试，再经 Plan 落实。
 
 ## 4. 里程碑与三文档映射
 
