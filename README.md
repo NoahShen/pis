@@ -1,6 +1,6 @@
 # PIS
 
-PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00 的构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施，以及 D01 的 SQLite 连接、冻结 schema、同步事务与 Event FTS 维护基础。数据库尚未接入 HTTP 服务启动流程。
+PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00 的构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施，D01 的 SQLite 连接、冻结 schema、同步事务与 Event FTS 维护基础，以及 D02-T01 的 Prompt 逐次读取基础。数据库与 Prompt 尚未接入 HTTP 服务启动流程。
 
 ## 先决版本
 
@@ -49,6 +49,22 @@ npm run format
 `initializeDatabase(db)` 负责一次性建立冻结的 11 张业务表、显式索引和 `event_search` FTS5 表；连接级 WAL、外键与 busy timeout 在 DDL 事务前配置。该函数可对当前冻结结构重复执行并保留已有数据，但**不是迁移器**：它不升级或修复历史 schema。
 
 `event_search` 是可丢弃重存的派生索引，不是业务事实。只能通过 `refreshEventSearch(db, eventId)` 刷新单个 Event，或通过 `rebuildEventSearch(db)` 全量重建；不要直接写入或依赖 SQL 触发器自动同步。后续业务事务修改 Event、Event Update 或确认 Entity alias 时，必须在同一短事务内显式调用刷新函数。D01 不提供自动挂接；索引构建失败时，业务事务与旧索引应一起回滚。
+
+## Prompt 读取
+
+`PromptRepository` 构造时必须收到部署显式指定的单一 Prompt 根目录。它不读取环境变量，不使用当前工作目录回退，也不自动探测其他目录。五类 operation 使用固定文件映射：
+
+| Operation            | 功能指令                | User Context                       |
+| -------------------- | ----------------------- | ---------------------------------- |
+| `processing-route`   | `processing-route.md`   | 不读取                             |
+| `event-search`       | `event-search.md`       | 不读取                             |
+| `event-analysis`     | `event-analysis.md`     | 不读取                             |
+| `knowledge-analysis` | `knowledge-analysis.md` | 从同一根目录读取 `user-context.md` |
+| `topic-matching`     | `topic-matching.md`     | 不读取                             |
+
+每次 `load()` 都重新以 UTF-8 读取本次需要的 Markdown，返回当次请求的原始文本快照；没有内存缓存、watcher 或旧值 fallback。文件修改会影响下一次读取，但不会改变已经返回的快照。Knowledge Analysis 先从同一根目录读取功能指令，再读取 User Context；其他 operation 不构造或读取 User Context 路径。文件缺失、不可读或只有空白内容时失败关闭，不发送空指令。
+
+`config/prompts/user-context.md` 是公开固定测试使用的人工合成背景，不是真实用户配置。部署必须另行提供包含实际运行 Prompt 的单一根目录；D02-T01 不增加公开/私有双根目录、自动探测或 fallback。真实私有 `config/prompt/user-context.md` 由精确忽略规则排除，不进入公开仓库。
 
 ## 配置
 
@@ -103,8 +119,6 @@ curl --fail-with-body \
 
 D00 范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify 健康端点、Pino 安全日志、环境配置校验和可测试的启停生命周期。D01 当前提供 better-sqlite3 连接、冻结 schema 初始化、同步事务基础、TEXT 时间存取和 Event FTS 刷新/重建基础。
 
-当前不包含业务 API、RSS 抓取、LLM 调用、任务队列、Prompt 加载或 PM2 部署配置。`/api/*` 和 `/feeds/*` 尚未实现。
-
-Prompt 目录与权威设计当前存在待对齐项：当前实际路径为 `config/prompt/`，权威设计目标为 `config/prompts/`。该事项应在 D02-T01 前对齐，D00 不修改 Prompt。
+当前不包含业务 API、RSS 抓取、LLM Provider 调用、任务队列、Prompt 启动接入或 PM2 部署配置。`/api/*` 和 `/feeds/*` 尚未实现。
 
 工程已配置 GitHub Actions，在拉取请求、推送到 `main` 和手动触发时执行与本地一致的门禁。**远程 CI 尚未实际运行，状态为 `NOT_RUN`；本地通过不能替代远程执行证据。**

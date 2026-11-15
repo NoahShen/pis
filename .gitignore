@@ -8,3 +8,4 @@ coverage/
 .env.*
 *.tmp
 .DS_Store
+/config/prompt/user-context.md
