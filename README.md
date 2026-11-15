@@ -94,6 +94,12 @@ export LOG_LEVEL=info
 
 客户端只发送一次非流式请求，不重试。默认总超时为 60 秒、响应上限为 2 MiB；错误和安全日志不包含 endpoint query、apiKey、model、Prompt、响应正文或底层 cause。
 
+### Typed LLM calls
+
+`createTypedLlmCalls()` 提供五个固定 operation 的强类型入口。每次调用在第一个异步等待前深拷贝任务数据和引用集合，只加载一次对应 Prompt、调用一次文本补全并执行一次严格响应校验；不重试、不修复、不缓存，也不访问数据库。
+
+system 消息只包含本次读取的功能指令、固定标签和代码生成的输出 JSON Schema。其他四类 user 消息为 `{"task_data": ...}`，Knowledge Analysis 额外使用独立的 `user_context` 字段；动态任务数据不会成为消息角色、工具或请求配置。调用方可通过可选 `AbortSignal` 传递取消信号。
+
 ## 启动、健康检查与关闭
 
 先构建并启动：
