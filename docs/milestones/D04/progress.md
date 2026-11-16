@@ -4,7 +4,7 @@
 
 - 当前角色：Architect。
 - 实现基线：`09db5ecf11838fa74e8850aaa9d019234f86e682`；D03 最终 PASS，远程 CI Success，D03 心跳已删除，遗留 Worker 工作区已收尾并归档。
-- D04 Intent v0.1：`DRAFT / G1_PENDING`。
+- D04 Intent v0.1：`DRAFT / G1_PENDING`。负责人指出全文与摘要判定缺失，已补充字段语义与获取依据分离的规则，仍待最终 G1。
 - D04 Spec/Plan：尚未生成；G2/G3 未通过。
 - D04-T01/T02/T03：`NOT_STARTED`。
 - D04 Lead/Worker：未委派；无活动 D04 心跳。
