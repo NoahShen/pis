@@ -1,7 +1,7 @@
 # D04 Plan · 通用 SourceAdapter 与 RSS 首个实现
 
 > 版本：v0.4
-> 状态：REVIEW · 已按 Architect 对 v0.3 的 G3 CHANGES_REQUIRED 修订，提交复核
+> 状态：APPROVED · Architect G3 通过；待负责人批准执行
 > 版本轨迹：v0.1 初稿；v0.2、v0.3 为前序 G3 修订稿，均未 APPROVED；v0.4 修复 v0.3 的四项定位阻塞并补齐 Lead 文档交付/Worker 收尾门禁。
 > Intent：`docs/milestones/D04/intent.md`（APPROVED）
 > Spec：`docs/milestones/D04/spec.md`（APPROVED · Architect G2）
@@ -464,4 +464,5 @@ Worker 收尾：candidate↔merge blob 对照 PASS；branch/candidate 对齐；�
 - 三卡均给出允许写集、能力边界、测试、命令、依赖和合并门禁；`T01/T02` 不会暴露不受保护的默认真实 HTTP。
 - T02 不引入 jsdom/DOM lib/any；仅以单一窄 DOM boundary + 受控 capability assertions 处理 linkedom/Readability，且必须执行真实互操作 smoke。
 - “调用入口同步快照可变输入”已在 §4.1、T01/T02 必测与最终验收包中形成可定位 PASS 证据。
-- 当前下一步仅为计划评审。未获负责人执行批准前不创建 Worker；未获另行 push 授权不推送。
+- Architect G3：APPROVED（2026-11-16）。复核候选 commit `83e307b8ceef028a5a1106d57e5ef4451dddf25a`，tree `c5a6dc4ad3e96c4a54252fbcf037a3a58fe70467`；四项阻塞已解决，提交仅含 Plan/Progress，diff-check 通过。规划文档已快进整合至 main，生产实现未开始。
+- 当前下一步为负责人审阅执行计划。未获负责人执行批准前不创建 Worker；未获另行 push 授权不推送。

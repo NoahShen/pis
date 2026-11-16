@@ -2,11 +2,11 @@
 
 ## 当前门禁
 
-- 当前角色：D04 Lead，状态 `PLAN_REVISION_SUBMITTED`，等待 Architect 对 Plan v0.4 的 G3 复核。
+- 当前门禁：Architect 已完成 Plan v0.4 的 G3 复核，`APPROVED`；等待负责人明确批准执行。
 - 实现基线：`09db5ecf11838fa74e8850aaa9d019234f86e682`；D03 最终 PASS，远程 CI Success，D03 心跳已删除，遗留 Worker 工作区已收尾并归档。
 - D04 Intent：`APPROVED · G1 PASS`。负责人确认全文/摘要判定，并明确 RSS 仅为一种实现；财经资讯抓取 API Adapter 延期至 V1 全流程走通后另立里程碑。
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
-- D04 Plan：v0.1 初稿、v0.2/v0.3 前序 G3 修订稿均保持 `REVIEW` 且从未 `APPROVED`；Architect 对 v0.3 给出四项 `CHANGES_REQUIRED`，Lead 已在 v0.4 逐项修复。v0.4 仍为 `REVIEW`，不得自行标为 `APPROVED`。
+- D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。执行授权仍为 `PENDING`。
 - D04-T01/T02/T03：`NOT_STARTED`；未创建 Worker，未安装依赖，未执行开发测试。
 - D04 测试/远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
@@ -27,7 +27,14 @@
 
 ## 下一步
 
-Architect 按 v0.4 复核四项阻塞。只有 G3 `APPROVED` 且负责人明确批准执行后，才可按 Plan 创建首张 T01 Worker；当前不创建 Worker、不开始实现、不 push。
+负责人审阅 Plan v0.4 并明确批准执行后，Lead 才可创建首张 T01 Worker；当前不创建 Worker、不开始实现、不 push。
+
+## Architect G3 审核记录
+
+- 审核候选：`83e307b8ceef028a5a1106d57e5ef4451dddf25a`；tree：`c5a6dc4ad3e96c4a54252fbcf037a3a58fe70467`；parent 与 Spec 基线 `b87594a742f4440eaf49a5daeac74bd2ca622e51` 一致。
+- Architect 独立检查四项阻塞修复、Spec 一致性、仅两文档写集、worktree clean 与 diff-check；结论 `APPROVED`。取消信号/连接隔离、原始 DOM 限制信号检测、受限隐私扫描与逐卡归档均有明确验证要求。
+- main 已以 fast-forward 整合候选；仅文档，无需重跑生产测试。npm 安装、互操作测试与 full verify 均未在本轮运行。
+- 本记录为计划批准，不代表实现通过或执行授权；后续按负责人决定进入开发。
 
 ## 证据边界
 
