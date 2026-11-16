@@ -579,22 +579,10 @@ describe("Source API", () => {
     }, repositories);
   });
 
-  it("source API registers only Source configuration routes", async () => {
+  it("source API leaves Topic configuration behavior to the Topic routes", async () => {
     await withSourceApp(async ({ app }) => {
-      for (const request of [
-        { method: "GET" as const, url: "/api/topics" },
-        { method: "POST" as const, url: "/api/topics" },
-        { method: "PATCH" as const, url: "/api/topics/topic-1" },
-      ]) {
-        const response = await app.inject({
-          ...request,
-          headers: AUTHORIZATION,
-        });
-        expect(response.statusCode).toBe(404);
-      }
-
       expect(app.hasRoute({ method: "GET", url: "/api/sources" })).toBe(true);
-      expect(app.hasRoute({ method: "GET", url: "/api/topics" })).toBe(false);
+      expect(app.hasRoute({ method: "GET", url: "/api/topics" })).toBe(true);
     });
   });
 });

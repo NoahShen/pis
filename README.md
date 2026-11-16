@@ -1,6 +1,6 @@
 # PIS
 
-PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00 的构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施，D01 的 SQLite 连接、冻结 schema、同步事务与 Event FTS 维护基础，以及 D02-T01 的 Prompt 逐次读取基础。数据库与 Prompt 尚未接入 HTTP 服务启动流程。
+PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00 的构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施，D01 的 SQLite 连接、冻结 schema、同步事务与 Event FTS 维护基础，D02-T01 的 Prompt 逐次读取基础，以及 D03 的 Source/Topic 配置 API。Prompt、RSS 抓取与调度尚未接入 HTTP 服务启动流程。
 
 ## 先决版本
 
@@ -75,18 +75,32 @@ export HOST=127.0.0.1
 export PORT=3000
 export API_TOKEN=local-test-token-change-me
 export LOG_LEVEL=info
+export DATABASE_PATH=./data/pis.sqlite
 ```
 
 上例 Token 仅用于本地演示，不是生产秘密。
 
-| 变量        | 默认值      | 约束                                                           |
-| ----------- | ----------- | -------------------------------------------------------------- |
-| `HOST`      | `127.0.0.1` | 非空且不能有首尾空白；无法绑定的地址会在启动时失败             |
-| `PORT`      | `3000`      | 十进制整数，范围 `0`～`65535`；`0` 表示由操作系统分配端口      |
-| `API_TOKEN` | 无          | 必填、非空且不能包含空白；没有开发默认 Token                   |
-| `LOG_LEVEL` | `info`      | `fatal`、`error`、`warn`、`info`、`debug`、`trace` 或 `silent` |
+| 变量            | 默认值              | 约束                                                           |
+| --------------- | ------------------- | -------------------------------------------------------------- |
+| `HOST`          | `127.0.0.1`         | 非空且不能有首尾空白；无法绑定的地址会在启动时失败             |
+| `PORT`          | `3000`              | 十进制整数，范围 `0`～`65535`；`0` 表示由操作系统分配端口      |
+| `API_TOKEN`     | 无                  | 必填、非空且不能包含空白；没有开发默认 Token                   |
+| `LOG_LEVEL`     | `info`              | `fatal`、`error`、`warn`、`info`、`debug`、`trace` 或 `silent` |
+| `DATABASE_PATH` | `./data/pis.sqlite` | 非空且不能只有空白；相对路径按进程当前目录解析，父目录自动创建 |
 
 显式空字符串不会使用默认值。配置错误时进程在监听前以非零状态退出，错误信息不包含配置原值。启动成功时日志会记录实际监听地址与端口；使用 `PORT=0` 时请以 ready 日志中的端口为准。
+
+### 配置 API
+
+`GET /api/sources`、`GET /api/topics` 返回 `{"items":[...]}`，包含停用配置并按 ID 升序排列。`GET /api/sources/:id`、`GET /api/topics/:id` 返回完整配置；`POST` 创建并返回 `201`；`PATCH` 更新并返回 `200`。所有配置端点都要求与 `/health` 相同的 `Authorization: Bearer <API_TOKEN>`，且不接受任何查询参数。
+
+Source 创建字段为 `name`、`type`、`url`、`cron`，可选 `enabled`（缺省 `true`）和 `description`（缺省 `null`）；V1 的 `type` 只接受 `RSS`。Source 更新只接受 `name`、`cron`、`enabled`、`description`，至少一项；`type`、`url`、`id`、`last_collected_at` 不可修改，即使 PATCH 提交相同值也返回 `400`。`name` 和 Source 的 URL 不静默改写；`url` 只接受可解析的绝对 HTTP(S) URL，`cron` 只做五或六字段语法校验，不创建调度任务，也不执行抓取。
+
+Topic 创建字段为 `name`、`description`，可选 `enabled`（缺省 `true`）；更新只接受 `name`、`description`、`enabled`，至少一项。名称与 Topic 描述必须包含非空白字符，服务保存原始字符串；Topic 更新及启停只写入 `topics`，不回溯、重算或发布历史关联。API 不提供删除。
+
+非法 body、未知字段、空 PATCH、查询参数均返回 `400 {"error":"invalid_request"}`；不存在返回 `404 {"error":"not_found"}`；超过 1 MiB 返回 `413`，非 JSON 写入返回 `415`；SQLite busy/locked 返回 `503`，其他内部错误返回 `500`。无授权请求不会解析或写入配置。
+
+默认数据库为 `./data/pis.sqlite`；可用 `DATABASE_PATH` 指向其他 SQLite 文件。服务启动时创建父目录并使用冻结 schema 初始化数据库，重启后保留配置。测试与真实进程 smoke 始终使用独立的临时数据库，不读取或污染默认 `data/` 路径。
 
 ### Chat Completions 调用配置
 
@@ -131,6 +145,6 @@ curl --fail-with-body \
 
 D00 范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify 健康端点、Pino 安全日志、环境配置校验和可测试的启停生命周期。D01 当前提供 better-sqlite3 连接、冻结 schema 初始化、同步事务基础、TEXT 时间存取和 Event FTS 刷新/重建基础。
 
-当前不包含业务 API、RSS 抓取、LLM Provider 调用、任务队列、Prompt 启动接入或 PM2 部署配置。`/api/*` 和 `/feeds/*` 尚未实现。
+当前包含 Source/Topic 配置 API，但不包含 RSS 抓取、调度执行、LLM 调用接入、任务队列、历史查询、匹配回填或发布 API。`/feeds/*` 尚未实现。
 
 工程已配置 GitHub Actions，在拉取请求、推送到 `main` 和手动触发时执行与本地一致的门禁。**远程 CI 尚未实际运行，状态为 `NOT_RUN`；本地通过不能替代远程执行证据。**
