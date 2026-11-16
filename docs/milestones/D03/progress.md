@@ -10,7 +10,7 @@
 - Spec v0.1：`APPROVED`，Architect G2 通过。
 - Plan v0.2：`APPROVED`；Architect G3 复核提交为 `753322a`，三项 G3 阻塞已解决。
 - `USER_EXECUTION_APPROVAL=APPROVED`：负责人审阅 Plan v0.2 后明确回复“确认，开始执行吧”；授权记录提交为 `48585e2801754cc74124f8031e42829d65e361bb`。批准 T01～T03 按计划串行执行，不包含 push 授权。
-- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`PASS · LOCAL_MERGE_VERIFIED`；D03-T03：`PASS · LOCAL_MERGE_VERIFIED`；Plan §6 本地集成 Gate：`LEAD_VERIFIED_AWAITING_ARCHITECT`。
+- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`PASS · LOCAL_MERGE_VERIFIED`；D03-T03：`PASS · LOCAL_MERGE_VERIFIED`；Plan §6 本地集成 Gate：`APPROVED`。
 - 此前未创建推进心跳；Architect 现已按用户要求创建 active heartbeat `21df46f8`（名称：PIS D03 执行推进与分级验收；`*/10 * * * *`；`Asia/Shanghai`），由 Architect 在最终验收完成或用户要求停止时删除并核对。Lead 未代 Worker 编码，未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
 - 规划核验：未发现需要重定 Spec 契约的矛盾；现有 `startServer` 的 listen rejection 与 bound-address 失败分支均未调用 `app.close()`，已作为 T02 的双分支生命周期缺口纳入单一总预算、单次 cleanup/flush 与竞态回归证据。
 
@@ -26,9 +26,9 @@
 ## 当前证据边界
 
 - Architect G3：v0.1 `CHANGES_REQUIRED` → v0.2 `APPROVED`；独立核对完整修订 diff、仅两文档范围、clean 状态及 diff-check，通过。
-- D03-T01/T02/T03 实现测试：`PASS`；三卡均已按精确 candidate merge 后复验记 `PASS · LOCAL_MERGE_VERIFIED`，下一步执行 Plan §6 干净集成 Gate。
-- D03 本地集成 Gate：`NOT_RUN`。
-- `D03_LOCAL_GATE=NOT_APPROVED`；`D03_REMOTE_CI=NOT_RUN`；`D03_FINAL_PASS=NOT_ISSUED`。不得以本地规划、本地测试或既有 D02 CI 代替远程与最终验收。
+- D03-T01/T02/T03 实现测试：`PASS`；三卡均已按精确 candidate merge 后复验记 `PASS · LOCAL_MERGE_VERIFIED`。
+- D03 本地集成 Gate：`PASS`。Architect 已独立核对 Gate 快照、三卡 parent/tree/范围与定向测试，并采纳 Lead 的干净安装及全量验证证据。
+- `D03_LOCAL_GATE=APPROVED`；`D03_REMOTE_CI=NOT_RUN`；`D03_FINAL_PASS=NOT_ISSUED`。不得以本地 Gate 或既有 D02 CI 代替 D03 远程 CI 与最终验收。
 - 真实 RSS、Scheduler 执行、Topic Matching 快照、LLM、历史回溯及发布：`NOT_RUN`，不属于 D03 配置 API 验收。
 
 ## D03-T01 执行记录
@@ -76,14 +76,14 @@
 
 ## 下一步
 
-三卡均 `PASS · LOCAL_MERGE_VERIFIED`。下一步从包含 T03 PASS 记录的最终 local `main` 创建新的干净 Gate worktree，按 Plan §6 重新 `npm ci`、定向与 full verify，审计真实 Source/Topic smoke、默认 `data/`/SQLite/WAL/SHM 残留、三卡路径与精确 SHA、隐私和范围；形成证据后交 Architect 终验。`D03_LOCAL_GATE` 在 Architect 批准前保持非 APPROVED，`REMOTE_CI=NOT_RUN`、`FINAL_PASS=NOT_ISSUED`，不 push、不启动 D04。
+D03 三卡与本地集成 Gate 均已完成并获批。下一步仅等待负责人对 D03 push 的明确授权；授权前不 push、不启动 D04，也不反复催问。获得授权后须先核对待推 SHA，再推送并等待该精确 SHA 的远程 CI 结果；只有本地 Gate 与远程 CI 同时满足才可评估 `D03_FINAL_PASS`。当前 `D03_REMOTE_CI=NOT_RUN`、`D03_FINAL_PASS=NOT_ISSUED`。
 
 ## D03 本地集成 Gate 执行记录
 
-- Gate 状态：`LEAD_VERIFIED_AWAITING_ARCHITECT`。证据快照为该检查开始前的 local `main` `677924ddf960d9bf29eca8de6e46d0f50c362b88`（tree `bebaae9006581c543f8bf3c486bc8d4cf20511b7`），独立 workspace `wks_2bfde919b801cdf4`、branch `d03-local-integration-gate`、worktree `/Users/noahshen/.paseo/worktrees/0eapmc43/d03-local-integration-gate`；创建时及全部命令后 worktree 均为 clean。
-- 三卡合并链：T01 candidate `3248df14a6fd7a8ad7eaa179d5931c204b4ee49f` / merge `205324c91b98192135a21cd22042a1599ecbd63e`；T02 candidate `0decc8466afe726c5e87080249d8bf78cf57c5ac` / merge `1212107c685bc080709efaa140b1fd03ef5e81d4`；T03 candidate `4482c78ea998a937e64da87d3ef198e13635b89b` / merge `a5db4077af54c07bb14b4e405c3a820fddde2bf0`。三个 merge commit 的第二 parent 均为对应 candidate，candidate tree/patch SHA 与各自 Architect 批准值一致。
-- D03 总范围审计（Spec baseline `6b5a52c` 到 Gate HEAD）：35 paths，其中 4 个 D03 docs、README、`.gitignore`、package manifest/lock、smoke 编排与三配置 smoke、app/config/lifecycle、9 个 configuration 源文件及对应测试/fixtures。相对 baseline 仅新增精确依赖 `node-cron@4.6.0`；`npm ls node-cron` 为 4.6.0，`npm ls --depth=0` 无 extraneous；未改 DDL/schema、remote CI、D02 LLM 或 D04 范围。`git diff --check 6b5a52c..677924d` 退出 `0`。
+- Gate 状态：`APPROVED`。证据快照为该检查开始前的 local `main` `677924ddf960d9bf29eca8de6e46d0f50c362b88`（tree `bebaae9006581c543f8bf3c486bc8d4cf20511b7`），独立 workspace `wks_2bfde919b801cdf4`、branch `d03-local-integration-gate`、worktree `/Users/noahshen/.paseo/worktrees/0eapmc43/d03-local-integration-gate`；创建时及全部命令后 worktree 均为 clean。
+- 三卡合并链：T01 candidate `3248df14a6fd7a8ad7eaa179d5931c204b4ee49f` / merge `205324c91b98192135a21cd22042a1599ecbd63e`，第一父到 merge 为 `9` paths；T02 candidate `0decc8466afe726c5e87080249d8bf78cf57c5ac` / merge `1212107c685bc080709efaa140b1fd03ef5e81d4`，实现/边界范围为 `18` paths；T03 candidate `4482c78ea998a937e64da87d3ef198e13635b89b` / merge `a5db4077af54c07bb14b4e405c3a820fddde2bf0`，第一父到 merge 为 `6` paths。三个 merge commit 的第二 parent 均为对应 candidate，candidate tree/patch SHA 与各自 Architect 批准值一致。
+- D03 总范围审计（Spec baseline `6b5a52c` 到 Gate HEAD）：35 paths，其中 4 个 D03 docs、README、`.gitignore`、package manifest/lock、smoke 编排与三配置 smoke、app/config/lifecycle、`8` 个 configuration 源文件及对应测试/fixtures。相对 baseline 仅新增精确依赖 `node-cron@4.6.0`；`npm ls node-cron` 为 4.6.0，`npm ls --depth=0` 无 extraneous；未改 DDL/schema、remote CI、D02 LLM 或 D04 范围。`git diff --check 6b5a52c..677924d` 退出 `0`。
 - 固定 toolchain 为 Node `v26.13.1` / npm `11.20.0` / `darwin-arm64`；`node scripts/verify-toolchain.mjs` PASS；独立 `npm ci` 安装 94 packages、audit 95、0 vulnerabilities。npm 11 的 `better-sqlite3`/`fsevents` install-scripts allowScripts 提示未造成失败，后续 typecheck/build/smoke 全部通过。
 - Gate 定向 `7` 个 Topic/TopicRepository/Source/SourceRepository/app-assembly/contracts/app 文件为 `52/52` tests PASS；随后 full `npm run verify` 退出 `0`：typecheck PASS、`30/30` 文件 `191/191` tests、build 与 schema asset copy PASS、5 个 lifecycle smoke + Source/Topic 两真实重启持久化 smoke PASS、database schema bytes/init smoke PASS、`89` 文件格式检查 PASS。
 - Gate 后默认 `data/` 不存在；除 ignored `node_modules/`、`dist/` 外 SQLite/DB/WAL/SHM 扫描为空；tracked `data/`、`.env`、SQLite/DB/key/PEM 文件为空；高置信 private-key/GitHub/OpenAI/AWS/Slack token 模式扫描无命中；`.gitignore` 已包含 `/data/`。
-- Lead 结论为 `PASS`，但 `D03_LOCAL_GATE` 仍为非 APPROVED，等待 Architect 对同一 Gate 快照与上述证据独立复核。`REMOTE_CI=NOT_RUN`、`FINAL_PASS=NOT_ISSUED`；未 push、未启动 D04。
+- Architect 终验：`D03_LOCAL_GATE=APPROVED`。Architect 独立核对 Gate HEAD/tree、clean 状态、三个 candidate/merge 双 parent 与逐文件内容、实际 T01 `9` / T02 `18` / T03 `6` 路径、D03 总范围 `35` paths、唯一依赖 `node-cron@4.6.0`、无 DDL/CI/D02 LLM 越界及无默认/临时 DB 残留；独立 toolchain、diff-check 与 `7/7` 文件 `52/52` 定向测试通过。本轮采纳 Lead 的干净 `npm ci` 94/0 vulnerabilities 和 full verify `191/191` 证据，Architect 未重复运行 full（T03 候选轮已有独立 full verify）。Gate 后 main 文档提交未改变生产实现，远程 `main` 仍为 `40d9efeb21e8c94480dbdc644f09be0ac17d7a9f`，D03 未 push。`REMOTE_CI=NOT_RUN`、`FINAL_PASS=NOT_ISSUED`。
