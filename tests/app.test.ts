@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";
+import type { ConfigurationRepositories } from "../src/configuration/app-assembly.js";
 import type { AppConfig } from "../src/config.js";
 import { CapturedLogger } from "./fixtures/captured-logger.js";
 
@@ -20,8 +21,31 @@ const config: AppConfig = {
 };
 const apps: FastifyInstance[] = [];
 
-function createApp(logger = new CapturedLogger()) {
-  const app = buildApp(config, logger);
+const unusedRepositories: ConfigurationRepositories = {
+  source: {
+    create: () => {
+      throw new Error("not used");
+    },
+    getById: () => null,
+    list: () => [],
+    listEnabled: () => [],
+    update: () => null,
+  },
+  topic: {
+    create: () => {
+      throw new Error("not used");
+    },
+    getById: () => null,
+    list: () => [],
+    listEnabled: () => [],
+    update: () => null,
+  },
+};
+
+async function createApp(logger = new CapturedLogger()) {
+  const app = await buildApp(config, logger, {
+    repositories: unusedRepositories,
+  });
   apps.push(app);
   return { app, logger };
 }
@@ -32,7 +56,7 @@ afterEach(async () => {
 
 describe("application", () => {
   it("GET /health with valid Bearer returns exact ok body", async () => {
-    const { app } = createApp();
+    const { app } = await createApp();
     const response = await app.inject({
       method: "GET",
       url: "/health",
@@ -52,7 +76,7 @@ describe("application", () => {
       "Bearer ",
       `Bearer ${API_TOKEN} extra`,
     ]) {
-      const { app } = createApp();
+      const { app } = await createApp();
       const response = await app.inject({
         method: "GET",
         url: "/health",
@@ -66,7 +90,7 @@ describe("application", () => {
   });
 
   it("unregistered API and feed paths return 404 with no side effects", async () => {
-    const { app, logger } = createApp();
+    const { app, logger } = await createApp();
 
     for (const request of [
       { method: "GET" as const, url: `/api/${PATH_SENTINEL}` },
@@ -102,7 +126,7 @@ describe("application", () => {
   });
 
   it("logs request id, method, path only, status and duration", async () => {
-    const { app, logger } = createApp();
+    const { app, logger } = await createApp();
     const response = await app.inject({
       method: "GET",
       url: "/health?token=must-not-be-logged",
@@ -139,7 +163,7 @@ describe("application", () => {
   });
 
   it("captured logs include 401 response metadata", async () => {
-    const { app, logger } = createApp();
+    const { app, logger } = await createApp();
     const response = await app.inject({ method: "GET", url: "/health" });
 
     expect(response.statusCode).toBe(401);
@@ -153,7 +177,7 @@ describe("application", () => {
     logger.request = () => {
       throw new Error("logger unavailable");
     };
-    const { app } = createApp(logger);
+    const { app } = await createApp(logger);
 
     const response = await app.inject({
       method: "GET",
@@ -165,8 +189,8 @@ describe("application", () => {
     expect(response.json()).toEqual({ status: "ok" });
   });
 
-  it("does not register an undocumented readiness route", () => {
-    const { app } = createApp();
+  it("does not register an undocumented readiness route", async () => {
+    const { app } = await createApp();
 
     expect(app.hasRoute({ method: "GET", url: "/ready" })).toBe(false);
     expect(app.hasRoute({ method: "GET", url: "/health" })).toBe(true);

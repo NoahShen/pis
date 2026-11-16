@@ -3,6 +3,11 @@ import Fastify from "fastify";
 import { buildApp } from "../../dist/app.js";
 import { main } from "../../dist/server.js";
 
+const databasePath = process.env.DATABASE_PATH;
+if (databasePath === undefined || databasePath.trim() === "") {
+  throw new Error("DATABASE_PATH must be provided by the smoke harness");
+}
+
 let emitSignal = () => {};
 let signalSourceOn = false;
 
@@ -28,7 +33,7 @@ process.once("SIGTERM", () => {
 });
 
 await main({
-  env: process.env,
+  env: { ...process.env, DATABASE_PATH: databasePath },
   appFactory(config, logger) {
     const app = buildApp(config, logger);
     const listen = app.listen.bind(app);

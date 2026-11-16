@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import { ConfigError, loadConfig } from "../src/config.js";
@@ -9,6 +11,7 @@ describe("loadConfig", () => {
       port: 3000,
       apiToken: "secret",
       logLevel: "info",
+      databasePath: resolve("data/pis.sqlite"),
     });
   });
 
@@ -25,11 +28,25 @@ describe("loadConfig", () => {
       port: 0,
       apiToken: "token",
       logLevel: "silent",
+      databasePath: resolve("data/pis.sqlite"),
     });
 
     expect(
       loadConfig({ PORT: "65535", API_TOKEN: "x", LOG_LEVEL: "trace" }).port,
     ).toBe(65535);
+    expect(
+      loadConfig({ API_TOKEN: "x", DATABASE_PATH: "tmp/configured.sqlite" })
+        .databasePath,
+    ).toBe(resolve("tmp/configured.sqlite"));
+  });
+
+  it("loadConfig accepts a non-blank DATABASE_PATH with surrounding spaces without trimming it", () => {
+    const databasePath = "  tmp/configured.sqlite  ";
+
+    expect(
+      loadConfig({ API_TOKEN: "token", DATABASE_PATH: databasePath })
+        .databasePath,
+    ).toBe(resolve(databasePath));
   });
 
   it("loadConfig ignores unknown environment variables", () => {
@@ -44,6 +61,7 @@ describe("loadConfig", () => {
       port: 3000,
       apiToken: "token",
       logLevel: "info",
+      databasePath: resolve("data/pis.sqlite"),
     });
   });
 
@@ -64,17 +82,19 @@ describe("loadConfig", () => {
     }
   });
 
-  it("loadConfig rejects empty or whitespace-padded HOST, invalid PORT and invalid LOG_LEVEL without echoing inputs", () => {
+  it("loadConfig rejects invalid path values without echoing inputs", () => {
     const invalidValues = [
       ["HOST", ["", " host", "host "]],
       ["PORT", ["", "-1", "65536", "1.5", " 3000", "3000 ", "1e3", "abc"]],
       ["LOG_LEVEL", ["", " info", "verbose", "INFO"]],
+      ["DATABASE_PATH", ["", "   ", "\t \n"]],
     ] as const;
     const safeReasons = {
       HOST: "must be non-empty without surrounding whitespace",
       PORT: "must be a decimal integer from 0 to 65535",
       LOG_LEVEL:
         "must be one of fatal, error, warn, info, debug, trace, silent",
+      DATABASE_PATH: "must not be empty or whitespace-only",
     } as const;
 
     for (const [path, values] of invalidValues) {

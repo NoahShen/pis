@@ -6,6 +6,10 @@ import Fastify, {
   type FastifyRequest,
 } from "fastify";
 
+import {
+  assembleApp,
+  type AppDependencies,
+} from "./configuration/app-assembly.js";
 import { createBearerPreHandler } from "./auth.js";
 import type { AppConfig } from "./config.js";
 import type { Logger } from "./logger.js";
@@ -19,7 +23,11 @@ function pathWithoutQuery(url: string | undefined): string {
   return queryIndex === -1 ? url : url.slice(0, queryIndex);
 }
 
-export function buildApp(config: AppConfig, logger: Logger): FastifyInstance {
+export function buildApp(
+  config: AppConfig,
+  logger: Logger,
+  dependencies?: AppDependencies,
+): FastifyInstance {
   const app = Fastify({
     logger: false,
     logController: new LogController({ disableRequestLogging: true }),
@@ -58,6 +66,8 @@ export function buildApp(config: AppConfig, logger: Logger): FastifyInstance {
       return reply.code(200).send({ status: "ok" });
     },
   );
+
+  assembleApp(app, config, dependencies);
 
   return app;
 }

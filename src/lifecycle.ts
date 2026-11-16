@@ -195,18 +195,51 @@ function isAddressInfo(value: unknown): value is AddressInfo {
   );
 }
 
-async function flushAfterListenFailure(
+async function cleanupStartupFailure(
+  app: FastifyInstance,
   logger: Logger,
   timeoutMs: number,
 ): Promise<void> {
-  const budget = createTimeout(Math.max(0, timeoutMs));
+  const deadline = Date.now() + Math.max(0, timeoutMs);
+
+  const runWithinBudget = async <T>(
+    operation: () => Promise<T>,
+  ): Promise<T> => {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) {
+      throw new OperationTimeoutError();
+    }
+
+    const budget = createTimeout(remaining);
+    try {
+      return await withTimeout(operation, budget.promise);
+    } finally {
+      budget.clear();
+    }
+  };
 
   try {
-    await withTimeout(() => logger.flush(), budget.promise);
-  } catch {
-    // The listen failure remains the primary lifecycle outcome.
-  } finally {
-    budget.clear();
+    await runWithinBudget(() => app.close());
+  } catch (error) {
+    logError(
+      logger,
+      "shutdown",
+      error instanceof OperationTimeoutError ? "timeout" : "close_error",
+    );
+  }
+
+  if (Date.now() >= deadline) {
+    return;
+  }
+
+  try {
+    await runWithinBudget(() => logger.flush());
+  } catch (error) {
+    logError(
+      logger,
+      "shutdown",
+      error instanceof OperationTimeoutError ? "timeout" : "flush_error",
+    );
   }
 }
 
@@ -332,6 +365,14 @@ export function startServer({
     subscribed = false;
   };
 
+  const finishListenFailure = async (readyError: Error): Promise<void> => {
+    unsubscribe();
+    logError(logger, "listen", "listen_error");
+    await cleanupStartupFailure(app, logger, shutdownTimeoutMs);
+    rejectReadyIfPending(readyError);
+    finish({ code: 1, reason: "listen_error", forced: false });
+  };
+
   function finish(result: LifecycleResult): void {
     if (completedSettled) {
       return;
@@ -357,11 +398,7 @@ export function startServer({
         return;
       }
 
-      unsubscribe();
-      logError(logger, "listen", "listen_error");
-      await flushAfterListenFailure(logger, shutdownTimeoutMs);
-      rejectReadyIfPending(new Error("Server failed to listen"));
-      finish({ code: 1, reason: "listen_error", forced: false });
+      await finishListenFailure(new Error("Server failed to listen"));
       return;
     }
 
@@ -377,11 +414,9 @@ export function startServer({
     }
 
     if (!isAddressInfo(address)) {
-      unsubscribe();
-      logError(logger, "listen", "listen_error");
-      await flushAfterListenFailure(logger, shutdownTimeoutMs);
-      rejectReadyIfPending(new Error("Server did not expose a bound address"));
-      finish({ code: 1, reason: "listen_error", forced: false });
+      await finishListenFailure(
+        new Error("Server did not expose a bound address"),
+      );
       return;
     }
 
