@@ -10,7 +10,7 @@
 - Spec v0.1：`APPROVED`，Architect G2 通过。
 - Plan v0.2：`APPROVED`；Architect G3 复核提交为 `753322a`，三项 G3 阻塞已解决。
 - `USER_EXECUTION_APPROVAL=APPROVED`：负责人审阅 Plan v0.2 后明确回复“确认，开始执行吧”；授权记录提交为 `48585e2801754cc74124f8031e42829d65e361bb`。批准 T01～T03 按计划串行执行，不包含 push 授权。
-- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`PASS · LOCAL_MERGE_VERIFIED`；D03-T03：`IN_PROGRESS · WORKER_RUNNING`。
+- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`PASS · LOCAL_MERGE_VERIFIED`；D03-T03：`IN_PROGRESS · LEAD_APPROVED_AWAITING_ARCHITECT`。
 - 此前未创建推进心跳；Architect 现已按用户要求创建 active heartbeat `21df46f8`（名称：PIS D03 执行推进与分级验收；`*/10 * * * *`；`Asia/Shanghai`），由 Architect 在最终验收完成或用户要求停止时删除并核对。Lead 未代 Worker 编码，未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
 - 规划核验：未发现需要重定 Spec 契约的矛盾；现有 `startServer` 的 listen rejection 与 bound-address 失败分支均未调用 `app.close()`，已作为 T02 的双分支生命周期缺口纳入单一总预算、单次 cleanup/flush 与竞态回归证据。
 
@@ -26,7 +26,7 @@
 ## 当前证据边界
 
 - Architect G3：v0.1 `CHANGES_REQUIRED` → v0.2 `APPROVED`；独立核对完整修订 diff、仅两文档范围、clean 状态及 diff-check，通过。
-- D03-T01/T02 实现测试：`PASS`；D03-T03 已串行派发，Worker 实现测试中。
+- D03-T01/T02 实现测试：`PASS`；D03-T03 Worker 与 Lead 审核完成，等待 Architect 对冻结 tree 的独立复核。
 - D03 本地集成 Gate：`NOT_RUN`。
 - `D03_LOCAL_GATE=NOT_APPROVED`；`D03_REMOTE_CI=NOT_RUN`；`D03_FINAL_PASS=NOT_ISSUED`。不得以本地规划、本地测试或既有 D02 CI 代替远程与最终验收。
 - 真实 RSS、Scheduler 执行、Topic Matching 快照、LLM、历史回溯及发布：`NOT_RUN`，不属于 D03 配置 API 验收。
@@ -63,8 +63,11 @@
 - 合并后工作树 clean，默认 `data/` 不存在，未出现真实配置/DB/Token 污染。`T02_STATUS=PASS · LOCAL_MERGE_VERIFIED`；`T02_REMOTE_CI=NOT_RUN`；未 push。
 - T03 `WORKSPACE_ID=wks_4f99c8228f3873c2`；`WORKER_AGENT_ID=c4dccc92-be2b-4c09-8300-e09065baeccf`；全新 Paseo Worker，采用 `codex-worker` profile（`codex-magpie/group/worker`、`auto-review`、`thinking=high`）。
 - `T03_BRANCH=d03-t03-topic-api-integration`；`T03_BASE_SHA=511b37d053b1e53693a656d6a315dd12d3f77de7`；`T03_BASE_TREE=0e690944533e5d61df047bf1808465e9ab6bacaa`；`T03_WORKTREE=/Users/noahshen/.paseo/worktrees/0eapmc43/d03-t03-topic-api-integration`。创建后核对 branch HEAD 与该 SHA 一致、工作树 clean。
-- T03 Worker 门禁：只允许 Plan 的 5 个预期路径（`topic-routes.ts`、`route-registry.ts`、`topic-api.test.ts`、`smoke-configuration-topics.mjs`、`README.md`）；不新增依赖，不改 T01/T02 共享实现、DDL、runner、lifecycle、CI 或权威文档。只回报 `REVIEW`/`BLOCKED`，不得 stage/commit/merge/push。
+- T03 Worker 门禁原预期 5 路径（`topic-routes.ts`、`route-registry.ts`、`topic-api.test.ts`、`smoke-configuration-topics.mjs`、`README.md`）；Worker 回报 `REVIEW` 并增加第 6 路径 `source-api.test.ts`。该文件仅把 T02 的“Topic 路由应 404 / hasRoute=false”过时负向断言同步为 Topic 路由已注册，Source 生产路由未改。Lead 判定这是启用已批准 Topic 路由所必需的测试同步、无契约扩张，接受写集 deviation 并提交 Architect 裁断；不得以 Worker 自报代替审核。
+- T03 Worker 自测：干净安装后定向与 full verify 均 PASS；`npm run verify` 为 `30/30` 文件、`191/191` tests，build、Source+Topic 真实重启 smoke、database smoke、`89` 文件格式检查全部通过；无 SQLite/WAL/SHM 残留。Worker 未 stage/commit/merge/push，源码 worktree 为非暂存改动。
+- Lead 独立复验：固定 Node `26.13.1` / npm `11.20.0`；`npm ci` 94 packages、0 vulnerabilities；Topic/TopicRepository/Source/app 定向 `4/4` 文件 `35/35` tests；full verify 退出 `0`，`30/30` 文件 `191/191` tests，真实进程依次输出 Source 与 Topic 跨重启持久化 PASS，格式覆盖 `89` 文件。
+- `T03_CANDIDATE_TREE=e51a86a9f6a663ab41d1fc9cbf8658e5ad0bbfff`；`T03_PATCH_SHA256=3672acac1a027350f4b9e31899fe4394211526d78e36955f59fbbc54b1f5c1fb`。冻结方法为从 base 读入隔离临时 index，只显式 add 上述 6 路径后 `write-tree`；patch hash 对 `git diff --cached --binary --full-index --no-ext-diff 511b37d...` 计算。真实 index 为空，HEAD 未变，未创建 candidate commit。
 
 ## 下一步
 
-等待 T03 Worker 自测回报。收到后由 Lead 独立核对 5 路径写集、Topic API/鉴权/错误映射、11 表 sentinel 零副作用、真实重启 smoke 与 README，并复跑定向/full verify；随后冻结精确 tree 交 Architect 复核。不 push。
+等待 Architect 独立复核精确 `T03_CANDIDATE_TREE=e51a86a9f6a663ab41d1fc9cbf8658e5ad0bbfff`，包括 6-path 范围、Topic 契约、11 表零副作用、真实重启 smoke 与 README。只有 Architect 批准该精确 tree 后，才可按同一 tree 创建 candidate commit；T03 PASS 前不得发布本地 Gate 或最终结论，不 push。
