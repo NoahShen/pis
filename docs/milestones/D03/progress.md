@@ -2,16 +2,34 @@
 
 ## 当前门禁
 
-- 角色：当前会话 Architect；尚未委派 D03 Lead/Worker。
-- 实现基线：`40d9efeb21e8c94480dbdc644f09be0ac17d7a9f`，已推送且远程 CI Success。
+- 当前角色：D03 Lead（仅规划）。
+- 文档基线：`a8571c76e661f75c6a9ff2318631454ce5f3e1ed`；生产实现基线：`40d9efeb21e8c94480dbdc644f09be0ac17d7a9f`（已推送且远程 CI Success）。
 - D02 四卡、本地集成、远程 CI 已通过，Architect 已记录最终 PASS。
-- `SOURCE_TYPE_URL_POLICY=IMMUTABLE_AFTER_CREATE`：负责人明确批准；影响 D03-T01/T02 以及 API-01 的待定条款。
-- Intent v0.1：`APPROVED`，负责人回复“好的，没问题，继续下一步”，G1 通过。
-- Spec v0.1：`APPROVED`，Architect G2 通过；固定字段、严格校验、不可变字段整单拒绝、错误映射与真实 DB 装配/关闭。
-- Plan：`NOT_STARTED`；`USER_EXECUTION_APPROVAL=PENDING`。
-- D03-T01 / T02 / T03：`NOT_STARTED`。
-- D03 未创建推进心跳，未派发 Worker，未修改生产代码。
+- `SOURCE_TYPE_URL_POLICY=IMMUTABLE_AFTER_CREATE`：负责人明确批准；同值 PATCH 亦整单拒绝。
+- Intent v0.1：`APPROVED`，负责人 G1 通过。
+- Spec v0.1：`APPROVED`，Architect G2 通过。
+- Plan v0.1：`REVIEW`；`PLAN_REVIEW`，等待 Architect G3。
+- `USER_EXECUTION_APPROVAL=PENDING`：负责人尚未在 G3 后明确批准正式执行。
+- D03-T01 / T02 / T03：`NOT_STARTED`，严格串行且不得并行。
+- 未创建或委派 Worker，未创建推进心跳；未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
+- 规划核验：未发现需要重定 Spec 契约的矛盾；现有 `startServer` listen 失败路径未调用 `app.close()`，已作为 T02 的可定位生命周期缺口纳入文件写集和回归证据。
+
+## 计划摘要
+
+- D03-T01：共享 strict Zod/Repository 双边界、Source/Topic Repository、稳定 ID 排序、不可变 Source `type/url` 与只读 `last_collected_at`、唯一新增精确依赖 `node-cron@4.6.0`（仅 `validate()`，只允许 `package.json`/`package-lock.json` 依赖变化）。
+- D03-T02：Source API、`DATABASE_PATH`（默认 `./data/pis.sqlite`）、默认 `buildApp/main` 真实 DB 装配、owned `onClose`、初始化/监听失败一次回收、严格 JSON Content-Type、现有测试与 process smoke 全部临时 DB 隔离。
+- D03-T03：Topic API 复用同一连接与 T02 装配缝，验证配置更新不改历史关联/发布及下游表，并完成 Topic process smoke 与 README。
+- 每卡门禁：新 Worker 会话、独立 worktree、固定 Node 26.13.1/npm 11.20.0、`npm ci`、定向测试与完整 `verify`、Worker 自测、Lead 独立审核、Architect 复核、合并并记录 PASS；之后才进入下一卡。
+- 集成 Gate：干净 worktree 精确 `npm ci` + `npm run verify`，真实临时 SQLite 与 Source/Topic 真实进程 smoke；远程 CI 必须另行授权 push 后实际观察。
+
+## 当前证据边界
+
+- Architect G3：`NOT_RUN`。
+- D03 实现测试：`NOT_RUN`。
+- D03 集成 Gate：`NOT_RUN`。
+- D03 远程 CI：`NOT_RUN`；不得以本地规划或既有 D02 CI 代替。
+- 真实 RSS、Scheduler 执行、Topic Matching 快照、LLM、历史回溯及发布：`NOT_RUN`，不属于 D03 配置 API 验收。
 
 ## 下一步
 
-委派新 Paseo Lead 按已批准 Spec 编写文件级 Plan；Architect 复核后交负责人审阅，获执行批准才派发 Worker。
+Architect 审核 Plan v0.1（G3）；通过后交项目负责人审阅并明确批准执行。只有 G3 与负责人执行批准同时成立，Lead 才可为 D03-T01 创建新的 Worker worktree/会话；本轮不派发、不实现、不 push。
