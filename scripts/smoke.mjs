@@ -1,7 +1,11 @@
 import { spawn } from "node:child_process";
+import { mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:net";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { runConfigurationSmoke } from "./configuration-smoke.mjs";
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -48,6 +52,14 @@ function assert(condition, message) {
   if (!condition) {
     fail(message);
   }
+}
+
+async function createSmokeDatabase(label) {
+  const directory = await mkdtemp(path.join(os.tmpdir(), `pis-${label}-`));
+  return {
+    path: path.join(directory, "pis.sqlite"),
+    directory,
+  };
 }
 
 function delay(milliseconds) {
@@ -309,9 +321,14 @@ function assertNoSensitiveOutput(state) {
 
 async function runSignalScenario(signal) {
   let state;
+  let database;
 
   try {
-    state = spawnCaptured(serverEntry, { API_TOKEN });
+    database = await createSmokeDatabase(`smoke-${signal.toLowerCase()}`);
+    state = spawnCaptured(serverEntry, {
+      API_TOKEN,
+      DATABASE_PATH: database.path,
+    });
     const ready = await waitForReady(state);
     await exerciseHttp(ready.port);
     assert(state.child.kill(signal), `could not send ${signal}`);
@@ -349,12 +366,16 @@ async function runSignalScenario(signal) {
     );
   } finally {
     await terminateAfterFailure(state);
+    if (database !== undefined) {
+      await rm(database.directory, { force: true, recursive: true });
+    }
   }
 }
 
 async function runListenFailureScenario() {
   const blocker = createServer();
   let state;
+  let database;
 
   try {
     await new Promise((resolve, reject) => {
@@ -367,8 +388,10 @@ async function runListenFailureScenario() {
       "could not acquire a loopback port",
     );
 
+    database = await createSmokeDatabase("smoke-listen-failure");
     state = spawnCaptured(serverEntry, {
       API_TOKEN,
+      DATABASE_PATH: database.path,
       PORT: String(address.port),
     });
     const exit = await waitForExit(
@@ -405,14 +428,22 @@ async function runListenFailureScenario() {
   } finally {
     await terminateAfterFailure(state);
     await new Promise((resolve) => blocker.close(() => resolve()));
+    if (database !== undefined) {
+      await rm(database.directory, { force: true, recursive: true });
+    }
   }
 }
 
 async function runForcedExitScenario() {
   let state;
+  let database;
 
   try {
-    state = spawnCaptured(forcedExitEntry, { API_TOKEN });
+    database = await createSmokeDatabase("smoke-forced-exit");
+    state = spawnCaptured(forcedExitEntry, {
+      API_TOKEN,
+      DATABASE_PATH: database.path,
+    });
     const exit = await waitForExit(
       state,
       FORCED_EXIT_TIMEOUT_MS,
@@ -441,14 +472,22 @@ async function runForcedExitScenario() {
     );
   } finally {
     await terminateAfterFailure(state);
+    if (database !== undefined) {
+      await rm(database.directory, { force: true, recursive: true });
+    }
   }
 }
 
 async function runPendingListenScenario() {
   let state;
+  let database;
 
   try {
-    state = spawnCaptured(pendingListenEntry, { API_TOKEN });
+    database = await createSmokeDatabase("smoke-pending-listen");
+    state = spawnCaptured(pendingListenEntry, {
+      API_TOKEN,
+      DATABASE_PATH: database.path,
+    });
     await waitForEvent(state, "pending-listen", "pending-listen child");
     assert(state.child.kill("SIGTERM"), "could not send SIGTERM");
     await waitForEvent(state, "late-listening", "pending-listen child");
@@ -501,6 +540,9 @@ async function runPendingListenScenario() {
     );
   } finally {
     await terminateAfterFailure(state);
+    if (database !== undefined) {
+      await rm(database.directory, { force: true, recursive: true });
+    }
   }
 }
 
@@ -510,6 +552,7 @@ try {
   await runListenFailureScenario();
   await runForcedExitScenario();
   await runPendingListenScenario();
+  await runConfigurationSmoke();
   console.log("Smoke verification passed.");
 } catch (error) {
   console.error(

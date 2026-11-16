@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 import { z } from "zod";
 
 export const LOG_LEVELS = [
@@ -17,9 +19,11 @@ export interface AppConfig {
   port: number;
   apiToken: string;
   logLevel: LogLevel;
+  databasePath?: string;
 }
 
-export type ConfigPath = "HOST" | "PORT" | "API_TOKEN" | "LOG_LEVEL";
+export type ConfigPath =
+  "HOST" | "PORT" | "API_TOKEN" | "LOG_LEVEL" | "DATABASE_PATH";
 
 export class ConfigError extends Error {
   readonly path: ConfigPath;
@@ -36,6 +40,7 @@ export class ConfigError extends Error {
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 3000;
 const DEFAULT_LOG_LEVEL: LogLevel = "info";
+export const DEFAULT_DATABASE_PATH = "data/pis.sqlite";
 const DECIMAL_PORT = /^[0-9]+$/;
 const WHITESPACE = /\s/u;
 
@@ -68,6 +73,12 @@ const environmentSchema = z.object({
       message: "must be one of fatal, error, warn, info, debug, trace, silent",
     })
     .optional(),
+  DATABASE_PATH: z
+    .string()
+    .refine((value) => value.length > 0 && value.trim().length > 0, {
+      message: "must not be empty or whitespace-only",
+    })
+    .optional(),
 });
 
 const CONFIG_PATHS = new Set<ConfigPath>([
@@ -75,6 +86,7 @@ const CONFIG_PATHS = new Set<ConfigPath>([
   "PORT",
   "API_TOKEN",
   "LOG_LEVEL",
+  "DATABASE_PATH",
 ]);
 
 function isConfigPath(value: unknown): value is ConfigPath {
@@ -100,5 +112,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       result.data.PORT === undefined ? DEFAULT_PORT : Number(result.data.PORT),
     apiToken: result.data.API_TOKEN,
     logLevel: result.data.LOG_LEVEL ?? DEFAULT_LOG_LEVEL,
+    databasePath: resolve(result.data.DATABASE_PATH ?? DEFAULT_DATABASE_PATH),
   };
 }

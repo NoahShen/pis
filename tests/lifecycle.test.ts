@@ -31,6 +31,27 @@ function deferred<T>(): {
   return { promise, resolve, reject };
 }
 
+function trackSettlement<T>(promise: Promise<T>): {
+  promise: Promise<T>;
+  count: () => number;
+} {
+  let settlements = 0;
+
+  return {
+    promise: promise.then(
+      (value) => {
+        settlements += 1;
+        return value;
+      },
+      (error: unknown) => {
+        settlements += 1;
+        throw error;
+      },
+    ),
+    count: () => settlements,
+  };
+}
+
 async function occupyLoopbackPort(): Promise<{
   port: number;
   close: () => Promise<void>;
@@ -63,6 +84,117 @@ function hangingCloseApp(): FastifyInstance {
   return app;
 }
 
+const BOUND_ADDRESS_CLEANUP_CASES = [
+  {
+    fault: "close rejection",
+    flushCount: 1,
+    timeoutReason: "close_error",
+    timed: false,
+  },
+  {
+    fault: "close hang",
+    flushCount: 0,
+    timeoutReason: "timeout",
+    timed: true,
+  },
+  {
+    fault: "flush rejection",
+    flushCount: 1,
+    timeoutReason: "flush_error",
+    timed: false,
+  },
+  {
+    fault: "flush hang",
+    flushCount: 1,
+    timeoutReason: "timeout",
+    timed: true,
+  },
+] as const;
+
+type BoundAddressCleanupCase = (typeof BOUND_ADDRESS_CLEANUP_CASES)[number];
+
+async function exerciseBoundAddressCleanup(
+  testCase: BoundAddressCleanupCase,
+): Promise<void> {
+  const usesFakeTimers = testCase.timed;
+  if (usesFakeTimers) {
+    vi.useFakeTimers();
+  }
+
+  try {
+    const logger = new CapturedLogger();
+    if (testCase.fault === "flush rejection") {
+      logger.failNextFlush();
+    } else if (testCase.fault === "flush hang") {
+      logger.flush = () => {
+        logger.flushCount += 1;
+        return new Promise<void>(() => undefined);
+      };
+    }
+
+    const close =
+      testCase.fault === "close rejection"
+        ? vi.fn(async () => {
+            throw new Error("close detail");
+          })
+        : testCase.fault === "close hang"
+          ? vi.fn(() => new Promise<void>(() => undefined))
+          : vi.fn(async () => undefined);
+    const app = {
+      listen: vi.fn(async () => "http://127.0.0.1:41011"),
+      close,
+      server: { address: () => null },
+    } as unknown as FastifyInstance;
+    const signals = new FakeSignals();
+    const startedAt = Date.now();
+    const server = startServer({
+      app,
+      config: { host: "127.0.0.1", port: 0 },
+      logger,
+      signalSource: signals,
+      shutdownTimeoutMs: 50,
+    });
+    const ready = trackSettlement(
+      server.ready.catch((error: unknown) => error),
+    );
+    const completed = trackSettlement(server.completed);
+
+    if (testCase.timed) {
+      await vi.advanceTimersByTimeAsync(49);
+      expect(ready.count()).toBe(0);
+      expect(completed.count()).toBe(0);
+      expect(Date.now() - startedAt).toBe(49);
+      await vi.advanceTimersByTimeAsync(1);
+    }
+
+    await expect(ready.promise).resolves.toMatchObject({
+      message: "Server did not expose a bound address",
+    });
+    await expect(completed.promise).resolves.toEqual({
+      code: 1,
+      reason: "listen_error",
+      forced: false,
+    });
+    expect(close).toHaveBeenCalledExactlyOnceWith();
+    expect(logger.readyEntries).toEqual([]);
+    expect(logger.flushCount).toBe(testCase.flushCount);
+    expect(logger.errorEntries).toEqual([
+      { operation: "listen", reason: "listen_error" },
+      { operation: "shutdown", reason: testCase.timeoutReason },
+    ]);
+    expect(signals.count()).toBe(0);
+    expect(ready.count()).toBe(1);
+    expect(completed.count()).toBe(1);
+    if (testCase.timed) {
+      expect(Date.now() - startedAt).toBe(50);
+    }
+  } finally {
+    if (usesFakeTimers) {
+      vi.useRealTimers();
+    }
+  }
+}
+
 describe("startServer", () => {
   it("startServer keeps completed pending while serving and resolves ready after listen", async () => {
     const app = Fastify({ logger: false });
@@ -92,34 +224,343 @@ describe("startServer", () => {
     expect(signals.count()).toBe(0);
   });
 
-  it("listen failure rejects ready, resolves listen_error and emits no ready log", async () => {
-    const occupied = await occupyLoopbackPort();
+  it("listen rejection closes owned resources once and flushes once within one shared budget", async () => {
     const app = Fastify({ logger: false });
+    let closeCount = 0;
+    app.addHook("preClose", async () => {
+      closeCount += 1;
+    });
+    app.listen = async () => {
+      throw new Error("listen detail");
+    };
     const logger = new CapturedLogger();
     const signals = new FakeSignals();
+    const server = startServer({
+      app,
+      config: { host: "127.0.0.1", port: 0 },
+      logger,
+      signalSource: signals,
+    });
+    const ready = trackSettlement(server.ready);
+    const completed = trackSettlement(server.completed);
 
+    await expect(ready.promise).rejects.toThrow(/failed to listen/);
+    await expect(completed.promise).resolves.toEqual({
+      code: 1,
+      reason: "listen_error",
+      forced: false,
+    });
+    expect(logger.readyEntries).toEqual([]);
+    expect(logger.errorEntries).toEqual([
+      { operation: "listen", reason: "listen_error" },
+    ]);
+    expect(closeCount).toBe(1);
+    expect(logger.flushCount).toBe(1);
+    expect(signals.count()).toBe(0);
+    expect(ready.count()).toBe(1);
+    expect(completed.count()).toBe(1);
+  });
+
+  it("bound address failure closes owned resources once and flushes once within one shared budget", async () => {
+    const close = vi.fn(async () => undefined);
+    const app = {
+      listen: vi.fn(async () => "http://127.0.0.1:41011"),
+      close,
+      server: { address: () => null },
+    } as unknown as FastifyInstance;
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const server = startServer({
+      app,
+      config: { host: "127.0.0.1", port: 0 },
+      logger,
+      signalSource: signals,
+    });
+    const ready = trackSettlement(server.ready);
+    const completed = trackSettlement(server.completed);
+
+    await expect(ready.promise).rejects.toThrow(/bound address/);
+    await expect(completed.promise).resolves.toEqual({
+      code: 1,
+      reason: "listen_error",
+      forced: false,
+    });
+    expect(close).toHaveBeenCalledExactlyOnceWith();
+    expect(logger.flushCount).toBe(1);
+    expect(logger.errorEntries).toEqual([
+      { operation: "listen", reason: "listen_error" },
+    ]);
+    expect(signals.count()).toBe(0);
+    expect(ready.count()).toBe(1);
+    expect(completed.count()).toBe(1);
+  });
+
+  it.each(BOUND_ADDRESS_CLEANUP_CASES)(
+    "bound address failure with cleanup $fault closes once, bounds flush to one shared deadline, and preserves listen_error",
+    async (testCase) => {
+      await exerciseBoundAddressCleanup(testCase);
+    },
+  );
+
+  it("startup cleanup close rejection still attempts one bounded flush and preserves listen_error", async () => {
+    const close = vi.fn(async () => {
+      throw new Error("close detail");
+    });
+    const app = {
+      listen: vi.fn(async () => {
+        throw new Error("listen detail");
+      }),
+      close,
+    } as unknown as FastifyInstance;
+    const logger = new CapturedLogger();
+    const signals = new FakeSignals();
+    const server = startServer({
+      app,
+      config: { host: "127.0.0.1", port: 0 },
+      logger,
+      signalSource: signals,
+    });
+    const ready = trackSettlement(server.ready);
+    const completed = trackSettlement(server.completed);
+
+    await expect(ready.promise).rejects.toThrow(/failed to listen/);
+    await expect(completed.promise).resolves.toEqual({
+      code: 1,
+      reason: "listen_error",
+      forced: false,
+    });
+    expect(close).toHaveBeenCalledExactlyOnceWith();
+    expect(logger.flushCount).toBe(1);
+    expect(logger.errorEntries).toEqual([
+      { operation: "listen", reason: "listen_error" },
+      { operation: "shutdown", reason: "close_error" },
+    ]);
+    expect(signals.count()).toBe(0);
+    expect(ready.count()).toBe(1);
+    expect(completed.count()).toBe(1);
+  });
+
+  it("startup cleanup close hang skips flush after budget exhaustion and preserves listen_error", async () => {
+    vi.useFakeTimers();
     try {
+      const close = vi.fn(() => new Promise<void>(() => undefined));
+      const app = {
+        listen: vi.fn(async () => {
+          throw new Error("listen detail");
+        }),
+        close,
+      } as unknown as FastifyInstance;
+      const logger = new CapturedLogger();
+      const signals = new FakeSignals();
       const server = startServer({
         app,
-        config: { host: "127.0.0.1", port: occupied.port },
+        config: { host: "127.0.0.1", port: 0 },
         logger,
         signalSource: signals,
+        shutdownTimeoutMs: 50,
       });
+      const ready = trackSettlement(
+        server.ready.catch((error: unknown) => error),
+      );
+      const completed = trackSettlement(server.completed);
 
-      await expect(server.ready).rejects.toThrow(/failed to listen/);
-      await expect(server.completed).resolves.toEqual({
+      await vi.advanceTimersByTimeAsync(0);
+      expect(close).toHaveBeenCalledExactlyOnceWith();
+      await vi.advanceTimersByTimeAsync(50);
+
+      await expect(ready.promise).resolves.toMatchObject({
+        message: "Server failed to listen",
+      });
+      await expect(completed.promise).resolves.toEqual({
         code: 1,
         reason: "listen_error",
         forced: false,
       });
-      expect(logger.readyEntries).toEqual([]);
+      expect(logger.flushCount).toBe(0);
       expect(logger.errorEntries).toEqual([
         { operation: "listen", reason: "listen_error" },
+        { operation: "shutdown", reason: "timeout" },
       ]);
-      expect(logger.flushCount).toBe(1);
       expect(signals.count()).toBe(0);
+      expect(ready.count()).toBe(1);
+      expect(completed.count()).toBe(1);
     } finally {
-      await occupied.close();
+      vi.useRealTimers();
+    }
+  });
+
+  it("startup cleanup flush rejection stays bounded and settles listen_error once", async () => {
+    const logger = new CapturedLogger();
+    logger.failNextFlush();
+    const close = vi.fn(async () => undefined);
+    const app = {
+      listen: vi.fn(async () => {
+        throw new Error("listen detail");
+      }),
+      close,
+    } as unknown as FastifyInstance;
+    const signals = new FakeSignals();
+    const server = startServer({
+      app,
+      config: { host: "127.0.0.1", port: 0 },
+      logger,
+      signalSource: signals,
+    });
+    const ready = trackSettlement(
+      server.ready.catch((error: unknown) => error),
+    );
+    const completed = trackSettlement(server.completed);
+
+    await expect(ready.promise).resolves.toMatchObject({
+      message: "Server failed to listen",
+    });
+    await expect(completed.promise).resolves.toEqual({
+      code: 1,
+      reason: "listen_error",
+      forced: false,
+    });
+    expect(close).toHaveBeenCalledExactlyOnceWith();
+    expect(logger.flushCount).toBe(1);
+    expect(logger.errorEntries).toEqual([
+      { operation: "listen", reason: "listen_error" },
+      { operation: "shutdown", reason: "flush_error" },
+    ]);
+    expect(signals.count()).toBe(0);
+    expect(ready.count()).toBe(1);
+    expect(completed.count()).toBe(1);
+  });
+
+  it("startup cleanup flush hang stays bounded and settles listen_error once", async () => {
+    vi.useFakeTimers();
+    try {
+      const logger = new CapturedLogger();
+      logger.flush = () => {
+        logger.flushCount += 1;
+        return new Promise<void>(() => undefined);
+      };
+      const close = vi.fn(async () => undefined);
+      const app = {
+        listen: vi.fn(async () => {
+          throw new Error("listen detail");
+        }),
+        close,
+      } as unknown as FastifyInstance;
+      const signals = new FakeSignals();
+      const server = startServer({
+        app,
+        config: { host: "127.0.0.1", port: 0 },
+        logger,
+        signalSource: signals,
+        shutdownTimeoutMs: 50,
+      });
+      const ready = trackSettlement(
+        server.ready.catch((error: unknown) => error),
+      );
+      const completed = trackSettlement(server.completed);
+
+      await vi.advanceTimersByTimeAsync(50);
+
+      await expect(ready.promise).resolves.toMatchObject({
+        message: "Server failed to listen",
+      });
+      await expect(completed.promise).resolves.toEqual({
+        code: 1,
+        reason: "listen_error",
+        forced: false,
+      });
+      expect(close).toHaveBeenCalledExactlyOnceWith();
+      expect(logger.flushCount).toBe(1);
+      expect(logger.errorEntries).toEqual([
+        { operation: "listen", reason: "listen_error" },
+        { operation: "shutdown", reason: "timeout" },
+      ]);
+      expect(signals.count()).toBe(0);
+      expect(ready.count()).toBe(1);
+      expect(completed.count()).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("two independent startup failures use parallel 5000ms cleanup deadlines and settle together", async () => {
+    const realHrtime = process.hrtime.bigint.bind(process.hrtime);
+    vi.useFakeTimers();
+    try {
+      const startedAt = Date.now();
+      const wallStartedAt = realHrtime();
+      const closeStartTimes: number[][] = [[], []];
+      const failures = [0, 1].map((index) => {
+        const logger = new CapturedLogger();
+        const signals = new FakeSignals();
+        const close = vi.fn(() => {
+          closeStartTimes[index]?.push(Date.now());
+          return new Promise<void>(() => undefined);
+        });
+        const app = {
+          listen: vi.fn(async () => {
+            throw new Error("listen detail");
+          }),
+          close,
+        } as unknown as FastifyInstance;
+        const server = startServer({
+          app,
+          config: { host: "127.0.0.1", port: 0 },
+          logger,
+          signalSource: signals,
+          shutdownTimeoutMs: 5_000,
+        });
+
+        return {
+          ready: trackSettlement(server.ready.catch((error: unknown) => error)),
+          completed: trackSettlement(server.completed),
+          close,
+          logger,
+          signals,
+        };
+      });
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(closeStartTimes).toEqual([[startedAt], [startedAt]]);
+      for (const failure of failures) {
+        expect(failure.close).toHaveBeenCalledExactlyOnceWith();
+        expect(failure.ready.count()).toBe(0);
+        expect(failure.completed.count()).toBe(0);
+        expect(failure.logger.flushCount).toBe(0);
+        expect(failure.signals.count()).toBe(0);
+      }
+
+      await vi.advanceTimersByTimeAsync(4_999);
+      for (const failure of failures) {
+        expect(failure.ready.count()).toBe(0);
+        expect(failure.completed.count()).toBe(0);
+      }
+
+      await vi.advanceTimersByTimeAsync(1);
+      for (const failure of failures) {
+        await expect(failure.ready.promise).resolves.toMatchObject({
+          message: "Server failed to listen",
+        });
+        await expect(failure.completed.promise).resolves.toEqual({
+          code: 1,
+          reason: "listen_error",
+          forced: false,
+        });
+        expect(failure.close).toHaveBeenCalledExactlyOnceWith();
+        expect(failure.logger.flushCount).toBe(0);
+        expect(failure.logger.errorEntries).toEqual([
+          { operation: "listen", reason: "listen_error" },
+          { operation: "shutdown", reason: "timeout" },
+        ]);
+        expect(failure.signals.count()).toBe(0);
+        expect(failure.ready.count()).toBe(1);
+        expect(failure.completed.count()).toBe(1);
+      }
+
+      expect(Date.now() - startedAt).toBe(5_000);
+      const wallElapsedMs = Number(realHrtime() - wallStartedAt) / 1_000_000;
+      expect(wallElapsedMs).toBeLessThan(4_900);
+    } finally {
+      vi.useRealTimers();
     }
   });
 
@@ -345,7 +786,7 @@ describe("startServer", () => {
     ]);
   });
 
-  it("consumes a late listen reject without an unhandled rejection or state change", async () => {
+  it("late listen rejection after shutdown does not repeat owned cleanup", async () => {
     const listen = deferred<string>();
     const app = Fastify({ logger: false });
     const close = vi.fn(async () => undefined);
@@ -538,7 +979,6 @@ describe("main", () => {
   });
 
   it("ready rejection also consumes completed without an unhandled rejection", async () => {
-    const occupied = await occupyLoopbackPort();
     const logger = new CapturedLogger();
     const forceExit = vi.fn();
     const signals = new FakeSignals();
@@ -550,9 +990,15 @@ describe("main", () => {
 
     try {
       await main({
-        env: { API_TOKEN: "test-token", PORT: String(occupied.port) },
+        env: { API_TOKEN: "test-token" },
         loggerFactory: () => logger,
-        appFactory: () => Fastify({ logger: false }),
+        appFactory: () => {
+          const app = Fastify({ logger: false });
+          app.listen = async () => {
+            throw new Error("listen detail");
+          };
+          return app;
+        },
         signalSource: signals,
         forceExit,
       });
@@ -564,7 +1010,6 @@ describe("main", () => {
       expect(signals.count()).toBe(0);
     } finally {
       process.off("unhandledRejection", onUnhandled);
-      await occupied.close();
     }
   });
 
