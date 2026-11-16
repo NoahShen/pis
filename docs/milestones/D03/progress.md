@@ -11,7 +11,7 @@
 - Plan v0.2：`APPROVED`；Architect G3 复核提交为 `753322a`，三项 G3 阻塞已解决。
 - `USER_EXECUTION_APPROVAL=APPROVED`：负责人审阅 Plan v0.2 后明确回复“确认，开始执行吧”；授权记录提交为 `48585e2801754cc74124f8031e42829d65e361bb`。批准 T01～T03 按计划串行执行，不包含 push 授权。
 - D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`PASS · LOCAL_MERGE_VERIFIED`；D03-T03：`PASS · LOCAL_MERGE_VERIFIED`；Plan §6 本地集成 Gate：`APPROVED`。
-- 此前未创建推进心跳；Architect 现已按用户要求创建 active heartbeat `21df46f8`（名称：PIS D03 执行推进与分级验收；`*/10 * * * *`；`Asia/Shanghai`），由 Architect 在最终验收完成或用户要求停止时删除并核对。Lead 未代 Worker 编码，未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
+- D03 推进心跳 `21df46f8`（`*/10 * * * *`，`Asia/Shanghai`）已在最终验收后由 Architect 使用 `delete_heartbeat` 删除，工具确认 `success=true`。
 - 规划核验：未发现需要重定 Spec 契约的矛盾；现有 `startServer` 的 listen rejection 与 bound-address 失败分支均未调用 `app.close()`，已作为 T02 的双分支生命周期缺口纳入单一总预算、单次 cleanup/flush 与竞态回归证据。
 
 ## 计划摘要
@@ -28,7 +28,7 @@
 - Architect G3：v0.1 `CHANGES_REQUIRED` → v0.2 `APPROVED`；独立核对完整修订 diff、仅两文档范围、clean 状态及 diff-check，通过。
 - D03-T01/T02/T03 实现测试：`PASS`；三卡均已按精确 candidate merge 后复验记 `PASS · LOCAL_MERGE_VERIFIED`。
 - D03 本地集成 Gate：`PASS`。Architect 已独立核对 Gate 快照、三卡 parent/tree/范围与定向测试，并采纳 Lead 的干净安装及全量验证证据。
-- `D03_LOCAL_GATE=APPROVED`；`D03_REMOTE_CI=NOT_RUN`；`D03_FINAL_PASS=NOT_ISSUED`。不得以本地 Gate 或既有 D02 CI 代替 D03 远程 CI 与最终验收。
+- `D03_LOCAL_GATE=APPROVED`；`D03_REMOTE_CI=PASS`；`D03_FINAL_PASS=ISSUED`。负责人明确回复“授权推送”，Architect 推送并核实远程 main 为 `f85a846624a898d4e8ff7551227a05e464d545bf`；该精确提交的 [GitHub CI #4](https://github.com/NoahShen/pis/actions/runs/43848005884) 为 Success，总耗时 32 秒，verify 作业成功。Architect 据三卡分级审核、本地集成及远程 CI 批准 D03 最终验收。后文未 push/NOT_RUN 等均保留为当时的历史证据。
 - 真实 RSS、Scheduler 执行、Topic Matching 快照、LLM、历史回溯及发布：`NOT_RUN`，不属于 D03 配置 API 验收。
 
 ## D03-T01 执行记录
@@ -76,7 +76,7 @@
 
 ## 下一步
 
-D03 三卡与本地集成 Gate 均已完成并获批。下一步仅等待负责人对 D03 push 的明确授权；授权前不 push、不启动 D04，也不反复催问。获得授权后须先核对待推 SHA，再推送并等待该精确 SHA 的远程 CI 结果；只有本地 Gate 与远程 CI 同时满足才可评估 `D03_FINAL_PASS`。当前 `D03_REMOTE_CI=NOT_RUN`、`D03_FINAL_PASS=NOT_ISSUED`。
+D03 已完成最终验收，推进心跳已删除。D04 尚未启动，后续按新的 Intent/Spec/Plan 门禁推进。本次收尾仅更新验收记录，不改生产代码；真实 RSS/调度/Matching/LLM/发布等后续能力不在 D03 PASS 范围。
 
 ## D03 本地集成 Gate 执行记录
 
