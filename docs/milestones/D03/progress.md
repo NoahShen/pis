@@ -9,7 +9,7 @@
 - Intent v0.1：`APPROVED`，负责人 G1 通过。
 - Spec v0.1：`APPROVED`，Architect G2 通过。
 - Plan v0.2：`APPROVED`；Architect 已复核 `2b305005e2206118b01eb1c3b30001aad31185a1` 的订正，三项 G3 阻塞已解决；等待负责人审核批准执行。
-- `USER_EXECUTION_APPROVAL=PENDING`：负责人尚未在 G3 后明确批准正式执行。
+- `USER_EXECUTION_APPROVAL=APPROVED`：负责人审阅 Plan v0.2 后明确回复“确认，开始执行吧”。批准 T01～T03 按计划串行执行，不包含 push 授权。
 - D03-T01 / T02 / T03：`NOT_STARTED`，严格串行且不得并行。
 - 未创建或委派 Worker，未创建推进心跳；未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
 - 规划核验：未发现需要重定 Spec 契约的矛盾；现有 `startServer` 的 listen rejection 与 bound-address 失败分支均未调用 `app.close()`，已作为 T02 的双分支生命周期缺口纳入单一总预算、单次 cleanup/flush 与竞态回归证据。
@@ -33,4 +33,4 @@
 
 ## 下一步
 
-Plan v0.2 已通过 Architect G3，交项目负责人审阅并明确批准执行。负责人批准前保持三卡 NOT_STARTED，不创建 Worker 或推进心跳，不实现、不 push。
+负责人已批准 Plan v0.2 执行。Lead 从包含本授权记录的本地 main 创建 T01 独立 worktree，委派全新 Paseo Worker；执行前 npm ci 与精确工具链检查。依次遵守 Worker → Lead → Architect → 合并验证 → PASS，不提前派发后续卡，不 push。

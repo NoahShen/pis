@@ -1,7 +1,7 @@
 # D03 Plan · Source/Topic 配置与管理 API
 
 > 版本：v0.2 · 2026-11-16
-> 状态：**APPROVED · Architect G3 v0.2 复核通过；等待负责人执行批准**
+> 状态：**APPROVED · Architect G3 v0.2 复核通过；负责人已批准执行**
 > 起草：Paseo Lead（仅规划）
 > 修订：按 Architect G3 v0.1 `CHANGES_REQUIRED` 校正逐卡合并顺序、远程 CI/最终验收边界及启动失败资源回收证据；不改变已批准 Spec 契约。
 > 依据：[Intent v0.1](intent.md)（APPROVED）、[Spec v0.1](spec.md)（APPROVED G2）、[任务拆分 v0.1](../../PIS_V1_开发实施计划与任务拆分_v0.1.md) D03、[测试设计 v0.2](../../PIS_V1_测试用例设计_v0.2.md) CFG/API 配置用例。
@@ -14,7 +14,7 @@
 正式派发 Worker 必须同时满足：
 
 1. Architect G3 APPROVED，且本文件状态改为 `APPROVED`。
-2. 项目负责人审阅 Plan 后明确批准执行；当前 `USER_EXECUTION_APPROVAL=PENDING`。
+2. 项目负责人审阅 Plan 后明确批准执行；当前 `USER_EXECUTION_APPROVAL=APPROVED`，依据负责人回复“确认，开始执行吧”。
 3. Lead 从包含已批准 Plan 的合并 commit 为每卡创建新的独立 worktree/任务分支并记录 base SHA；Worker 进入后先以固定 Node/npm 执行 `npm ci`，再开始实现。
 4. 三卡严格串行，每卡使用新的 Paseo Worker 会话。固定顺序为：Worker 自测 `REVIEW` → Lead 独立审核并冻结精确 diff/tree → Architect 对冻结 diff/tree `APPROVED` → Lead 形成精确候选提交 → `git merge --no-ff` 合并 → 在合并 commit 上复跑定向测试和 full verify → 记录 `PASS` → 才创建下一卡。
 5. Worker 不自行 stage/commit、不扩大写集、不宣称最终 PASS；工作结果先记 `REVIEW`。
@@ -471,7 +471,7 @@ D03_FINAL_PASS=NOT_ISSUED|ISSUED
 - v0.1：Architect `CHANGES_REQUIRED`，要求修正合并后才 PASS、远程 CI 最终门禁及启动失败清理证据。
 - v0.2：Architect `APPROVED`。复核候选提交 `2b305005e2206118b01eb1c3b30001aad31185a1` 相对 v0.1 的全部文档差异；三项阻塞已解决，文件范围与已批准 Spec 一致，未扩展生产实现范围。
 - 核验：工作区干净，提交仅 plan/progress，`git diff --check` 通过。当前为计划审核，不代表实现测试通过。
-- `USER_EXECUTION_APPROVAL=PENDING`。未经负责人对本 Plan 明确批准执行，不派发 Worker，不创建推进心跳，不 push。
+- `USER_EXECUTION_APPROVAL=APPROVED`。负责人审阅本 Plan 后回复“确认，开始执行吧”，授权 Lead 按三卡串行派发新的 Worker。push 仍需另行授权；本次不创建推进心跳。
 
 ## 8. 交接模板与失败收敛
 
