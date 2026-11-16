@@ -2,11 +2,11 @@
 
 ## 当前门禁
 
-- 当前门禁：Architect 已完成 Plan v0.4 的 G3 复核，`APPROVED`；等待负责人明确批准执行。
+- 当前门禁：Plan v0.4 `APPROVED · G3 PASS`；负责人已明确批准执行：“按 Plan v0.4 开始执行”。
 - 实现基线：`09db5ecf11838fa74e8850aaa9d019234f86e682`；D03 最终 PASS，远程 CI Success，D03 心跳已删除，遗留 Worker 工作区已收尾并归档。
 - D04 Intent：`APPROVED · G1 PASS`。负责人确认全文/摘要判定，并明确 RSS 仅为一种实现；财经资讯抓取 API Adapter 延期至 V1 全流程走通后另立里程碑。
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
-- D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。执行授权仍为 `PENDING`。
+- D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
 - D04-T01/T02/T03：`NOT_STARTED`；未创建 Worker，未安装依赖，未执行开发测试。
 - D04 测试/远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
@@ -27,7 +27,7 @@
 
 ## 下一步
 
-负责人审阅 Plan v0.4 并明确批准执行后，Lead 才可创建首张 T01 Worker；当前不创建 Worker、不开始实现、不 push。
+Lead 基于 main 的执行批准记录创建新的 Paseo T01 Worker 与独立 worktree；T01 完成分级审核、合并后验证并 PASS 后才进入 T02。沿用已批准的逐卡收尾与归档要求，不 push。
 
 ## Architect G3 审核记录
 
