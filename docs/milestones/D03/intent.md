@@ -1,7 +1,7 @@
 # D03 Intent · Source/Topic 配置与管理 API
 
 > 版本：v0.1
-> 状态：REVIEW · 等待项目负责人 G1 审核
+> 状态：APPROVED · 项目负责人 G1 通过
 > 起草：Architect
 > 实现基线：`40d9efeb21e8c94480dbdc644f09be0ac17d7a9f`；D01 数据库与 D02 Prompt/LLM 基础均已验收，远程 CI 已通过。
 
@@ -56,5 +56,6 @@
 ## 6. 审核记录
 
 - 负责人已授权继续 D03 准备工作，并明确批准 Source type/url 创建后不可修改。
-- 本文为该目标的可审核落档，G1 结论待负责人确认；不把“继续”扩展为尚未形成的 Spec/Plan 或 Worker 执行批准。
+- G1 审核者：项目负责人；结论：APPROVED。审批依据：“好的，没问题，继续下一步”。
+- 批准本 Intent v0.1 的目标、三项任务、成功标准及 type/url 不可变约束；进入 Spec 阶段，不代表尚未形成的 Plan 或 Worker 执行批准。
 - G1 通过后由 Architect 准备 Spec，再委派新的 Paseo Lead 编写 Plan；负责人审阅 Plan 后才进入 Worker 开发。
