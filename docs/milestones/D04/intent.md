@@ -1,13 +1,13 @@
 # D04 Intent · RSS Adapter 与正文获取
 
 > 版本：v0.1
-> 状态：DRAFT · 待项目负责人 G1 审核
+> 状态：APPROVED · 项目负责人 G1 通过
 > 起草：Architect
 > 实现基线：`09db5ecf11838fa74e8850aaa9d019234f86e682`；D03 最终 PASS，精确提交远程 CI Success。
 
 ## 1. 问题与目标
 
-系统已有 Source 配置入口，但还不能读取 RSS 来源或获取文章内容。D04 提供独立 SourceAdapter：读取条目列表、复用条目已有全文、必要时尝试获取文章正文，并在失败时保留实际取得的片段或摘要，为 D05 Collection 提供可序列化输入。
+系统已有 Source 配置入口，但还不能读取 RSS 来源或获取文章内容。D04 提供与具体来源解耦的 SourceAdapter 契约，以及首个 RSS Adapter：读取条目列表、复用条目已有全文、必要时尝试获取文章正文，并在失败时保留实际取得的片段或摘要，为 D05 Collection 提供可序列化输入。后续财经资讯网站的抓取 API 将各自实现对应 Adapter，不在 D04 中提前开发。
 
 权威依据：
 
@@ -26,13 +26,14 @@
 
 ## 3. 不变量与边界
 
-1. Adapter 返回 SourceEntry/SourceContent；不写 Source Item、Content 或 Source 检查点，不派发任务，不启动调度器。
-2. RSS 不依据发布时间与检查点简单过滤条目。新旧条目的持久化判定属于 D05；D05 只对新条目调用 fetchContent。
-3. 明确全文仅依据字段语义：`content:encoded` 或 Atom `content` 中非空可用内容作为全文；`description`、`summary` 或 `media:description` 一律先视为摘要，即使很长或包含 HTML，也不能仅据此宣称全文。无明确全文字段时尝试抓取原文；是否采用抓取正文、网页提取可信度及失败回退由 Spec 明确。
-4. SourceContent 分别记录内容种类（FULL_BODY / SUMMARY / FRAGMENT / NONE）、取得方式（SOURCE_FULL_FIELD / ARTICLE_EXTRACT / SOURCE_FALLBACK / NONE）及原文获取状态。Adapter 不把来源声明与网页提取结果混为一谈，也不按字数武断生成最终 FULL/PARTIAL；Processing 依据这些明确依据判定。抓取成功但无法可靠提取正文时保留摘要，不伪造全文。
-5. 单篇原文获取失败不应使整个来源批次失败；保留 entry 已有正文、片段或摘要。身份有效但没有可用内容的条目仍可返回，不能补造正文。
-6. RSS 来源和文章请求均有有限资源预算及明确网络访问边界。重定向不能绕过访问策略；本地 HTTP 测试通过受控测试机制运行，不放宽生产默认策略。
-7. 不修改 Source type/url 不可变、检查点只读、现有数据库结构与 Prompt 隐私约束。
+1. SourceAdapter 是 Collection 依赖的通用边界；RSS Adapter 只是本阶段的一种实现。接口和结果模型不得硬编码 RSS 专属字段或假设所有内容来自网页 HTML。后续财经 API 可以直接返回结构化正文/摘要，仍遵守同样的 fetchEntries/fetchContent 契约。
+2. Adapter 返回 SourceEntry/SourceContent；不写 Source Item、Content 或 Source 检查点，不派发任务，不启动调度器。
+3. RSS 不依据发布时间与检查点简单过滤条目。新旧条目的持久化判定属于 D05；D05 只对新条目调用 fetchContent。
+4. 明确全文仅依据字段语义：`content:encoded` 或 Atom `content` 中非空可用内容作为全文；`description`、`summary` 或 `media:description` 一律先视为摘要，即使很长或包含 HTML，也不能仅据此宣称全文。无明确全文字段时尝试抓取原文；是否采用抓取正文、网页提取可信度及失败回退由 Spec 明确。
+5. SourceContent 分别记录内容种类（FULL_BODY / SUMMARY / FRAGMENT / NONE）、取得方式（SOURCE_FULL_FIELD / ARTICLE_EXTRACT / SOURCE_FALLBACK / NONE）及原文获取状态。Adapter 不把来源声明与网页提取结果混为一谈，也不按字数武断生成最终 FULL/PARTIAL；Processing 依据这些明确依据判定。抓取成功但无法可靠提取正文时保留摘要，不伪造全文。
+6. 单篇原文获取失败不应使整个来源批次失败；保留 entry 已有正文、片段或摘要。身份有效但没有可用内容的条目仍可返回，不能补造正文。
+7. RSS 来源和文章请求均有有限资源预算及明确网络访问边界。重定向不能绕过访问策略；本地 HTTP 测试通过受控测试机制运行，不放宽生产默认策略。
+8. 不修改 Source type/url 不可变、检查点只读、现有数据库结构与 Prompt 隐私约束。
 
 ## 4. 成功标准
 
@@ -48,6 +49,8 @@
 
 本阶段不实现 Collection 去重与事务、Processing、LLM、Scheduler/Runtime、RSS 输出发布，也不引入浏览器渲染或付费墙绕过。
 
+后续财经资讯网站抓取 API Adapter 明确延期至 V1 全流程走通之后，届时根据实际 API 契约另立里程碑三文档；D04 仅保证通用接口可扩展，不预造未知财经 API 字段、认证方式或配置模型，也不为此提前增加 Source.type 枚举。
+
 Spec 需要固定：RSS 支持格式与解析依赖、稳定 external_id 的选择及缺失策略、全文/摘要字段优先级与 SourceContent 结构、网页正文提取的接受与拒绝依据、错误与取消行为、HTTP 限额默认值和配置方式、DNS/重定向/私网访问策略。依赖需明确版本、必要性和测试方式；不由 Worker 临时扩展范围。
 
 沿用 Node 26.13.1/npm 11.20.0、TypeScript strict 与原生 fetch 基线。真实 `config/prompt/user-context.md` 不读、不复制、不 stage；五份功能 Prompt 不修改。
@@ -55,6 +58,8 @@ Spec 需要固定：RSS 支持格式与解析依赖、稳定 external_id 的选�
 ## 6. 审核记录
 
 - 用户“好的，继续下一步”授权进入 D04 准备；本 Intent 首次提交 G1 审核，尚未批准。
-- 负责人指出原 Intent 未明确“如何判断全文还是摘要”；本版已明确：description/summary 不自动升级为全文，明确全文字段与网页提取结果分开记录，最终完整性依据确定规则而非长度猜测。
-- G1 仍待负责人确认；通过后由 Architect 编写并审核 Spec，再委派新的 Paseo Lead 编写 Plan。
+- 负责人已确认全文/摘要判定规则，并明确 RSS 仅为一种 Adapter 实现；后续财经资讯网站抓取 API 对应 Adapter 放在全流程走通之后。
+- G1 审核者：项目负责人；结论：APPROVED。审批依据：“ok”，及随后对后续财经 API Adapter 延期边界的明确说明。
+- 批准本 Intent 的通用 SourceAdapter 契约、首个 RSS Adapter、三张任务与全文/摘要判定原则；进入 Spec，不代表 Plan 或 Worker 执行批准。
+- G1 通过后由 Architect 编写并审核 Spec，再委派新的 Paseo Lead 编写 Plan。
 - 当前不创建 Worker、不启动开发心跳、不推送 D04 文档。
