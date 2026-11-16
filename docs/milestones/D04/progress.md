@@ -7,7 +7,7 @@
 - D04 Intent：`APPROVED · G1 PASS`。负责人确认全文/摘要判定，并明确 RSS 仅为一种实现；财经资讯抓取 API Adapter 延期至 V1 全流程走通后另立里程碑。
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
-- D04-T01/T02/T03：`NOT_STARTED`；未创建 Worker，未安装依赖，未执行开发测试。
+- D04-T01：`IN_PROGRESS`；已创建独立 Worker/worktree，正在固定白名单内实现与自测。D04-T02/T03：`NOT_STARTED`。
 - D04 测试/远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
 ## Lead 执行身份与交付位置
@@ -18,6 +18,13 @@
 - Branch：`d04-lead-plan`；文档提交基线：`b87594a742f4440eaf49a5daeac74bd2ca622e51`。
 - 本轮只提交 `docs/milestones/D04/plan.md` 与 `docs/milestones/D04/progress.md`，提交主题为 `docs(d04): revise plan for G3 blockers`；精确提交 SHA 由 Lead 交回 Architect 时固定。
 
+## D04-T01 执行记录
+
+- Worker Agent：`c1fe5080-e7ac-44c1-8dd4-916763b1dafd`；profile `codex-worker`，mode `auto-review`，thinking `high`。
+- Workspace：`wks_2f570238f5eb4a0c`，`/Users/noahshen/.paseo/worktrees/0eapmc43/d04-t01-contracts-rss-list`。
+- Branch：`feat/d04-t01-contracts-rss-list`；固定 base/初始 HEAD：`7218d74f8da376d92d7b36798a40f93d218d8b52`。
+- 该 Worker 只允许 Plan §5 的 T01 写集；保持未提交 `REVIEW` 交接，不得 stage/commit/merge/push。安装依赖与测试结果待 Worker 收据和 Lead 独立复核。
+
 ## G3 CHANGES_REQUIRED 修订记录
 
 1. 默认 HTTP transport 改为每个逻辑 feed/article 请求按该次 `callSignal` 新建，adapter 只共享不可变 policy/factory，不缓存首次绑定的 transport。补同一实例连续两次取消、首次取消后下一次成功、并行 A abort/B success 的 Factory/Controller/Agent/socket 隔离测试。
@@ -27,7 +34,7 @@
 
 ## 下一步
 
-Lead 基于 main 的执行批准记录创建新的 Paseo T01 Worker 与独立 worktree；T01 完成分级审核、合并后验证并 PASS 后才进入 T02。沿用已批准的逐卡收尾与归档要求，不 push。
+等待 T01 Worker 提交 `REVIEW`/`BLOCKED`。Lead 随后独立检查写集、依赖、Case 覆盖与未提交 diff，运行必要验证并冻结精确 base/patch/tree/blob，交 Architect G4 复核；批准后才可创建 candidate 与合并。T02 仅在 T01 PASS、收尾并归档后启动，不 push。
 
 ## Architect G3 审核记录
 
@@ -38,7 +45,7 @@ Lead 基于 main 的执行批准记录创建新的 Paseo T01 Worker 与独立 wo
 
 ## 证据边界
 
-本轮仅交付两份 D04 文档，不修改生产代码、依赖、测试、Spec 或 Intent。未执行 npm/install/typecheck/verify，未请求真实互联网；文档提交后的状态、准确 SHA 与 `git diff --check` 结果由 Lead 交回 Architect 时记录。
+T01 派发阶段只更新本 Progress；Worker 分支独立承载生产候选，不得覆盖 main 的 Progress。Lead 尚未替 Worker 声称依赖安装或测试通过；全部证据以 Worker 收据、实际 diff 和 Lead 复核命令为准。未请求真实互联网，不读取或复制 User Context/私密配置。
 
 ## 历史 G2 审核记录
 
