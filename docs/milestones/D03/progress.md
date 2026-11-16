@@ -10,7 +10,7 @@
 - Spec v0.1：`APPROVED`，Architect G2 通过。
 - Plan v0.2：`APPROVED`；Architect G3 复核提交为 `753322a`，三项 G3 阻塞已解决。
 - `USER_EXECUTION_APPROVAL=APPROVED`：负责人审阅 Plan v0.2 后明确回复“确认，开始执行吧”；授权记录提交为 `48585e2801754cc74124f8031e42829d65e361bb`。批准 T01～T03 按计划串行执行，不包含 push 授权。
-- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02 / T03：`NOT_STARTED`，严格串行且不得提前派发。
+- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`IN_PROGRESS · WORKER_RUNNING`；D03-T03：`NOT_STARTED`，严格串行且不得提前派发。
 - 未创建推进心跳；Lead 未代 Worker 编码，未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
 - 规划核验：未发现需要重定 Spec 契约的矛盾；现有 `startServer` 的 listen rejection 与 bound-address 失败分支均未调用 `app.close()`，已作为 T02 的双分支生命周期缺口纳入单一总预算、单次 cleanup/flush 与竞态回归证据。
 
@@ -26,7 +26,7 @@
 ## 当前证据边界
 
 - Architect G3：v0.1 `CHANGES_REQUIRED` → v0.2 `APPROVED`；独立核对完整修订 diff、仅两文档范围、clean 状态及 diff-check，通过。
-- D03-T01 实现测试：`PASS`；D03-T02 / T03 实现测试：`NOT_RUN`。
+- D03-T01 实现测试：`PASS`；D03-T02 实现中；D03-T03 实现测试：`NOT_RUN`。
 - D03 本地集成 Gate：`NOT_RUN`。
 - `D03_LOCAL_GATE=NOT_APPROVED`；`D03_REMOTE_CI=NOT_RUN`；`D03_FINAL_PASS=NOT_ISSUED`。不得以本地规划、本地测试或既有 D02 CI 代替远程与最终验收。
 - 真实 RSS、Scheduler 执行、Topic Matching 快照、LLM、历史回溯及发布：`NOT_RUN`，不属于 D03 配置 API 验收。
@@ -48,7 +48,10 @@
 - `T01_CANDIDATE_SHA=3248df14a6fd7a8ad7eaa179d5931c204b4ee49f`；candidate tree 与实际 stage tree 均为 Architect 批准的 `e3f4b66897c134febf4794e763c8d8649a287488`。
 - local main 的 `--no-ff` merge commit 为 `205324c91b98192135a21cd22042a1599ecbd63e`，merge tree 为 `c5b91748b36701e10c0e68f9831d7bb8ddbf1ff7`；第一父提交包含仅文档的 T01 委派记录 `2b5ffbca40ff31265d08dd7739a6312aec35b909`，第二父为 candidate。
 - 合并后 main 重新执行 `npm ci`：94 packages、0 vulnerabilities；随后定向仍为 3/3 文件、19/19 tests，完整 verify 仍为 27/27 文件、155/155 tests，toolchain/typecheck/build/smokes/database smoke/78 文件格式检查全部通过。`T01_REMOTE_CI=NOT_RUN`；未 push。
+- T02 `WORKSPACE_ID=wks_314e88f78e20a7ab`；`WORKER_AGENT_ID=e5b9be93-86e3-49e1-9023-b78e45f1d6b1`；全新 Paseo Worker，采用 `codex-worker` profile（`codex-magpie/group/worker`、`auto-review`、`thinking=high`）。
+- `T02_BRANCH=d03-t02-source-api-app-assembly`；`T02_BASE_SHA=ff9e9cb0238e5f91cca913bfe906c7c8540b90fe`；`T02_WORKTREE=/Users/noahshen/.paseo/worktrees/0eapmc43/d03-t02-source-api-app-assembly`。创建后核对 branch HEAD、独立 worktree HEAD 与 local main 均为该 SHA。
+- T02 门禁：只允许 Plan 的 18 路径，不新增依赖，不修改 T01 contracts/repositories、DDL、依赖、CI、README 或三份权威文档；只实现 Source 路由，不提前暴露 Topic。用户批准的 Source `type`/`url` 创建后不可修改规则必须进入 PATCH 拒绝和数据库 no-side-effect 测试。
 
 ## 下一步
 
-按已批准 Plan 为 D03-T02 创建新的 Worker 会话与独立 worktree，完成 source API、`DATABASE_PATH`、默认 DB 装配、owned `onClose`、初始化/监听失败一次回收与临时 DB 隔离。T01 已 PASS，但不得提前派发 T03；不 push。
+等待 T02 Worker 自测回报。收到后由 Lead 独立核对 18 路径写集、Source API/DB ownership/lifecycle 竞态/进程 smoke，并复跑定向与 full verify；随后冻结精确 diff/tree 交 Architect 复核。T02 PASS 前不得派发 T03；不 push。
