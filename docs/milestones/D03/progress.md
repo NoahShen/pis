@@ -10,7 +10,7 @@
 - Spec v0.1：`APPROVED`，Architect G2 通过。
 - Plan v0.2：`APPROVED`；Architect G3 复核提交为 `753322a`，三项 G3 阻塞已解决。
 - `USER_EXECUTION_APPROVAL=APPROVED`：负责人审阅 Plan v0.2 后明确回复“确认，开始执行吧”；授权记录提交为 `48585e2801754cc74124f8031e42829d65e361bb`。批准 T01～T03 按计划串行执行，不包含 push 授权。
-- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`IN_PROGRESS · WORKER_RUNNING`；D03-T03：`NOT_STARTED`，严格串行且不得提前派发。
+- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`IN_PROGRESS · ARCHITECT_APPROVED_AWAITING_CANDIDATE_MERGE`；D03-T03：`NOT_STARTED`，严格串行且不得提前派发。
 - 此前未创建推进心跳；Architect 现已按用户要求创建 active heartbeat `21df46f8`（名称：PIS D03 执行推进与分级验收；`*/10 * * * *`；`Asia/Shanghai`），由 Architect 在最终验收完成或用户要求停止时删除并核对。Lead 未代 Worker 编码，未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
 - 规划核验：未发现需要重定 Spec 契约的矛盾；现有 `startServer` 的 listen rejection 与 bound-address 失败分支均未调用 `app.close()`，已作为 T02 的双分支生命周期缺口纳入单一总预算、单次 cleanup/flush 与竞态回归证据。
 
@@ -26,7 +26,7 @@
 ## 当前证据边界
 
 - Architect G3：v0.1 `CHANGES_REQUIRED` → v0.2 `APPROVED`；独立核对完整修订 diff、仅两文档范围、clean 状态及 diff-check，通过。
-- D03-T01 实现测试：`PASS`；D03-T02 实现中；D03-T03 实现测试：`NOT_RUN`。
+- D03-T01 实现测试：`PASS`；D03-T02 Worker、Lead、Architect 已审核同一冻结 tree，等待精确 candidate merge 与合并后复验；D03-T03 实现测试：`NOT_RUN`。
 - D03 本地集成 Gate：`NOT_RUN`。
 - `D03_LOCAL_GATE=NOT_APPROVED`；`D03_REMOTE_CI=NOT_RUN`；`D03_FINAL_PASS=NOT_ISSUED`。不得以本地规划、本地测试或既有 D02 CI 代替远程与最终验收。
 - 真实 RSS、Scheduler 执行、Topic Matching 快照、LLM、历史回溯及发布：`NOT_RUN`，不属于 D03 配置 API 验收。
@@ -51,7 +51,14 @@
 - T02 `WORKSPACE_ID=wks_314e88f78e20a7ab`；`WORKER_AGENT_ID=e5b9be93-86e3-49e1-9023-b78e45f1d6b1`；全新 Paseo Worker，采用 `codex-worker` profile（`codex-magpie/group/worker`、`auto-review`、`thinking=high`）。
 - `T02_BRANCH=d03-t02-source-api-app-assembly`；`T02_BASE_SHA=ff9e9cb0238e5f91cca913bfe906c7c8540b90fe`；`T02_WORKTREE=/Users/noahshen/.paseo/worktrees/0eapmc43/d03-t02-source-api-app-assembly`。创建后核对 branch HEAD、独立 worktree HEAD 与 local main 均为该 SHA。
 - T02 门禁：只允许 Plan 的 18 路径，不新增依赖，不修改 T01 contracts/repositories、DDL、依赖、CI、README 或三份权威文档；只实现 Source 路由，不提前暴露 Topic。用户批准的 Source `type`/`url` 创建后不可修改规则必须进入 PATCH 拒绝和数据库 no-side-effect 测试。
+- Lead 首轮审核将 Worker 退回两项：`DATABASE_PATH` 约束改为只拒绝空或全空白且保留原文；异步路由注册阶段的 `app.ready()` 失败必须让 owned DB 恰好关闭一次，后续 `app.close()` 不得二次关闭。Worker 均在原 18 路径写集内修复并补测。
+- Worker 最终自测：typecheck 退出 `0`；config/app-assembly 定向 `2/2` 文件、`11/11` tests 退出 `0`；T02 五文件定向 `5/5` 文件、`61/61` tests 退出 `0`；`npm run verify` 退出 `0`，`29/29` 文件、`183/183` tests。新增用例名包含 `loadConfig accepts a non-blank DATABASE_PATH with surrounding spaces without trimming it` 与 `closes an owned database once when a registered plugin fails during app.ready()`。
+- Lead 独立复核：config/app-assembly verbose `11/11` tests 退出 `0`；`npm run verify` 退出 `0`，toolchain/typecheck、`29/29` 文件 `183/183` tests、build、既有 SIGINT/SIGTERM/监听失败 smoke、Source 重启持久化 process smoke、database smoke 及 `86` 文件格式检查全部成功。`git diff --check` 退出 `0`。
+- `WORKER_VERDICT=REVIEW`；`LEAD_REVIEW=APPROVED`；`T02_ARCHITECT_AGENT_ID=8d95474b-e07e-43c7-bc7f-92928fe91e71`；`ARCHITECT_REVIEW=APPROVED`。Architect 独立重算精确 tree、18 路径逐文件 blob/hash 与 patch SHA-256，确认真实 index 为空且 HEAD 未变；Plan 定向 `5/5` 文件 `61/61` tests、full verify `29/29` 文件 `183/183` tests 及全部 smoke/format/diff-check 均通过，无生产阻塞。
+- `T02_CANDIDATE_TREE=5ac735e759145742e21639bfa1061490c28a154f`；`T02_PATCH_SHA256=4b1bda51dcc3a0fbd3e12ddae5a027bea0037acd21337b49e90cedc79982a848`。冻结方法为以 `HEAD=ff9e9cb0238e5f91cca913bfe906c7c8540b90fe` 读入隔离临时 index，只 add Plan 的 18 路径后 `write-tree`；patch hash 对 `git diff --cached --binary --full-index --no-ext-diff HEAD` 计算。
+- 冻结 tree 相对 base 恰好 `18` 个路径；`docs/milestones/D03/progress.md` 为门禁记录，不在 candidate 内。真实 index 为空，未 stage、未 commit、未 push、未创建 candidate commit。
+- `T02_CANDIDATE_SHA=0decc8466afe726c5e87080249d8bf78cf57c5ac`；candidate tree 精确为 Architect 批准的 `5ac735e759145742e21639bfa1061490c28a154f`，唯一 parent 为 `ff9e9cb0238e5f91cca913bfe906c7c8540b90fe`，diff-tree 恰 `18` 路径，真实 index 清空。T02 worktree 中未纳入候选的旧 `progress.md` 改动保持未 stage，未使用 `git add -A`。
 
 ## 下一步
 
-等待 T02 Worker 自测回报。收到后由 Lead 独立核对 18 路径写集、Source API/DB ownership/lifecycle 竞态/进程 smoke，并复跑定向与 full verify；随后冻结精确 diff/tree 交 Architect 复核。T02 PASS 前不得派发 T03；不 push。
+将 `T02_CANDIDATE_SHA=0decc8466afe726c5e87080249d8bf78cf57c5ac` 以 `--no-ff` 合并到 local `main`，核对 merge tree、双亲与候选范围后重跑定向和 full verify。合并后复验通过才记 T02 `PASS`；T02 PASS 前不得派发 T03，不 push。
