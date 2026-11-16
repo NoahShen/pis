@@ -10,7 +10,7 @@
 - Spec v0.1：`APPROVED`，Architect G2 通过。
 - Plan v0.2：`APPROVED`；Architect G3 复核提交为 `753322a`，三项 G3 阻塞已解决。
 - `USER_EXECUTION_APPROVAL=APPROVED`：负责人审阅 Plan v0.2 后明确回复“确认，开始执行吧”；授权记录提交为 `48585e2801754cc74124f8031e42829d65e361bb`。批准 T01～T03 按计划串行执行，不包含 push 授权。
-- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`PASS · LOCAL_MERGE_VERIFIED`；D03-T03：`IN_PROGRESS · ARCHITECT_APPROVED_AWAITING_CANDIDATE_MERGE`。
+- D03-T01：`PASS · LOCAL_MERGE_VERIFIED`；D03-T02：`PASS · LOCAL_MERGE_VERIFIED`；D03-T03：`PASS · LOCAL_MERGE_VERIFIED`；Plan §6 本地集成 Gate：`READY`。
 - 此前未创建推进心跳；Architect 现已按用户要求创建 active heartbeat `21df46f8`（名称：PIS D03 执行推进与分级验收；`*/10 * * * *`；`Asia/Shanghai`），由 Architect 在最终验收完成或用户要求停止时删除并核对。Lead 未代 Worker 编码，未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
 - 规划核验：未发现需要重定 Spec 契约的矛盾；现有 `startServer` 的 listen rejection 与 bound-address 失败分支均未调用 `app.close()`，已作为 T02 的双分支生命周期缺口纳入单一总预算、单次 cleanup/flush 与竞态回归证据。
 
@@ -26,7 +26,7 @@
 ## 当前证据边界
 
 - Architect G3：v0.1 `CHANGES_REQUIRED` → v0.2 `APPROVED`；独立核对完整修订 diff、仅两文档范围、clean 状态及 diff-check，通过。
-- D03-T01/T02 实现测试：`PASS`；D03-T03 Worker、Lead、Architect 已审核同一冻结 tree，等待精确 candidate merge 与合并后复验。
+- D03-T01/T02/T03 实现测试：`PASS`；三卡均已按精确 candidate merge 后复验记 `PASS · LOCAL_MERGE_VERIFIED`，下一步执行 Plan §6 干净集成 Gate。
 - D03 本地集成 Gate：`NOT_RUN`。
 - `D03_LOCAL_GATE=NOT_APPROVED`；`D03_REMOTE_CI=NOT_RUN`；`D03_FINAL_PASS=NOT_ISSUED`。不得以本地规划、本地测试或既有 D02 CI 代替远程与最终验收。
 - 真实 RSS、Scheduler 执行、Topic Matching 快照、LLM、历史回溯及发布：`NOT_RUN`，不属于 D03 配置 API 验收。
@@ -69,7 +69,11 @@
 - `T03_CANDIDATE_TREE=e51a86a9f6a663ab41d1fc9cbf8658e5ad0bbfff`；`T03_PATCH_SHA256=3672acac1a027350f4b9e31899fe4394211526d78e36955f59fbbc54b1f5c1fb`。冻结方法为从 base 读入隔离临时 index，只显式 add 上述 6 路径后 `write-tree`；patch hash 对 `git diff --cached --binary --full-index --no-ext-diff 511b37d...` 计算。真实 index 为空，HEAD 未变，未创建 candidate commit。
 - `T03_ARCHITECT_AGENT_ID=8d95474b-e07e-43c7-bc7f-92928fe91e71`；`ARCHITECT_REVIEW=APPROVED`。Architect 独立核对 base/HEAD、真实 index 为空、6 路径逐文件 hash/blob、tree 与 patch SHA-256、diff-check；Plan 原定向 `3/3` 文件 `28/28` tests、full verify `30/30` 文件 `191/191` tests 与全部 build/smoke/format 均 PASS，无阻塞。
 - Architect 明确批准本次 Plan 写集例外：仅额外 `tests/configuration/source-api.test.ts` 的最后一项过时 Topic 未注册断言同步，启用已批准 Topic 路由必需，Source 行为断言保留；不得将该追认扩大为任意 T02 修改。仅批准精确 tree `e51a86a9f6a663ab41d1fc9cbf8658e5ad0bbfff`，不代表 candidate/merge/T03 PASS。
+- `T03_CANDIDATE_SHA=4482c78ea998a937e64da87d3ef198e13635b89b`；candidate tree 精确为已批准的 `e51a86a9f6a663ab41d1fc9cbf8658e5ad0bbfff`，唯一 parent 为 base `511b37d053b1e53693a656d6a315dd12d3f77de7`，6 路径 patch SHA-256 精确为 `3672acac1a027350f4b9e31899fe4394211526d78e36955f59fbbc54b1f5c1fb`。
+- T03 合并前文档提交 `be3b404006613a7ae885e3e9d620b2abc260c30d`；local `main` 的 `--no-ff` merge commit 为 `a5db4077af54c07bb14b4e405c3a820fddde2bf0`，第一父为前述文档提交、第二父为 candidate；merge tree `0cba032101b61cd5c984896577e2b0511f1e472f`。第一父到 merge 恰 6 路径，patch SHA-256 仍为 `3672acac...`，diff-check 为 `0`。
+- T03 合并后 local `main` 以固定 Node `26.13.1` / npm `11.20.0` 执行干净 `npm ci`：94 packages、0 vulnerabilities；定向 Topic/TopicRepository/Source/app `4/4` 文件 `35/35` tests 退出 `0`；full `npm run verify` 退出 `0`，typecheck、`30/30` 文件 `191/191` tests、build、生命周期 + Source/Topic 两真实重启 smoke、database smoke 与 `89` 文件格式检查全部通过。
+- T03 merge 后工作树 clean，默认 `data/` 不存在，仓库内无 SQLite/WAL/SHM 残留。`T03_STATUS=PASS · LOCAL_MERGE_VERIFIED`；`T03_REMOTE_CI=NOT_RUN`；未 push。
 
 ## 下一步
 
-以 base `511b37d053b1e53693a656d6a315dd12d3f77de7` 为唯一 parent、tree `e51a86a9f6a663ab41d1fc9cbf8658e5ad0bbfff` 创建 candidate commit，核对 tree/parent/6-path patch 后 `--no-ff` 合并到 local `main`，再执行 `npm ci`、定向和 full verify。只有合并后复验通过才记 T03 `PASS`；随后进入 Plan §6 干净集成 Gate。不 push。
+三卡均 `PASS · LOCAL_MERGE_VERIFIED`。下一步从包含 T03 PASS 记录的最终 local `main` 创建新的干净 Gate worktree，按 Plan §6 重新 `npm ci`、定向与 full verify，审计真实 Source/Topic smoke、默认 `data/`/SQLite/WAL/SHM 残留、三卡路径与精确 SHA、隐私和范围；形成证据后交 Architect 终验。`D03_LOCAL_GATE` 在 Architect 批准前保持非 APPROVED，`REMOTE_CI=NOT_RUN`、`FINAL_PASS=NOT_ISSUED`，不 push、不启动 D04。
