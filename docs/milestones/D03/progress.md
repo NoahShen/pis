@@ -8,7 +8,7 @@
 - `SOURCE_TYPE_URL_POLICY=IMMUTABLE_AFTER_CREATE`：负责人明确批准；同值 PATCH 亦整单拒绝。
 - Intent v0.1：`APPROVED`，负责人 G1 通过。
 - Spec v0.1：`APPROVED`，Architect G2 通过。
-- Plan v0.2：`REVIEW`；`PLAN_REVIEW`，按 Architect G3 v0.1 `CHANGES_REQUIRED` 完成三项可定位订正，等待 G3 复核。
+- Plan v0.2：`APPROVED`；Architect 已复核 `2b305005e2206118b01eb1c3b30001aad31185a1` 的订正，三项 G3 阻塞已解决；等待负责人审核批准执行。
 - `USER_EXECUTION_APPROVAL=PENDING`：负责人尚未在 G3 后明确批准正式执行。
 - D03-T01 / T02 / T03：`NOT_STARTED`，严格串行且不得并行。
 - 未创建或委派 Worker，未创建推进心跳；未修改生产代码、测试、依赖、锁文件、Prompt、Spec 或权威设计。
@@ -25,7 +25,7 @@
 
 ## 当前证据边界
 
-- Architect G3：`NOT_RUN`。
+- Architect G3：v0.1 `CHANGES_REQUIRED` → v0.2 `APPROVED`；独立核对完整修订 diff、仅两文档范围、clean 状态及 diff-check，通过。
 - D03 实现测试：`NOT_RUN`。
 - D03 本地集成 Gate：`NOT_RUN`。
 - `D03_LOCAL_GATE=NOT_APPROVED`；`D03_REMOTE_CI=NOT_RUN`；`D03_FINAL_PASS=NOT_ISSUED`。不得以本地规划、本地测试或既有 D02 CI 代替远程与最终验收。
@@ -33,4 +33,4 @@
 
 ## 下一步
 
-Architect 复核 Plan v0.2（G3）；通过后交项目负责人审阅并明确批准执行。只有 G3 与负责人执行批准同时成立，Lead 才可为 D03-T01 创建新的 Worker worktree/会话；本轮不派发、不实现、不 push。
+Plan v0.2 已通过 Architect G3，交项目负责人审阅并明确批准执行。负责人批准前保持三卡 NOT_STARTED，不创建 Worker 或推进心跳，不实现、不 push。

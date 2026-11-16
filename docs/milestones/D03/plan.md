@@ -1,7 +1,7 @@
 # D03 Plan · Source/Topic 配置与管理 API
 
 > 版本：v0.2 · 2026-11-16
-> 状态：**REVIEW · 等待 Architect G3 与负责人执行批准**
+> 状态：**APPROVED · Architect G3 v0.2 复核通过；等待负责人执行批准**
 > 起草：Paseo Lead（仅规划）
 > 修订：按 Architect G3 v0.1 `CHANGES_REQUIRED` 校正逐卡合并顺序、远程 CI/最终验收边界及启动失败资源回收证据；不改变已批准 Spec 契约。
 > 依据：[Intent v0.1](intent.md)（APPROVED）、[Spec v0.1](spec.md)（APPROVED G2）、[任务拆分 v0.1](../../PIS_V1_开发实施计划与任务拆分_v0.1.md) D03、[测试设计 v0.2](../../PIS_V1_测试用例设计_v0.2.md) CFG/API 配置用例。
@@ -466,7 +466,14 @@ D03_FINAL_PASS=NOT_ISSUED|ISSUED
 
 推送到远程和触发 CI 需要负责人另行授权；本 Plan、G3 审批和本地 Gate 均不授予 push 权限，也不构成 D03 FINAL_PASS。
 
-## 7. 交接模板与失败收敛
+## 7. G3 审核记录
+
+- v0.1：Architect `CHANGES_REQUIRED`，要求修正合并后才 PASS、远程 CI 最终门禁及启动失败清理证据。
+- v0.2：Architect `APPROVED`。复核候选提交 `2b305005e2206118b01eb1c3b30001aad31185a1` 相对 v0.1 的全部文档差异；三项阻塞已解决，文件范围与已批准 Spec 一致，未扩展生产实现范围。
+- 核验：工作区干净，提交仅 plan/progress，`git diff --check` 通过。当前为计划审核，不代表实现测试通过。
+- `USER_EXECUTION_APPROVAL=PENDING`。未经负责人对本 Plan 明确批准执行，不派发 Worker，不创建推进心跳，不 push。
+
+## 8. 交接模板与失败收敛
 
 每卡 Worker 回报至少包含：
 
