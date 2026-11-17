@@ -16,10 +16,16 @@ import {
   toStableCollectionError,
   type CollectionErrorCode,
 } from "./collection-errors.js";
-import type {
-  CollectionPersistence,
-  CollectionPersistenceResult,
+import {
+  createCollectionPersistence,
+  type CollectionPersistence,
+  type CollectionPersistenceResult,
 } from "./collection-persistence.js";
+import type {
+  CollectOptions,
+  CollectionFactoryDependencies,
+  CollectionService,
+} from "./contracts.js";
 import type { SourceAdapterRegistry } from "./adapter-registry.js";
 import {
   createNoneSourceContent,
@@ -365,4 +371,53 @@ export function createSourceCollector(
     },
     () => ({ new_source_item_ids: [] }),
   );
+}
+
+export function createCollection(
+  dependencies: CollectionFactoryDependencies,
+): CollectionService {
+  const adapters: SourceAdapterRegistry = {
+    get(type) {
+      const adapter = dependencies.adapters.get(type);
+      return {
+        fetchEntries(source, lastCollectedAt, options) {
+          return adapter.fetchEntries(
+            { id: source.id, type: source.type, url: source.url },
+            lastCollectedAt,
+            options,
+          );
+        },
+        fetchContent(entry, options) {
+          return adapter.fetchContent(entry, options);
+        },
+      };
+    },
+  };
+  const collect = createSourceCollector({
+    sourceRepository: dependencies.sourceRepository,
+    sourceItemRepository: dependencies.sourceItemRepository,
+    adapters,
+    clock: dependencies.clock,
+    logger: dependencies.logger,
+    singleFlight: dependencies.singleFlight,
+    persistence: createCollectionPersistence({
+      database: dependencies.database,
+      sourceItemRepository: dependencies.sourceItemRepository,
+    }),
+  });
+
+  return Object.freeze({
+    async collect(sourceId: string, options?: CollectOptions) {
+      try {
+        const result = await collect(sourceId, options);
+        return { new_source_item_ids: [...result.new_source_item_ids] };
+      } catch (error) {
+        if (error instanceof CollectionError) {
+          throw error;
+        }
+
+        throw toStableCollectionError(error);
+      }
+    },
+  });
 }
