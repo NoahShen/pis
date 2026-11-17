@@ -7,7 +7,7 @@
 - D04 Intent：`APPROVED · G1 PASS`。负责人确认全文/摘要判定，并明确 RSS 仅为一种实现；财经资讯抓取 API Adapter 延期至 V1 全流程走通后另立里程碑。
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
-- D04-T01：`PASS · LOCAL_MERGE_VERIFIED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 分支与工作区收尾待完成。D04-T02/T03：`NOT_STARTED`，仅在 T01 收尾并归档后串行启动。
+- D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。D04-T02/T03：`NOT_STARTED`，按已批准 Plan 在后续新会话串行启动。
 - D04 本地测试：`PASS`（frozen tree `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`；local merge `f8ff76230779c4e2444d1a3e2568d9431b42d123`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
 ## Lead 执行身份与恢复记录
@@ -41,7 +41,7 @@
 
 ## 下一步
 
-完成 T01 Worker 分支与 merge 的对齐/无唯一未提交成果核验，通过 Paseo 归档 Worker 工作区并核验成功返回。T02 在 T01 完整收尾后另会话启动，遵循已批准 Plan；不 push、不新增心跳。
+T01 已完整收尾；在后续新会话派发 T02，严格遵循已批准 Plan 和既有门禁。不 push、不新增心跳。
 
 ## D04-T01 Lead 第二轮复核记录
 
@@ -62,6 +62,8 @@
 - 合并前仅文档批准提交为 `91582488fc389566445e881d39c0bb5e42940fc9`；local main `--no-ff` merge commit 为 `f8ff76230779c4e2444d1a3e2568d9431b42d123`，merge tree 为 `b1c5c0901482b1412fe720402e407238be2634a2`。第一/第二 parent 分别为批准记录与 candidate；第一 parent 到 merge 恰 13 路径，patch SHA-256 仍精确一致，candidate/merge/worktree blob 为 13/13 匹配。
 - 合并后以精确 Node `26.13.1` / npm `11.20.0` 执行 `npm ci --offline`：102 packages、0 vulnerabilities；adapter 定向 `3/3` 文件、`99/99` tests；完整 `npm run verify` 为 `33/33` 文件、`290/290` tests，typecheck、build、SIGINT/SIGTERM/占用端口/forced-close/late-listen smoke、Source+Topic 跨重启持久化、database smoke 与 `100` 文件格式检查全部通过。
 - `npm ls --all` 退出 `0`；merge tree 与 13 路径 patch 复算一致，`git diff-tree --check` 通过，工作树 clean，默认 `data/` 目录与仓库内 SQLite/WAL/SHM 均不存在。`T01_STATUS=PASS · LOCAL_MERGE_VERIFIED`；`T01_REMOTE_CI=NOT_RUN`；未 push，最终验收尚未签发。
+- Worker branch tip 精确等于 candidate parent `7218d74f8da376d92d7b36798a40f93d218d8b52`；归档前未暂存路径集合与 candidate 13 路径精确相同，staged entries 为 `0`，13/13 工作文件 blob 与 candidate 完全匹配，唯一未提交成果为 `0`。
+- Paseo `archive_workspace` 返回 `workspaceId=wks_2f570238f5eb4a0c`、`archivedAgentIds=[c1fe5080-e7ac-44c1-8dd4-916763b1dafd]`、`removedDirectory=true`。复核 active workspace 列表已无该 workspace，Worker agent 为 closed/archived，原 worktree 路径已不存在；归档前 main 于 PASS 记录提交 `f4497ecc43c6fa411304cd42363671b40b6c5d5c` clean，candidate object 仍可在 local main objects 解析。
 
 ## D04-T01 Architect G4 审核记录
 
