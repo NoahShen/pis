@@ -114,6 +114,23 @@ Topic 创建字段为 `name`、`description`，可选 `enabled`（缺省 `true`�
 
 system 消息只包含本次读取的功能指令、固定标签和代码生成的输出 JSON Schema。其他四类 user 消息为 `{"task_data": ...}`，Knowledge Analysis 额外使用独立的 `user_context` 字段；动态任务数据不会成为消息角色、工具或请求配置。调用方可通过可选 `AbortSignal` 传递取消信号。
 
+### RSS Adapter 的受限 HTTP 策略
+
+`createRssAdapter()` 默认使用受限 transport；需要测试或复用解析层时可注入 `RssTransport`。`httpPolicy` 的六个字段及默认值如下，超出范围会直接拒绝配置：
+
+| 字段                  |    默认值 |          允许范围 |
+| --------------------- | --------: | ----------------: |
+| `requestTimeoutMs`    |   `15000` | `100`–`120000` ms |
+| `maxRedirects`        |       `3` |           `0`–`5` |
+| `feedMaxBytes`        | `2097152` |  `1024`–`8388608` |
+| `articleMaxBytes`     | `5242880` | `1024`–`16777216` |
+| `maxFeedEntries`      |    `1000` |       `1`–`10000` |
+| `articleMinTextChars` |      `80` |        `1`–`1000` |
+
+一次 feed 或 article 获取共用一个总超时预算，重定向不会重置预算；相对重定向会重新执行 URL、DNS 和公网地址校验，HTTPS 不得降级到 HTTP。DNS 必须返回全部公网地址，连接固定到已校验的单个地址，不读取代理环境变量，也不修改 Node 全局 dispatcher。响应只接受 RSS/XML 或 article HTML 的受支持字符集和内容编码，并在原生 fetch 解压后的流式字节上限处取消；Content-Length 仅用于在读取前提前拒绝明显超限的响应。
+
+每次逻辑请求单独拥有 undici `Agent`；成功流正常关闭，失败、超限、超时和取消路径会取消 reader、解绑调用方 signal、清除计时器并销毁 dispatcher。调用方取消与内部超时会保持不同的错误原因。受限 HTTP 内部不进入公共 adapter API。
+
 ## 启动、健康检查与关闭
 
 先构建并启动：
@@ -145,6 +162,6 @@ curl --fail-with-body \
 
 D00 范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify 健康端点、Pino 安全日志、环境配置校验和可测试的启停生命周期。D01 当前提供 better-sqlite3 连接、冻结 schema 初始化、同步事务基础、TEXT 时间存取和 Event FTS 刷新/重建基础。
 
-当前包含 Source/Topic 配置 API，但不包含 RSS 抓取、调度执行、LLM 调用接入、任务队列、历史查询、匹配回填或发布 API。`/feeds/*` 尚未实现。
+当前包含 Source/Topic 配置 API 和可注入的 RSS Adapter，但 RSS 抓取尚未接入 HTTP 服务或调度执行，也不包含 LLM 调用接入、任务队列、历史查询、匹配回填或发布 API。`/feeds/*` 尚未实现，`/health` 不探测 RSS transport。
 
 工程已配置 GitHub Actions，在拉取请求、推送到 `main` 和手动触发时执行与本地一致的门禁。**远程 CI 尚未实际运行，状态为 `NOT_RUN`；本地通过不能替代远程执行证据。**

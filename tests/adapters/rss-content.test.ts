@@ -778,7 +778,7 @@ describe("RSS adapter cancellation and boundaries", () => {
     });
   });
 
-  it("delegates fetchEntries and defaults to an injected transport requirement", async () => {
+  it("delegates fetchEntries and constructs with the default restricted transport", async () => {
     const adapter = adapterFor({
       async fetch() {
         return document(
@@ -795,7 +795,7 @@ describe("RSS adapter cancellation and boundaries", () => {
     const invalidOptions = {} as unknown as Parameters<
       typeof createRssAdapter
     >[0];
-    expect(() => createRssAdapter(invalidOptions)).toThrow(TypeError);
+    expect(() => createRssAdapter(invalidOptions)).not.toThrow();
   });
 
   it.each(["204", "205"] as const)(

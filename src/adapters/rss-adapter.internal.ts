@@ -192,6 +192,7 @@ function requestRace<T>(
   const aborted = new Promise<never>((_resolve, reject) => {
     listener = () => reject(new AdapterError("aborted"));
   });
+  void aborted.catch(() => undefined);
   signal.addEventListener("abort", listener, { once: true });
   if (signal.aborted) {
     signal.removeEventListener("abort", listener);
@@ -202,6 +203,7 @@ function requestRace<T>(
     };
   }
   const request = startRequest();
+  void request.catch(() => undefined);
   return {
     promise: Promise.race([request, aborted]),
     dispose: () => signal.removeEventListener("abort", listener),

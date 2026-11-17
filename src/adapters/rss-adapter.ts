@@ -4,6 +4,7 @@ import {
   parseAdapterPolicy,
   type AdapterPolicy,
 } from "./options.js";
+import { createRestrictedRssTransport } from "./http/restricted-client.js";
 import type { RssTransport } from "./transport.js";
 import { createRssAdapterWithDependencies } from "./rss-adapter.internal.js";
 
@@ -18,18 +19,21 @@ export interface RssHttpPolicy {
 
 export interface RssAdapterOptions {
   httpPolicy?: Partial<RssHttpPolicy>;
-  transport: RssTransport;
+  transport?: RssTransport;
 }
 
-export function createRssAdapter(options: RssAdapterOptions): SourceAdapter {
-  if (options.transport === undefined) {
-    throw new TypeError("An injected RSS transport is required");
-  }
+export function createRssAdapter(
+  options: RssAdapterOptions = {},
+): SourceAdapter {
   const policy: Readonly<AdapterPolicy> = parseAdapterPolicy(
     options.httpPolicy ?? DEFAULT_ADAPTER_POLICY,
   );
   return createRssAdapterWithDependencies(
-    { ...options, httpPolicy: policy },
-    {},
+    { transport: options.transport, httpPolicy: policy },
+    {
+      restrictedTransportFactory(signal, requestPolicy) {
+        return createRestrictedRssTransport({ signal, policy: requestPolicy });
+      },
+    },
   );
 }
