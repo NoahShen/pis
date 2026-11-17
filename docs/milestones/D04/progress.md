@@ -8,7 +8,8 @@
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
 - D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。Architect 后续复核发现了归档时 branch tip 未按 Plan 对齐到 candidate 的收尾缺陷；工作区已无引用后已把 branch ref 精确指向 `a6a12e3a877812666cacde416a65332cfcada08b`，生产代码与 main 未变。
-- D04-T02：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect 批准的 11 路径 tree 已形成 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，并以 main `--no-ff` merge commit `19f7973f27a4a78a8f867c64c0823c0e245e5658` 合入。合并后定向 `57/57`、full verify `347/347`、candidate↔merge blob `11/11` 和 Worker 归档均通过。D04-T03：`READY_TO_START`。
+- D04-T02：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect 批准的 11 路径 tree 已形成 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，并以 main `--no-ff` merge commit `19f7973f27a4a78a8f867c64c0823c0e245e5658` 合入。合并后定向 `57/57`、full verify `347/347`、candidate↔merge blob `11/11` 和 Worker 归档均通过。
+- D04-T03：`IN_PROGRESS`；已在全新 Paseo Worker/worktree 中从 T02 PASS 后的 main `de0a2143c0f1c68721a09878f614df518b3238ed` 启动，严格限定 Plan §7.1 的 11 路径写集，尚未 stage/commit/merge。
 - D04 本地测试：`PASS`（T02 frozen tree `66a486f0873bf71c61bc1af9a3f5ea787575328f`；local merge `19f7973f27a4a78a8f867c64c0823c0e245e5658`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
 ## Lead 执行身份与恢复记录
@@ -42,7 +43,7 @@
 
 ## 下一步
 
-T02 已 `PASS`、合并后复验并完成 Worker 工作区归档；下一步从该 main merge 基线创建全新 T03 Worker/worktree，进入生产受限 HTTP 与集成卡。T03 完成前不得宣称 D04 本地 Gate。不 push、不新增心跳。
+T03 Worker 正在隔离 worktree 中实现生产受限 HTTP、故障矩阵和集成测试；等待其提交 `REVIEW` 或 `BLOCKED`，随后由 Lead 独立复核并冻结精确 tree。T03 完成前不得宣称 D04 本地 Gate。不 push、不新增心跳。
 
 ## D04-T01 Lead 第二轮复核记录
 
@@ -86,6 +87,12 @@ T02 已 `PASS`、合并后复验并完成 Worker 工作区归档；下一步从�
 - local main `--no-ff` merge commit 为 `19f7973f27a4a78a8f867c64c0823c0e245e5658`，merge tree 为 `6e071157c4be2102039a3eba667a03fdd4db9c8d`；第一/第二 parent 分别为批准记录与 candidate。candidate↔merge 的 11/11 生产 blob 完全一致，branch tip 精确等于 candidate，主工作区与归档前 Worker worktree 的 tracked/staged/untracked 变更均为 `0`。
 - 合并后以精确 Node `26.13.1` / npm `11.20.0` 执行 `npm ci --offline`：123 packages、0 vulnerabilities；定向正文 `3/3` 文件、`57/57` tests；完整 `npm run verify` 为 `36/36` 文件、`347/347` tests，typecheck、build、lifecycle/database smoke 与 109 文件格式检查全部通过。`git diff-tree --check` 通过。
 - Paseo `archive_workspace` 返回 `workspaceId=wks_21f5659a79f35681`、`archivedAgentIds=[e5a27406-fedf-4d6a-a6b0-c31476b2b0bc]`、`removedDirectory=true`。复核 active workspace 列表已无该 workspace，Worker agent 为 closed/archived，原 worktree 目录与 `git worktree list` 条目均已移除；branch 仍精确指向 candidate。`T02_STATUS=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；`T02_REMOTE_CI=NOT_RUN`。
+
+## D04-T03 执行记录
+
+- Worker Agent：`0e8e7175-670c-443e-ad93-5c7b60f79269`；全新 Paseo Worker，采用 `codex-worker` profile（`codex-magpie/group/worker`、`auto-review`、thinking `high`），已严格限定为 single-task 实现和 `REVIEW`/`BLOCKED` 交回。
+- Workspace：`wks_a80d292a6f275ae7`，`/Users/noahshen/.paseo/worktrees/0eapmc43/d04-t03-restricted-http`；Branch：`feat/d04-t03-restricted-http`。
+- 固定 base/初始 HEAD：`de0a2143c0f1c68721a09878f614df518b3238ed`；tree `e8352d02e3352d24fbd1935c294253aa5d62b494`，与 local main 一致，worktree clean。Worker 尚未产生提交或改变固定 base。
 
 ## D04-T01 Architect G4 审核记录
 
