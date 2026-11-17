@@ -1,6 +1,7 @@
 # D05 Intent：Collection 采集、去重与检查点
 
-- 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
+- 状态：`APPROVED · G1 PASS`
+- 负责人确认：2026-11-17 明确回复“确认ok，继续”；批准 §6 三项边界及本 Intent 范围。
 - 日期：2026-11-17
 - 依赖基线：D04 最终 PASS；main `1735deb577af924afd4066031ec054421225eca8`（实现验收 SHA `f2ae570…`，后续仅收尾文档）；远程 CI Success。
 - 上游：D01 数据库/同步事务，D03 Source Repository，D04 通用 SourceAdapter/RSS Adapter。
@@ -48,6 +49,6 @@ D05 把“取得内容”变成“持久化来源记录”，但不创建 Conten
 - 列表失败/取消/DB 失败不推进；成功空批次推进；返回 IDs 与数据库提交一致。
 - 三文档门禁、逐任务 Worker→Lead→Architect、精确 candidate/merge、干净本地 Gate、远程 CI、心跳及 Worker/workspace 归档按项目持续约定执行。
 
-## 6. 待负责人确认
+## 6. 审批记录
 
-请确认以上 D05 边界，尤其是：D05 只返回新 Source Item IDs，不直接派发 Processing；无可靠身份时接受少量重复；成功空批次也推进 checkpoint。确认后进入 Spec G2。
+负责人已确认 D05 只返回新 Source Item IDs、不直接派发 Processing；无可靠身份时接受少量重复；成功空批次推进 checkpoint。G1 通过，进入 Spec G2。
