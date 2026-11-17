@@ -12,6 +12,8 @@
 - D04-T03：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect G4 已批准 tree `aecccde31c1cd2aeca1cc60df816198c43c4f70d`。精确 candidate `16cd09a56daa50b1b88a6325dbee5f02ddf9ce15` 已以 main `--no-ff` merge commit `c44237814a1171bd78f69b7ab4432502807737f7` 合入；合并后定向/full verify、branch/candidate 对齐、Worker/workspace 归档与目录移除均通过。
 - D04 本地测试：`PASS`（T03 merge commit `c44237814a1171bd78f69b7ab4432502807737f7`；合并后定向 `3/3` 文件、`175/175` tests，full verify `39/39` 文件、`522/522` tests；干净集成快照同结果）。`D04_LOCAL_GATE=APPROVED`；`D04_REMOTE_CI=PASS`；`D04_FINAL_PASS=ISSUED`。负责人追加持续授权：本地验收通过后可直接推送并核验远程 CI，已写入项目规范 §8。Architect 推送 main `2ac527b92f32277617fb7ca6ee8785cbec9edcc6`（包含全部 D04 实现及文档），远程 SHA 一致；该精确提交的 [GitHub CI #6](https://github.com/NoahShen/pis/actions/runs/44096951788) Success，总耗时 42 秒、verify 作业成功。Architect 据三卡分级审核、本地 Gate 与远程 CI 签发最终 PASS。
 - D04 心跳 `b31a1236` 已通过 `delete_heartbeat({id:"b31a1236"})` 删除，工具确认 `success=true`。T01/T02/T03 Worker 及独立工作区均已归档移除，分支指向各自合入 candidate；主工作区保留。
+- 最终收尾补核：共享 main 中由旧 Lead 越权创建的附加 reviewer `d9963d99-fe00-4c97-b164-97a526f2a24c` 与定点修复 Worker `65515eb4-fc70-4360-9bd9-65b1bae47709` 已分别 `archive_agent` 成功；其共享 workspace `wks_98125e4e4fe91c3c` 已归档，两个 Agent ID 均返回，`removedDirectory=false` 是正确保护 main checkout。原 T03 Worker `0e8e7175…` 的独立 worktree 已随逐卡归档移除。
+- 最终验收记录提交 `e0f1d59e19ba92aac14f4136ddf038c535181039` 已推送，远程 SHA 一致；对应 [CI #7](https://github.com/NoahShen/pis/actions/runs/44097299993) Success，耗时 34 秒。
 
 ## Architect 本地集成验收
 
