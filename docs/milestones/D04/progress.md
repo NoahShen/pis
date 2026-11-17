@@ -10,7 +10,15 @@
 - D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。Architect 后续复核发现了归档时 branch tip 未按 Plan 对齐到 candidate 的收尾缺陷；工作区已无引用后已把 branch ref 精确指向 `a6a12e3a877812666cacde416a65332cfcada08b`，生产代码与 main 未变。
 - D04-T02：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect 批准的 11 路径 tree 已形成 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，并以 main `--no-ff` merge commit `19f7973f27a4a78a8f867c64c0823c0e245e5658` 合入。合并后定向 `57/57`、full verify `347/347`、candidate↔merge blob `11/11` 和 Worker 归档均通过。
 - D04-T03：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect G4 已批准 tree `aecccde31c1cd2aeca1cc60df816198c43c4f70d`。精确 candidate `16cd09a56daa50b1b88a6325dbee5f02ddf9ce15` 已以 main `--no-ff` merge commit `c44237814a1171bd78f69b7ab4432502807737f7` 合入；合并后定向/full verify、branch/candidate 对齐、Worker/workspace 归档与目录移除均通过。
-- D04 本地测试：`PASS`（T03 merge commit `c44237814a1171bd78f69b7ab4432502807737f7`；合并后定向 `3/3` 文件、`175/175` tests，full verify `39/39` 文件、`522/522` tests；干净集成快照同结果）。D04 本地集成 Gate：`PASS`。远程 CI：`NOT_RUN`；最终里程碑验收：`PENDING · FINAL_PASS_NOT_ISSUED`。
+- D04 本地测试：`PASS`（T03 merge commit `c44237814a1171bd78f69b7ab4432502807737f7`；合并后定向 `3/3` 文件、`175/175` tests，full verify `39/39` 文件、`522/522` tests；干净集成快照同结果）。`D04_LOCAL_GATE=APPROVED`（Architect）；`D04_REMOTE_CI=NOT_RUN`；`D04_FINAL_PASS=NOT_ISSUED`。下一步仅等待负责人另行授权 D04 push，随后核验精确 SHA 远程 CI；不得以本地 Gate 或 D03 CI 替代。
+
+## Architect 本地集成验收
+
+- Architect 独立核对三卡 candidate tree、T03 merge parent/tree 与批准对象一致；相对 D03 基线共 35 个变更路径，其中生产源码 15 个、测试/Fixture 12 个，其余为依赖锁和文档；无 DDL、CI、Prompt 或既有 LLM/lifecycle 修改。
+- 在 Lead 的干净集成快照 `/private/tmp/pis-d04-integration.55hmxG/tree` 独立执行固定工具链、typecheck 及九个 Adapter 测试文件：**331/331 PASS**；npm ls 顶层依赖完整。全部变更 blob 与 merge 对应内容一致，私有 User Context 不存在于快照，默认 data 目录不存在。
+- 采纳 Lead 同一 merge 的干净 npm ci（124 packages、零漏洞）、full verify **39 文件/522 测试**、build、process/database smoke 与 116 文件格式检查证据；本轮 Architect 未重跑全量。
+- T01/T02/T03 Worker 工作区均已归档移除，分支指向已合入 candidate；旧审计提交保留但不进入最终 candidate 祖先。主工作区 clean，远程仍为 D03 SHA `09db5ec…`。
+- 真实公网 RSS、实际 TLS 握手/证书验证、Collection 持久化与下游派发均未运行；本 Gate 只证明通用 Adapter/RSS 组件与受限 HTTP 的本地确定性行为。
 
 ## Lead 执行身份与恢复记录
 
