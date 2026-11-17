@@ -7,8 +7,8 @@
 - D04 Intent：`APPROVED · G1 PASS`。负责人确认全文/摘要判定，并明确 RSS 仅为一种实现；财经资讯抓取 API Adapter 延期至 V1 全流程走通后另立里程碑。
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
-- D04-T01：`APPROVED · CANDIDATE_PENDING`；Architect 已批准第二轮精确冻结 tree/patch，并授权创建 candidate。13 路径写集保持不变；尚未创建 candidate/merge。D04-T02/T03：`NOT_STARTED`，仅在 T01 `PASS`、收尾并归档后串行启动。
-- D04 本地测试：`PASS`（frozen tree `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
+- D04-T01：`PASS · LOCAL_MERGE_VERIFIED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 分支与工作区收尾待完成。D04-T02/T03：`NOT_STARTED`，仅在 T01 收尾并归档后串行启动。
+- D04 本地测试：`PASS`（frozen tree `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`；local merge `f8ff76230779c4e2444d1a3e2568d9431b42d123`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
 ## Lead 执行身份与恢复记录
 
@@ -41,7 +41,7 @@
 
 ## 下一步
 
-按批准范围从精确冻结 tree 创建 T01 candidate，逐文件核验 13 个 blob 后执行 main `--no-ff` merge。合并后完成定向/full verify、记录 PASS、对齐 Worker 分支与 merge、确认无唯一未提交成果并归档 Worker 工作区；T02 在 T01 完整收尾后另会话启动，不 push、不新增心跳。
+完成 T01 Worker 分支与 merge 的对齐/无唯一未提交成果核验，通过 Paseo 归档 Worker 工作区并核验成功返回。T02 在 T01 完整收尾后另会话启动，遵循已批准 Plan；不 push、不新增心跳。
 
 ## D04-T01 Lead 第二轮复核记录
 
@@ -54,6 +54,14 @@
 - Architect 独立运行 typecheck、adapter 三文件 `99/99` tests 与 build；三个原始失败探针（同步 abort + 永久 pending、无 weekday GMT、Atom 字面量 `<b>`）均确认修复，并审阅晚 reject、CDATA 与 HTML 层级回归。采纳 Lead clean-snapshot full verify `33 files / 290 tests` 及 smoke 证据，未声称 Architect 本轮重跑 full。
 - 授权对象严格限定为 tree `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`、parent/base `7218d74f8da376d92d7b36798a40f93d218d8b52`、canonical full-index binary patch SHA-256 `259f29f1f5246b1c3d8eae08227ce0fcd548f5881c77a6906a795898e59ddcb6` 与 13 白名单路径。
 - Architect 通过独立临时 index/object database 和原 objects alternate，从 13 个工作文件重建出相同 tree/patch，解决共享 objects 暂不可直接解析的证据缺口；真实 index 未改。创建 candidate 时必须保证对象可用、全部 13 blob 完全匹配，不得扩写或改动获批源码。
+
+## D04-T01 Candidate、Merge 与 PASS 记录
+
+- 已将完整 tree object closure 导入 local main objects；candidate `a6a12e3a877812666cacde416a65332cfcada08b` 可独立解析，精确 tree 为 `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`，唯一 parent/base 为 `7218d74f8da376d92d7b36798a40f93d218d8b52`。
+- candidate 相对 base 恰 13 路径，canonical full-index binary patch SHA-256 精确为 `259f29f1f5246b1c3d8eae08227ce0fcd548f5881c77a6906a795898e59ddcb6`；13/13 approved-tree blob 与 Worker 工作文件逐字匹配，未扩写或修改获批源码。
+- 合并前仅文档批准提交为 `91582488fc389566445e881d39c0bb5e42940fc9`；local main `--no-ff` merge commit 为 `f8ff76230779c4e2444d1a3e2568d9431b42d123`，merge tree 为 `b1c5c0901482b1412fe720402e407238be2634a2`。第一/第二 parent 分别为批准记录与 candidate；第一 parent 到 merge 恰 13 路径，patch SHA-256 仍精确一致，candidate/merge/worktree blob 为 13/13 匹配。
+- 合并后以精确 Node `26.13.1` / npm `11.20.0` 执行 `npm ci --offline`：102 packages、0 vulnerabilities；adapter 定向 `3/3` 文件、`99/99` tests；完整 `npm run verify` 为 `33/33` 文件、`290/290` tests，typecheck、build、SIGINT/SIGTERM/占用端口/forced-close/late-listen smoke、Source+Topic 跨重启持久化、database smoke 与 `100` 文件格式检查全部通过。
+- `npm ls --all` 退出 `0`；merge tree 与 13 路径 patch 复算一致，`git diff-tree --check` 通过，工作树 clean，默认 `data/` 目录与仓库内 SQLite/WAL/SHM 均不存在。`T01_STATUS=PASS · LOCAL_MERGE_VERIFIED`；`T01_REMOTE_CI=NOT_RUN`；未 push，最终验收尚未签发。
 
 ## D04-T01 Architect G4 审核记录
 
