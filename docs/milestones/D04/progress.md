@@ -8,8 +8,8 @@
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
 - D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。Architect 后续复核发现了归档时 branch tip 未按 Plan 对齐到 candidate 的收尾缺陷；工作区已无引用后已把 branch ref 精确指向 `a6a12e3a877812666cacde416a65332cfcada08b`，生产代码与 main 未变。
-- D04-T02：`CANDIDATE_APPROVED · MERGE_PENDING`；candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084` 的 tree 为 Architect 批准的 `66a486f0873bf71c61bc1af9a3f5ea787575328f`，唯一 parent 为固定 base `d3970ae753bfd241515935bcc2640b8792b46230`，11 路径写集，尚未 merge。D04-T03：`NOT_STARTED`，仅在 T02 PASS 并归档后串行启动。
-- D04 本地测试：`PASS`（frozen tree `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`；local merge `f8ff76230779c4e2444d1a3e2568d9431b42d123`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
+- D04-T02：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect 批准的 11 路径 tree 已形成 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，并以 main `--no-ff` merge commit `19f7973f27a4a78a8f867c64c0823c0e245e5658` 合入。合并后定向 `57/57`、full verify `347/347`、candidate↔merge blob `11/11` 和 Worker 归档均通过。D04-T03：`READY_TO_START`。
+- D04 本地测试：`PASS`（T02 frozen tree `66a486f0873bf71c61bc1af9a3f5ea787575328f`；local merge `19f7973f27a4a78a8f867c64c0823c0e245e5658`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
 ## Lead 执行身份与恢复记录
 
@@ -42,7 +42,7 @@
 
 ## 下一步
 
-T02 candidate 已获 Architect 精确 tree 批准，等待 `--no-ff` merge 与合并后复验。T03 仍为 `NOT_STARTED`，只能在 T02 PASS 并完成工作区收尾归档后启动。不 push、不新增心跳。
+T02 已 `PASS`、合并后复验并完成 Worker 工作区归档；下一步从该 main merge 基线创建全新 T03 Worker/worktree，进入生产受限 HTTP 与集成卡。T03 完成前不得宣称 D04 本地 Gate。不 push、不新增心跳。
 
 ## D04-T01 Lead 第二轮复核记录
 
@@ -79,6 +79,13 @@ T02 candidate 已获 Architect 精确 tree 批准，等待 `--no-ff` merge 与�
 - Lead 复核后冻结 tree `66a486f0873bf71c61bc1af9a3f5ea787575328f`，归档 SHA-256 `c0a54a9cbf107cd1b259ca7b0274d97127957927430b1eef67c2ab2c12539cdb`；写集精确为 11 路径，T01 diff 为 `0`，staged 外无 tracked/untracked 变更。独立 `npm run verify` 为 `36/36` 文件、`347/347` tests，typecheck、build、lifecycle/database smoke 和 109 文件格式检查全部通过；定向正文套件 `3/3` 文件、`57/57` tests 通过。
 - 冻结 11 路径高置信私钥/云厂商/GitHub/OpenAI/Slack/Bearer secret 模式命中路径计数为 `0`；`git diff --cached --check` 通过；新增生产代码未引入 `any`/`ts-ignore` 或额外网络实现，除注入 transport 的 `fetch` 调用外无网络入口。
 - Architect 对同一 tree 完成独立复冻结，结论 `D04-T02 ARCHITECT REFREEZE: APPROVE 66a486f0873bf71c61bc1af9a3f5ea787575328f`。Lead 随即以该精确 tree 创建 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，parent/base 与 tree 均逐字核验一致，Worker branch tip 已对齐 candidate；candidate archive SHA-256 为 `92787cf3252811972cb4c600ac764858108e18bf450a52db1c0b0637520b3b3b`。
+
+## D04-T02 Candidate、Merge 与 PASS 记录
+
+- candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084` 的 tree 为 `66a486f0873bf71c61bc1af9a3f5ea787575328f`，唯一 parent/base 为 `d3970ae753bfd241515935bcc2640b8792b46230`；candidate 相对 base 与 merge 第一 parent 均为精确 11 路径。合并前批准记录提交为 `028b70e7c5a0299e0165d2f6a3c234642cc02293`。
+- local main `--no-ff` merge commit 为 `19f7973f27a4a78a8f867c64c0823c0e245e5658`，merge tree 为 `6e071157c4be2102039a3eba667a03fdd4db9c8d`；第一/第二 parent 分别为批准记录与 candidate。candidate↔merge 的 11/11 生产 blob 完全一致，branch tip 精确等于 candidate，主工作区与归档前 Worker worktree 的 tracked/staged/untracked 变更均为 `0`。
+- 合并后以精确 Node `26.13.1` / npm `11.20.0` 执行 `npm ci --offline`：123 packages、0 vulnerabilities；定向正文 `3/3` 文件、`57/57` tests；完整 `npm run verify` 为 `36/36` 文件、`347/347` tests，typecheck、build、lifecycle/database smoke 与 109 文件格式检查全部通过。`git diff-tree --check` 通过。
+- Paseo `archive_workspace` 返回 `workspaceId=wks_21f5659a79f35681`、`archivedAgentIds=[e5a27406-fedf-4d6a-a6b0-c31476b2b0bc]`、`removedDirectory=true`。复核 active workspace 列表已无该 workspace，Worker agent 为 closed/archived，原 worktree 目录与 `git worktree list` 条目均已移除；branch 仍精确指向 candidate。`T02_STATUS=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；`T02_REMOTE_CI=NOT_RUN`。
 
 ## D04-T01 Architect G4 审核记录
 
