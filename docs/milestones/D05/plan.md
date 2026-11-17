@@ -1,7 +1,7 @@
 # D05 Plan：Collection 采集、去重与检查点
 
 > 版本：v0.2
-> 状态：`REVIEW · Architect G3 v0.2 待审核`
+> 状态：`APPROVED · Architect G3 PASS`
 > 版本轨迹：v0.1 首版 Lead Plan；v0.2 修复 G3 三项定位阻塞：raw_data 构造归属、single-flight 取消/token 清理、`config/prompt` tracked-diff 与事务回调表述。
 > Intent：`docs/milestones/D05/intent.md`（APPROVED · G1 PASS）
 > Spec：`docs/milestones/D05/spec.md`（APPROVED · G2 PASS）
@@ -449,5 +449,5 @@ Lead 签发 `D05_LOCAL_GATE=PASS` 后交 Architect。按负责人持续授权，
 - 本 Plan 仅将已批准 D05 Intent/Spec 映射为四张串行、文件级可执行任务卡；没有新增需求、公共契约、DDL、依赖或替代任务 ID。
 - T01～T04 均有精确允许路径、依赖、Spec/Case 引用、禁止范围、验证命令、冻结/候选/合并/归档证据字段。
 - v0.2 已按 v0.1 G3 三项定位阻塞完成修订：T02 前移并冻结 raw_data v1；逐调用取消、首调用共享终止与 token-aware 清理有明确测试；路径改为 `config/prompt` 且只做 tracked-diff 枚举，事务要求与实际 helper 一致，待 Architect 复核。
-- 当前 `plan.md` 状态为 `REVIEW`，`progress.md` 全部任务为 `NOT_STARTED`；未创建 Worker、未编码、未创建开发心跳、未合并或推送。
-- 下一步仅交 Architect G3 审核；批准后方可创建 T01 新 Worker。
+- v0.2 `APPROVED`：Architect 确认三项修订闭合，四卡写集自洽，无新增需求/DDL/依赖。批准 commit `21d97b1e123fe405690474a28f0a3b7083c08008`，tree `4d0fcc593da7b69bcc6653f880825f70b1611869`。
+- G3 已通过；按持续执行授权进入 T01，开发心跳由 Architect 创建。

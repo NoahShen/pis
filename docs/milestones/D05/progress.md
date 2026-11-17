@@ -1,20 +1,20 @@
 # D05 Progress：Collection 采集、去重与检查点
 
 - Plan：`docs/milestones/D05/plan.md` v0.2
-- Plan 状态：`REVIEW · Architect G3 v0.2 待审核`
+- Plan 状态：`APPROVED · Architect G3 PASS`（v0.2）
 - Intent：`APPROVED · G1 PASS`
 - Spec：`APPROVED · G2 PASS`
 - Plan/执行基线：`366d3d19c6dfe5cc4ef18057c4c17c6986a88bf2`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`NOT_CREATED`；G3 批准并开始开发后由 Architect 创建，本 Lead 未创建
 - Worker：`NONE`；G3 批准前不得创建
-- 当前结论：`D05_PLAN_G3=PENDING`、`D05_DEVELOPMENT=NOT_STARTED`
+- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_DEVELOPMENT=STARTING`；T01 READY，其余等待前卡。
 
 ## 任务状态
 
 | 任务 ID | 状态 | 前置/固定 base | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
-| D05-T01 | NOT_STARTED | G3 批准后的 Plan merge SHA | NOT_RUN | PENDING | PENDING | 等待 Plan G3 |
+| D05-T01 | READY | G3 批准后的 Plan merge SHA | NOT_RUN | PENDING | PENDING | 等待 Plan G3 |
 | D05-T02 | NOT_STARTED | D05-T01 merge SHA | NOT_RUN | PENDING | PENDING | 等待 T01 PASS |
 | D05-T03 | NOT_STARTED | D05-T02 merge SHA | NOT_RUN | PENDING | PENDING | 等待 T02 PASS |
 | D05-T04 | NOT_STARTED | D05-T03 merge SHA | NOT_RUN | PENDING | PENDING | 等待 T03 PASS |
@@ -67,4 +67,4 @@
 - 提交者：D05 Lead
 - 日期：2026-11-17
 - v0.1：`CHANGES_REQUIRED`。阻塞为：raw_data 构造归属前移与路径自洽；single-flight 逐调用取消及 token 清理语义；`config/prompt` tracked-diff 检查与事务 helper 表述。
-- v0.2：`PENDING`。T02 已前移 `raw-data.ts`/`raw-data.test.ts`，T04 只复用和公共导出；已明确首调用/后续等待者取消、独立 wait race、token-aware 清理及对应测试；已修正路径和同步事务回调表述。
+- v0.2：`APPROVED`。Architect 确认 T02 raw_data 前移、逐调用取消/token 清理、正确路径与同步事务表述均闭合；批准 commit `21d97b1e123fe405690474a28f0a3b7083c08008`，tree `4d0fcc593da7b69bcc6653f880825f70b1611869`。
