@@ -16,6 +16,10 @@ import {
   toStableCollectionError,
   type CollectionErrorCode,
 } from "./collection-errors.js";
+import type {
+  CollectionPersistence,
+  CollectionPersistenceResult,
+} from "./collection-persistence.js";
 import type { SourceAdapterRegistry } from "./adapter-registry.js";
 import {
   createNoneSourceContent,
@@ -37,6 +41,7 @@ export type CollectionLogStage =
   | "filter_entries"
   | "prefilter"
   | "fetch_content"
+  | "persist"
   | "complete";
 
 export type CollectionLogReason =
@@ -84,6 +89,15 @@ export type SourceAcquirer = (
   sourceId: string,
   options?: AcquisitionOptions,
 ) => Promise<AcquisitionResult>;
+
+export interface SourceCollectorDependencies extends SourceAcquirerDependencies {
+  readonly persistence: CollectionPersistence;
+}
+
+export type SourceCollector = (
+  sourceId: string,
+  options?: AcquisitionOptions,
+) => Promise<CollectionPersistenceResult>;
 
 function log(
   logger: CollectionLogger,
@@ -267,9 +281,14 @@ function sourceIsEnabled(source: Source | null): source is Source {
   return source !== null && source.enabled;
 }
 
-export function createSourceAcquirer(
+function createSourceOperation<Result>(
   dependencies: SourceAcquirerDependencies,
-): SourceAcquirer {
+  operation: (
+    source: Source,
+    signal: AbortSignal | undefined,
+  ) => Promise<Result>,
+  sourceUnavailable: () => Result,
+): (sourceId: string, options?: AcquisitionOptions) => Promise<Result> {
   const singleFlight = dependencies.singleFlight ?? new InProcessSingleFlight();
 
   return async (sourceId, options = {}) => {
@@ -296,11 +315,54 @@ export function createSourceAcquirer(
 
     if (!sourceIsEnabled(source)) {
       log(dependencies.logger, sourceId, "source_lookup", undefined, 0);
-      return { startedAt: null, drafts: [] };
+      return sourceUnavailable();
     }
 
     return singleFlight.run(sourceId, signal, (sharedSignal) =>
-      acquireEnabledSource(source, sharedSignal, dependencies),
+      operation(source, sharedSignal),
     );
   };
+}
+
+export function createSourceAcquirer(
+  dependencies: SourceAcquirerDependencies,
+): SourceAcquirer {
+  return createSourceOperation(
+    dependencies,
+    (source, signal) => acquireEnabledSource(source, signal, dependencies),
+    () => ({ startedAt: null, drafts: [] }),
+  );
+}
+
+export function createSourceCollector(
+  dependencies: SourceCollectorDependencies,
+): SourceCollector {
+  return createSourceOperation(
+    dependencies,
+    async (source, signal) => {
+      const acquisition = await acquireEnabledSource(
+        source,
+        signal,
+        dependencies,
+      );
+      if (acquisition.startedAt === null) {
+        return { new_source_item_ids: [] };
+      }
+
+      assertNotAborted(signal);
+
+      try {
+        return dependencies.persistence.persist(source.id, acquisition);
+      } catch (error) {
+        log(
+          dependencies.logger,
+          source.id,
+          "persist",
+          safeFailureReason(error),
+        );
+        throw toStableCollectionError(error);
+      }
+    },
+    () => ({ new_source_item_ids: [] }),
+  );
 }
