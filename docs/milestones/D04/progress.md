@@ -9,12 +9,13 @@
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
 - D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。Architect 后续复核发现了归档时 branch tip 未按 Plan 对齐到 candidate 的收尾缺陷；工作区已无引用后已把 branch ref 精确指向 `a6a12e3a877812666cacde416a65332cfcada08b`，生产代码与 main 未变。
 - D04-T02：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect 批准的 11 路径 tree 已形成 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，并以 main `--no-ff` merge commit `19f7973f27a4a78a8f867c64c0823c0e245e5658` 合入。合并后定向 `57/57`、full verify `347/347`、candidate↔merge blob `11/11` 和 Worker 归档均通过。
-- D04-T03：`IN_PROGRESS`；已在全新 Paseo Worker/worktree 中从 T02 PASS 后的 main `de0a2143c0f1c68721a09878f614df518b3238ed` 启动，严格限定 Plan §7.1 的 11 路径写集，尚未 stage/commit/merge。
-- D04 本地测试：`PASS`（T02 frozen tree `66a486f0873bf71c61bc1af9a3f5ea787575328f`；local merge `19f7973f27a4a78a8f867c64c0823c0e245e5658`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
+- D04-T03：`IN_PROGRESS · G4_PENDING`；最终完整 tree 已冻结为 `aecccde31c1cd2aeca1cc60df816198c43c4f70d`。原两轮阻塞（生产 dispatcher 的 pinned DNS 证据、畸形 redirect 分类）已闭合；Lead 完整验证与附加 reviewer 独立复核均通过，但 Architect G4 尚未签发，不得进入 candidate/merge。
+- D04 本地测试：`PASS`（T03 最终冻结 tree `aecccde31c1cd2aeca1cc60df816198c43c4f70d`；Lead 独立 full verify `39/39` 文件、`522/522` tests）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
 ## Lead 执行身份与恢复记录
 
-- 当前唯一 D04 Lead：`fd8b48f8-2292-4092-8219-b51a03293bab`（Architect 于 2026-11-17 指定）。
+- 当前唯一 D04 Lead：`7f55dda5-ddca-4b75-95da-5935d9236e05`（Architect 于 2026-11-17 指定，接替已归档的 `fd8b48f8-2292-4092-8219-b51a03293bab`）。
+- D04 推进心跳：`b31a1236`，`*/10 * * * *`，`Asia/Shanghai`；持续授权已记录于 `docs/project-development.md` §7。本卡不得重复创建心跳；最终验收或负责人停止时删除并核实。
 - Server：`srv_rWwNLOnyU5IK`；Workspace：`wks_8d25a71ed3ca78af`，主工作区 `/Users/noahshen/workspace/pis`。
 - 恢复原因：旧 Lead `b32354fa-d47e-45d5-90ba-84554fd09cdb` 已归档，上游报告旧会话上下文约 134 万 token、超过 105 万窗口且近期发生角色混淆；禁止加载旧会话全文或长日志，恢复到基于实际 Git/diff、批准文档和短证据的独立审核。
 - 恢复基线：main `9b7e27e49b479875ddc66b783bc23f242d14031b`、工作区 clean；T01 工作树固定于 base `7218d74f8da376d92d7b36798a40f93d218d8b52`。
@@ -43,7 +44,7 @@
 
 ## 下一步
 
-T03 Worker 正在隔离 worktree 中实现生产受限 HTTP、故障矩阵和集成测试；等待其提交 `REVIEW` 或 `BLOCKED`，随后由 Lead 独立复核并冻结精确 tree。T03 完成前不得宣称 D04 本地 Gate。不 push、不新增心跳。
+T03 最终冻结已交 Architect G4 独立复核。批准前不创建 candidate、不 merge、不 push；也不重复派发 Worker 或重复全量测试。Architect 批准后才进入精确 candidate、`--no-ff` merge、合并后验证、PASS、分支对齐及里程碑收尾。
 
 ## D04-T01 Lead 第二轮复核记录
 
@@ -93,6 +94,26 @@ T03 Worker 正在隔离 worktree 中实现生产受限 HTTP、故障矩阵和集
 - Worker Agent：`0e8e7175-670c-443e-ad93-5c7b60f79269`；全新 Paseo Worker，采用 `codex-worker` profile（`codex-magpie/group/worker`、`auto-review`、thinking `high`），已严格限定为 single-task 实现和 `REVIEW`/`BLOCKED` 交回。
 - Workspace：`wks_a80d292a6f275ae7`，`/Users/noahshen/.paseo/worktrees/0eapmc43/d04-t03-restricted-http`；Branch：`feat/d04-t03-restricted-http`。
 - 固定 base/初始 HEAD：`de0a2143c0f1c68721a09878f614df518b3238ed`；tree `e8352d02e3352d24fbd1935c294253aa5d62b494`，与 local main 一致，worktree clean。Worker 尚未产生提交或改变固定 base。
+- 首轮 Lead 复核发现 Worker 违反 §9.1，已将 11 路径写入提前提交 `9253cf0721760778e4a3ace7c88d98dee4ec591e`（parent `de0a2143c0f1c68721a09878f614df518b3238ed`，tree `b150e7d7ee17cf50c966fb3a4a5c1d6ea127ffbf`，初始 worktree clean），当时仅 `36/36` 定向测试、full suite `382/383`。Architect 裁决保留该提交作为**未批准审计对象**，不重置/改写历史、不据此合并；Worker 后续禁止 stage/commit/amend，由 Lead 对最终完整变更重新冻结和提交 G4。
+- 首轮 Lead 阻断：§7.3 的 redirect/status/encoding/byte/deadline/cancel/cleanup/并发/tracker/error-leak 矩阵大量缺失；实现还允许 WHATWG 静默剥离原始 URL 控制字符、redirect 后 destroy 而非 cancel+close、已收到 response 的 status/MIME/encoding 拒绝未取消 body、dispatcher 未检查 close/destroy capability、close rejection 未 fallback destroy、BOM 可旁路 charset 声明。已要求同一 Worker 在批准写集内完成修复与矩阵。
+- Architect 已批准一项最小写集例外：只允许修正 `tests/adapters/rss-content.test.ts:798` 的旧“缺少 transport 抛 TypeError”装配断言及直接关联描述/调用，使 `createRssAdapter()` 零参契约与 approved T03 一致；其他 T01/T02 映射和覆盖不变，已记录于 Plan §7.1 下方。该批准不代表 T03 实现通过。
+
+## D04-T03 A/B 裁决与 G4 精确冻结交接
+
+- A/B 裁决已固定：旧提交 `9253cf0721760778e4a3ace7c88d98dee4ec591e` 仅保留作**审计对象**，不是已批准 candidate，绝不据此 merge；Worker 自该裁决起不得再 commit/amend；修复后的最终 tree 必须作为新对象重新提交 Architect 审批；可审范围只能是原 11 路径加已批准的 `tests/adapters/rss-content.test.ts` 单条断言例外，不得扩大。
+- 任务原始 base：`de0a2143c0f1c68721a09878f614df518b3238ed`，tree `e8352d02e3352d24fbd1935c294253aa5d62b494`。旧审计提交：`9253cf0721760778e4a3ace7c88d98dee4ec591e`（唯一 parent 为上述 base，tree `b150e7d7ee17cf50c966fb3a4a5c1d6ea127ffbf`）。准确状态应表述为“旧审计 commit 之后的修复尚未提交”，不得简写为“全部尚未提交”。
+- 历史旧冻结（已作废，不得作为 G4 或 candidate 依据）：tree `feadd152eaea21969b22ac8c676fc0aaff65fac9`、patch `92,554` bytes / `7237ffaf6dc022c76bfca514dd5d00a2221eed2b42fe9105601c925ebb4953ee`，当时记录为相对旧审计提交之后的 7 个修改与旧提交合计 12 路径。该记录仅保留历史，已被下方最终 13 路径完整冻结取代；旧 `f766f4e6567d6673c1a0f2c86a01dc9185beda57` 及旧 9 修改补充 hash 同样只作历史审计线索，不能代替 base→最终 tree 证据。
+- 当前 Worker HEAD 仍为旧审计提交 `9253cf0721760778e4a3ace7c88d98dee4ec591e`；index 与 HEAD 一致、staged entries 为 `0`；worktree 相对 HEAD 有 9 个 tracked 修改，untracked 为 `0`。这 9 个修改与旧审计提交的既有变更合并后，相对原始 base 形成最终 13 路径冻结集。
+- 最终冻结 tree：`aecccde31c1cd2aeca1cc60df816198c43c4f70d`。tree 包含 157 个路径；在独立冻结对象库中 `git cat-file -t` 返回 `tree`，`git rev-parse <tree>^{tree}` 精确等于该 SHA。13 个当前工作文件 blob 均与最终 tree 对应 blob 完全一致，worktree 相对原始 base 的写集也精确为下述 13 路径。
+- 最终冻结目录：`/private/tmp/d04-t03-final-freeze.Ltdlhk`；隔离 index：`/private/tmp/d04-t03-final-freeze.Ltdlhk/index`；canonical patch：`/private/tmp/d04-t03-final-freeze.Ltdlhk/patch.bin`；自包含 bare 对象库：`/private/tmp/d04-t03-final-freeze.Ltdlhk/repo.git/objects`。对象闭包共 190 个 reachable objects，均逐对象读取通过；tree 枚举为 157 路径。对象库 pack ID 为 `a8a0085e259f11d5fb160c44d5bc5df7ce6b3e45`，pack SHA-256 为 `4262879771d8944280f0939453b367cfb2e02bf16f4e0cda5d4edd90e9b7694e`。
+- canonical patch 命令与结果：从原始 base 对最终冻结 tree 执行 `git diff --binary --full-index --no-ext-diff de0a2143c0f1c68721a09878f614df518b3238ed aecccde31c1cd2aeca1cc60df816198c43c4f70d`，输出 `136125` bytes，SHA-256 为 `436d48c1e056f0631038c013e699e951bda1a8ea6a3eb3f5ecc8c929e2a1369e`。现场重新生成的 patch 与 `patch.bin` 逐字节一致；该 base→完整 tree 结果是唯一 canonical 交接对象。
+- 最终冻结路径共 13 个：`M README.md`、`M package-lock.json`、`M package.json`、`A src/adapters/http/address-policy.ts`、`A src/adapters/http/encoding.ts`、`A src/adapters/http/restricted-client.ts`、`M src/adapters/rss-adapter.internal.ts`、`M src/adapters/rss-adapter.ts`、`A tests/adapters/restricted-http.test.ts`、`M tests/adapters/rss-content.test.ts`、`A tests/adapters/rss-http.test.ts`、`A tests/adapters/security.test.ts`、`A tests/fixtures/http-fixture.ts`。其中 `rss-content` 例外文件只有已批准的 `2 insertions/2 deletions`：一处测试标题随语义更新，一处断言由旧 `toThrow(TypeError)` 改为 `not.toThrow()`；没有其他业务覆盖修改。
+- 两个最终阻塞均已闭合。其一，生产 connector factory 校验 Agent 实际传入的 pinned `lookup`，测试经过生产 dispatcher 构造路径并在更低层映射 loopback；移除生产 `connect.lookup` 的内存变异会以 `The production dispatcher lost its pinned lookup` 失败，证明测试能识别 pin 丢失，同时保留 Host、端口与 HTTPS SNI 语义断言。其二，redirect 层先区分 URL 语法解析失败与安全策略拒绝：畸形 authority/IPv6、非法端口、控制字符等为 `invalid_redirect`；可解析但被策略阻止的 localhost、`.localhost`、userinfo、非默认端口等保留 `blocked_url`。两条路径均保留最后已验证 URL，并断言无下一跳 DNS/dispatcher/request；完整 article 调用链在策略拒绝时为 `BLOCKED` 且摘要回退。未扩大已批准 DNS/字节设计范围。
+- 依赖差异相对原始 base：直接依赖新增 `ipaddr.js@2.5.0` 与 `undici@8.12.4`；lockfile 新增 package path 仅 `node_modules/undici@8.12.4`（`resolved=https://registry.npmjs.org/undici/-/undici-8.12.4.tgz`，integrity `sha512-8Mx+uNKKER2bA4AdtedkqRbwUCIJFr2nJckXRe5yrDqzePqwLP7VNcctN8/XdmDSbF7mS+jJKIszlL+vbam1VA==`），移除路径为 `0`；`ipaddr.js` 已存在于 base lockfile，本卡仅提升为直接依赖。Node `26.13.1`/npm `11.20.0` 下 `npm ls --depth=0` 退出 `0`，无 missing/extraneous。
+- Lead 证据（最终冻结 tree）：精确 Node `26.13.1`/npm `11.20.0` 下 `npm run verify` 为 `PASS`；完整测试 `39/39` files、`522/522` tests；typecheck、build、SIGINT/SIGTERM/占用端口/forced-close/late-listen smoke、Source+Topic 跨重启持久化、database smoke 与 `116` 文件格式检查全部通过；`git diff --check` 通过。该 full verify 只对应最终 tree/patch，若 tree 或 patch 变化则失效，本次不再重复运行。
+- 附加 reviewer 证据（不替代 Architect）：reviewer agent `d9963d99-fe00-4c97-b164-97a526f2a24c` 对同一精确 patch 独立执行 3 个定向套件 `175/175` PASS、typecheck PASS，并完成 redirect 分类与生产 lookup 内存变异探针；其 PASS 仅作附加 review 证据，且其未独立重跑 full verify。Architect 本会话 G4 仍是唯一批准权威，不得以该 reviewer 或旧 Architect 报告替代。
+- 测试矩阵定位（冻结 tree 行号）：`tests/adapters/restricted-http.test.ts:71-218` 覆盖 URL/公网地址/DNS；`:220-1390` 覆盖 exact undici dispatcher、真实 Fixture、redirect、decompressed byte limit、stream cancel、status/MIME/encoding、dispatcher capability/cleanup、deadline/caller abort、DNS/fetch late settle 与 socket teardown；`tests/adapters/rss-http.test.ts:11-57` 覆盖 production seam 的 feed+article 本地集成；`tests/adapters/security.test.ts:18-49` 覆盖无全局 mutation/proxy、地址 pin、redirect downgrade 与公共导出边界；`tests/adapters/rss-content.test.ts:530-926` 覆盖取消/并发/默认 factory/transport 隔离，单条装配例外位于 `:781` 及其断言 `:798`。
+- 本次仅由 Lead 更新 `docs/milestones/D04/plan.md` 与 `docs/milestones/D04/progress.md` 并提交到 main 文档历史；文档提交不改变上述 `aecccde…` tree/patch，因此不使已完成的 full verify 失效。未修改生产代码、未 stage 生产 worktree、未 amend/reset 旧审计提交、未创建 candidate、未 merge、未 push。Architect G4 应对上述精确 base/tree/patch、对象库和 13 路径独立裁决；批准前 T03 仍为 `IN_PROGRESS · G4_PENDING`。
 
 ## D04-T01 Architect G4 审核记录
 

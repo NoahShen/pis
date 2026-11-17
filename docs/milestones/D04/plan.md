@@ -339,6 +339,8 @@ T02 通过只表示不依赖生产 SSRF 客户端的组件行为 PASS；不登�
 - `tests/fixtures/http-fixture.ts`。
 - `README.md`：D04 参数和调用边界；不改 D02/D03 文档。
 
+> **执行范围例外（Architect 2026-11-17 批准）**：允许仅修改 `tests/adapters/rss-content.test.ts` 中原“缺少 `transport` 必须抛 `TypeError`”的旧装配断言及其直接关联测试描述/调用方式，使其符合本卡批准的 `createRssAdapter()` 零参默认受限 transport 契约。该文件的其他 T01/T02 业务映射、显式注入、所有权、取消和正文决策表覆盖不得修改；零参默认请求经过 restricted transport 的证明仍放在 T03 集成测试文件中。
+
 不得修改 DDL、server/config、lifecycle、Prompt、D04 spec/intent 或 T01/T02 已冻结业务映射；若安全实现迫使接口改动，先回报 Lead，不自行扩写。
 
 ### 7.2 生产受限客户端
