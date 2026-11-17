@@ -10,7 +10,8 @@
 - D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。Architect 后续复核发现了归档时 branch tip 未按 Plan 对齐到 candidate 的收尾缺陷；工作区已无引用后已把 branch ref 精确指向 `a6a12e3a877812666cacde416a65332cfcada08b`，生产代码与 main 未变。
 - D04-T02：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect 批准的 11 路径 tree 已形成 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，并以 main `--no-ff` merge commit `19f7973f27a4a78a8f867c64c0823c0e245e5658` 合入。合并后定向 `57/57`、full verify `347/347`、candidate↔merge blob `11/11` 和 Worker 归档均通过。
 - D04-T03：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect G4 已批准 tree `aecccde31c1cd2aeca1cc60df816198c43c4f70d`。精确 candidate `16cd09a56daa50b1b88a6325dbee5f02ddf9ce15` 已以 main `--no-ff` merge commit `c44237814a1171bd78f69b7ab4432502807737f7` 合入；合并后定向/full verify、branch/candidate 对齐、Worker/workspace 归档与目录移除均通过。
-- D04 本地测试：`PASS`（T03 merge commit `c44237814a1171bd78f69b7ab4432502807737f7`；合并后定向 `3/3` 文件、`175/175` tests，full verify `39/39` 文件、`522/522` tests；干净集成快照同结果）。`D04_LOCAL_GATE=APPROVED`（Architect）；`D04_REMOTE_CI=NOT_RUN`；`D04_FINAL_PASS=NOT_ISSUED`。下一步仅等待负责人另行授权 D04 push，随后核验精确 SHA 远程 CI；不得以本地 Gate 或 D03 CI 替代。
+- D04 本地测试：`PASS`（T03 merge commit `c44237814a1171bd78f69b7ab4432502807737f7`；合并后定向 `3/3` 文件、`175/175` tests，full verify `39/39` 文件、`522/522` tests；干净集成快照同结果）。`D04_LOCAL_GATE=APPROVED`；`D04_REMOTE_CI=PASS`；`D04_FINAL_PASS=ISSUED`。负责人追加持续授权：本地验收通过后可直接推送并核验远程 CI，已写入项目规范 §8。Architect 推送 main `2ac527b92f32277617fb7ca6ee8785cbec9edcc6`（包含全部 D04 实现及文档），远程 SHA 一致；该精确提交的 [GitHub CI #6](https://github.com/NoahShen/pis/actions/runs/44096951788) Success，总耗时 42 秒、verify 作业成功。Architect 据三卡分级审核、本地 Gate 与远程 CI 签发最终 PASS。
+- D04 心跳 `b31a1236` 已通过 `delete_heartbeat({id:"b31a1236"})` 删除，工具确认 `success=true`。T01/T02/T03 Worker 及独立工作区均已归档移除，分支指向各自合入 candidate；主工作区保留。
 
 ## Architect 本地集成验收
 
@@ -52,7 +53,7 @@
 
 ## 下一步
 
-T03 已 PASS、合并验证并完成 Worker/workspace 归档；D04 干净 `npm ci --offline` + full verify 本地集成 Gate 已通过。下一步仅交 Architect 做 D04 最终里程碑验收；不 push、不创建新 Agent、不重复 full verify。远程 CI 保持 `NOT_RUN`，`FINAL_PASS` 未签发，心跳 `b31a1236` 保留至最终验收。
+D04 已完成最终验收，后续按新的 Intent/Spec/Plan 门禁推进 D05；本次收尾不修改生产代码。真实公网 RSS、实际 TLS 握手、Collection 持久化及下游派发仍不在 D04 PASS 范围。
 
 ## D04-T01 Lead 第二轮复核记录
 
