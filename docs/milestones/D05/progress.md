@@ -8,8 +8,8 @@
 - Plan/执行基线：`366d3d19c6dfe5cc4ef18057c4c17c6986a88bf2`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`1a12839e`（Architect 已创建并持续授权）
-- 当前 Worker：`NONE`；T01/T02/T03/T04 四个 Worker 均已归档
-- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_TASKS=PASS`、`D05_LOCAL_GATE=PASS`、`D05_FINAL_PASS=NOT_ISSUED`、`D05_REMOTE_CI=NOT_RUN`；等待 Architect 本地 Gate 复核，未 push。
+- 当前 Worker：`NONE`；T01/T02/T03/T04 与 D05-CI01 共五个 Worker 均已归档
+- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_TASKS=PASS`、`D05_LOCAL_GATE=PASS`、`D05_REMOTE_CI=FAIL`（旧 run `44128064463`，commit `fc7e353`）、`D05_FINAL_PASS=NOT_ISSUED`；D05-CI01 已合并复验并归档，等待 Architect 推送新 main 后重跑 CI，未 push。
 
 ## 任务状态
 
@@ -19,6 +19,7 @@
 | D05-T02 | PASS · LOCAL_MERGE_VERIFIED | `5af3d2c89851f5e0ea1bb9fbab14bf34ae54962e` | PASS（merge 后专项 4/4 files、30/30 tests；D04 2/2 files、172/172；full 45/45 files、560/560 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D05-T03 | PASS · LOCAL_MERGE_VERIFIED | `34339c19499e37d92a796e67c80a63159c7b3405` | PASS（merge 后专项 2/2 files、14/14 tests；full 47/47 files、574/574 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D05-T04 | PASS · LOCAL_MERGE_VERIFIED | `c0e1cdeb1a5b2ed314612053a1100e6b663b89c1` | PASS（merge 后 Collection 3/3 files、23/23 tests；配置/RSS 3/3 files、31/31；full 49/49 files、585/585 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
+| D05-CI01 | PASS · LOCAL_MERGE_VERIFIED | `fc7e35312a64a4993c1162c08e25b8020c812a11` | PASS（目标单测 10/10；merge 后 full 49/49 files、585/585 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档；新 main CI 待重跑 |
 
 状态语义：`NOT_STARTED → READY → IN_PROGRESS → REVIEW → PASS`；失败转 `FAIL/IN_PROGRESS`，设计/外部依赖缺失转 `BLOCKED`。Worker 不得自行写 PASS。
 
@@ -30,6 +31,7 @@
 | D05-T02 | `5af3d2c89851f5e0ea1bb9fbab14bf34ae54962e` | `8f593e43-483a-4bb3-938b-12ac22ecb8a0` / `wks_68a47bc1f56d9690` / `feat/d05-t02-single-flight-acquisition` | 精确 9 路径：errors/registry/single-flight/raw-data/collector + 四专项测试 | `af0b8d015a616411f51d2e9b12bdfd52f13b34ed` / `27583c4e7d690aaceb161d683b815dc6912b7a9b8182f316fbad385c423e01b8` | APPROVED · G4 | `3ec4ee1ef6cb6850fe835435043b8eed64255b6b` / `34339c19499e37d92a796e67c80a63159c7b3405` | PASS（merge 后 typecheck/专项/D04/full verify/build/smoke/format/diff-check） | `archive_workspace` success；agent closed；directory removed |
 | D05-T03 | `34339c19499e37d92a796e67c80a63159c7b3405` | `93faad84-feac-401e-94bd-9aa0d197ec18` / `wks_e14b152cb3581a7e` / `feat/d05-t03-transaction-checkpoint` | 精确 4 路径：persistence 新增、collector 接线、两事务测试 | `e5f9980d576f4f9caad68318da1e21b8d6fbf697` / `32723195e01978a700b1e46840b6c1039983bf0aa423b2e7cec8e78a719014a1` | APPROVED · G4 | `fb3631c297e792a766748c95861371cf97cb2139` / `c0e1cdeb1a5b2ed314612053a1100e6b663b89c1` | PASS（merge 后 typecheck/专项/full verify/build/smoke/format/diff-check） | `archive_workspace` success；agent closed；directory removed |
 | D05-T04 | `c0e1cdeb1a5b2ed314612053a1100e6b663b89c1` | `58438af5-eb91-42d2-9a2f-21fdd618251e` / `wks_cd84ce831f63f6e0` / `feat/d05-t04-public-contract-integration` | 精确 7 路径：公共 contracts/index、RSS registry/collector 接线、service/integration 测试与独立 fixture | `d5f50e66f0ce91b904d1b63022763162f6a5a92a` / `44afcd9e0919b42165637832c6892bf2538355a449bc50e6b7efdc08755dd7ba` | APPROVED · G4 | `5cbabc3ffcfe7a69a7f6df1046c2e4a4ecf8ca32` / `d83c1aaffae1e2ca6ff4584d913a9724a8babea8` | PASS（merge 后 Collection/配置/RSS/full verify/build/smoke/format/diff-check） | `archive_workspace` success；agent closed；directory removed |
+| D05-CI01 | `fc7e35312a64a4993c1162c08e25b8020c812a11` | `adb5dc7e-5b56-449f-9449-5eb53fac6a7d` / `wks_d98e75523e89ca07` / `fix/d05-ci01-restricted-http-close-race` | 精确 1 路径：`tests/adapters/restricted-http.test.ts`（2 insertions/2 deletions） | `643b3bf240812c4b5c4887aa4a574c9b22800526` / `68d3fe3ca5dccba41f61746c92165e69ddbd130936a85eef481fdedff0cc24ef` | APPROVED · G4 | `25d22bcf2aaf3cc6da60acab4db5590d34f9d001` / `16052b516fd5e9e84481e2960aca1afefd68b383` | PASS（merge 后 full verify/build/smoke/format/diff-check） | `archive_workspace` success；agent closed；directory removed |
 
 记录要求：
 
@@ -47,20 +49,20 @@
 | 真实 SQLite + D04 RSS Adapter 本地集成 | PASS · T04 | 独立 fixture + in-memory RSS transport，无公网 |
 | 配置 API checkpoint 不可写 / DDL / Prompt / CI 不变 | PASS · T04 | 配置/RSS 回归通过；T02 raw-data、D04、DDL/Prompt/CI diff 均为空 |
 | D05 本地集成 Gate | PASS · PENDING ARCHITECT REVIEW | final merge `d83c1aa` clean snapshot `49/49` files、`585/585` tests |
-| 远程 CI | NOT_RUN | 本地 Gate 后由 Architect 按持续授权推送并核验精确 SHA |
+| 远程 CI | FAIL · NEW CI PENDING | 旧 run `44128064463` @ `fc7e353` 因 socket close 时序失败；CI01 已本地合并复验，新 main push 后必须重跑 |
 | D05 最终 PASS | NOT_ISSUED | 本地 Gate、远程 CI、Architect 验收均未完成 |
-| D05 心跳删除 / Lead+Worker 归档 | PARTIAL · 4 WORKERS ARCHIVED | T01～T04 Agent/Workspace 已归档；heartbeat 与 Lead 待最终验收后由 Architect 组织 |
+| D05 心跳删除 / Lead+Worker 归档 | PARTIAL · 5 WORKERS ARCHIVED | T01～T04、CI01 Agent/Workspace 已归档；heartbeat 与 Lead 待最终验收后由 Architect 组织 |
 
 ## 当前阻塞与待决策事项
 
-- 无代码阻塞；D05 四卡、candidate/merge、post-merge verify 与本地集成 Gate 均已完成。
-- 唯一当前门禁：Architect 复核 D05 本地 Gate；之后按持续授权 push、核验精确 main SHA 的远程 CI 并最终验收。
+- 无代码阻塞；D05 四卡、本地 Gate 与 CI01 定向稳定化均已完成。
+- 唯一当前门禁：Architect 推送新 main 后，核验该精确 SHA 的 CI Success。
 
 ## 下一可执行动作
 
-1. Architect 复核 final main `d83c1aaffae1e2ca6ff4584d913a9724a8babea8`、clean snapshot、COL 映射与本地 Gate 证据。
-2. Architect 确认后按持续授权 push；必须核验远程 main SHA 以及该精确 SHA 的 CI Success。
-3. 远程 CI 成功且 Architect 最终验收后，删除 heartbeat `1a12839e` 并归档 D05 Lead；当前不得签发 FINAL PASS。
+1. 将 D05-CI01 PASS、candidate/merge、post-merge verify 与归档证据交 Architect。
+2. Architect push 新 main 后核验远程分支 SHA 与该精确 SHA 的 CI Success。
+3. CI 成功且最终验收后才可删除 heartbeat `1a12839e` 并归档 D05 Lead；当前不得签发 FINAL PASS。
 
 ## Plan G3 审核记录
 
@@ -73,6 +75,7 @@
 - T02 G4：Architect `APPROVED` tree `af0b8d015a616411f51d2e9b12bdfd52f13b34ed`、base `5af3d2c89851f5e0ea1bb9fbab14bf34ae54962e`、patch SHA-256 `27583c4e7d690aaceb161d683b815dc6912b7a9b8182f316fbad385c423e01b8`、精确 9 路径；Architect 独立 typecheck/build/4 files 30 tests PASS，采纳 Lead 同一 tree D04 172 与 full verify `45/45` files、`560/560` tests 证据。
 - T03 G4：Architect `APPROVED` tree `e5f9980d576f4f9caad68318da1e21b8d6fbf697`、base `34339c19499e37d92a796e67c80a63159c7b3405`、patch SHA-256 `32723195e01978a700b1e46840b6c1039983bf0aa423b2e7cec8e78a719014a1`、精确 4 路径；Architect 独立 typecheck/build/14 tests PASS，采纳 Lead 同一 tree full verify `47/47` files、`574/574` tests 证据。
 - T04 G4：Architect `APPROVED` tree `d5f50e66f0ce91b904d1b63022763162f6a5a92a`、base `c0e1cdeb1a5b2ed314612053a1100e6b663b89c1`、patch SHA-256 `44afcd9e0919b42165637832c6892bf2538355a449bc50e6b7efdc08755dd7ba`、精确 7 路径；Architect 独立 typecheck/build/Collection 23 tests PASS，采纳 Lead 同一 tree full verify `49/49` files、`585/585` tests 证据。
+- 远程 CI 失败：run `44128064463` @ `fc7e353`，`tests/adapters/restricted-http.test.ts:321` 在 dispatcher close 回调先于 socket close 事件时立即断言 socket 为 0；生产实现与本机 8 次重复未见失败。Architect 裁决仅稳定化该测试 waitFor 条件。CI01 已按该裁决完成并经 G4 批准。
 
 ## D05-T01 Lead 复核与冻结记录
 
@@ -140,4 +143,17 @@
 - COL 映射：`COL-01/07/11/12/16` → T01/T03/T04 identity、事务、checkpoint、NONE service/persistence；`COL-02/03/04/05/13/17/18` → T01 identity/repository + T04 service；`COL-06/08/09/10/14` → T02 acquisition/single-flight + T04 RSS integration；`COL-15` → D04 restricted HTTP/RSS 安全回归。`COL-01` 的 Processing 派发部分按 D05 边界归 D15。
 - 边界 diff：执行批准 `fab28a5` → final `d83c1aa` 仅新增 `src/collection/**` 与对应 `tests/collection/**`、`tests/fixtures/collection.ts`；`src/database/schema.sql`、`config/prompts`、`config/prompt`、`.github`、`src/adapters` tracked diff 均为空，无 package/lock 变更。
 - 资源：T01～T04 Worker 全部 archived，独立 worktree 条目/目录均已移除；主工作区 clean，无 SQLite/WAL/SHM 残留。未 push。
-- Gate 结论：`D05_LOCAL_GATE=PASS`、`D05_ARCHITECT_GATE_REVIEW=PENDING`、`D05_REMOTE_CI=NOT_RUN`、`D05_FINAL_PASS=NOT_ISSUED`。
+- Gate 结论：`D05_LOCAL_GATE=PASS`、`D05_ARCHITECT_GATE_REVIEW=PASS`、`D05_REMOTE_CI=FAIL`（等待新 main 重跑）、`D05_FINAL_PASS=NOT_ISSUED`。
+
+## D05-CI01 Lead 复核与冻结记录
+
+- 触发：远程 CI run `44128064463` @ `fc7e353` 的目标测试在 Linux 上仅因 dispatcher close 与 socket close 事件顺序不确定而失败；本机重复 8 次通过，生产实现未失败。
+- Worker 交回：`REVIEW`；base/HEAD `fc7e35312a64a4993c1162c08e25b8020c812a11`，真实 index 为空，无 commit/merge/push。
+- 精确 diff：仅 `tests/adapters/restricted-http.test.ts` 2 insertions/2 deletions；waitFor 条件为 `dispatchersClosed === 1 && fixture.sockets.size === 0`，描述同步更新；默认 1 秒 timeout 与全部原断言保留。
+- 边界：生产代码、fixture、其他测试、package、DDL、Prompt、CI 均无 diff。
+- Lead 验证：目标单测连续 `10/10` PASS；full `npm run verify` 为 `49/49` files、`585/585` tests，typecheck/build/SIGINT/SIGTERM/端口/关闭/持久化/database smoke/137 文件 format 全部 PASS；diff-check PASS。
+- 精确冻结：tree `643b3bf240812c4b5c4887aa4a574c9b22800526`；patch `688` bytes；SHA-256 `68d3fe3ca5dccba41f61746c92165e69ddbd130936a85eef481fdedff0cc24ef`；冻结目录 `/private/tmp/d05-ci01-final-freeze.EWuzXf`；blob `5be0688d70aa87eba548a10980986d8bb450e27a`。
+- G4 后执行：candidate `25d22bcf2aaf3cc6da60acab4db5590d34f9d001`，唯一 parent/base `fc7e353`、tree `643b3bf`、唯一测试路径。local main `--no-ff` merge commit `16052b516fd5e9e84481e2960aca1afefd68b383`，tree `643b3bf`，第一/第二 parent 分别为 `fc7e353` / candidate；test blob 精确 `5be0688d70aa87eba548a10980986d8bb450e27a`。
+- Post-merge verify：`npm ci --offline` 124 packages、0 vulnerabilities；full verify `49/49` files、`585/585` tests；typecheck/build/SIGINT/SIGTERM/端口/关闭/持久化/database smoke/137 文件 format 全部 PASS；diff-check PASS。
+- Worker 收尾：branch `fix/d05-ci01-restricted-http-close-race` 与 candidate 分支均对齐 `25d22bcf`，index empty、worktree clean。Paseo `archive_workspace(wks_d98e75523e89ca07)` 返回 `archivedAgentIds=[adb5dc7e-5b56-449f-9449-5eb53fac6a7d]`、`removedDirectory=true`；活跃列表无该项，worktree 条目/目录已移除，Agent `closed/archivedAt=2026-11-17T17:03:29.433Z`。
+- D05-CI01 结论：`D05-CI01_STATUS=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未 push。production-layer tree 为 `643b3bf240812c4b5c4887aa4a574c9b22800526`。
