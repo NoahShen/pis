@@ -14,6 +14,7 @@
 - D04 心跳 `b31a1236` 已通过 `delete_heartbeat({id:"b31a1236"})` 删除，工具确认 `success=true`。T01/T02/T03 Worker 及独立工作区均已归档移除，分支指向各自合入 candidate；主工作区保留。
 - 最终收尾补核：共享 main 中由旧 Lead 越权创建的附加 reviewer `d9963d99-fe00-4c97-b164-97a526f2a24c` 与定点修复 Worker `65515eb4-fc70-4360-9bd9-65b1bae47709` 已分别 `archive_agent` 成功；其共享 workspace `wks_98125e4e4fe91c3c` 已归档，两个 Agent ID 均返回，`removedDirectory=false` 是正确保护 main checkout。原 T03 Worker `0e8e7175…` 的独立 worktree 已随逐卡归档移除。
 - 最终验收记录提交 `e0f1d59e19ba92aac14f4136ddf038c535181039` 已推送，远程 SHA 一致；对应 [CI #7](https://github.com/NoahShen/pis/actions/runs/44097299993) Success，耗时 34 秒。收尾补充提交 `f212faeacf03bbfaf341e2db457a5f5968862e55` 亦已推送，对应 [CI #8](https://github.com/NoahShen/pis/actions/runs/44098375800) Success；远程 main 与该 SHA 一致。
+- 最终收尾补充：当前 Lead `7f55dda5-ddca-4b75-95da-5935d9236e05` 已 `archive_agent` 成功；旧 Plan workspace `wks_a734c952ac2dbc82` 已归档，所属 Agent `a3a84cfa-1888-446e-8de3-bed68e2d77b3` 一并归档，`removedDirectory=true`。活动列表仅剩主工作区 `wks_8d25a71ed3ca78af`，全部 D04 Lead/Worker/附加 reviewer 均已归档；D04 任务 worktree 已全部移除，main clean。
 
 ## Architect 本地集成验收
 
