@@ -9,8 +9,8 @@
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
 - D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。Architect 后续复核发现了归档时 branch tip 未按 Plan 对齐到 candidate 的收尾缺陷；工作区已无引用后已把 branch ref 精确指向 `a6a12e3a877812666cacde416a65332cfcada08b`，生产代码与 main 未变。
 - D04-T02：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect 批准的 11 路径 tree 已形成 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，并以 main `--no-ff` merge commit `19f7973f27a4a78a8f867c64c0823c0e245e5658` 合入。合并后定向 `57/57`、full verify `347/347`、candidate↔merge blob `11/11` 和 Worker 归档均通过。
-- D04-T03：`IN_PROGRESS · G4_PENDING`；最终完整 tree 已冻结为 `aecccde31c1cd2aeca1cc60df816198c43c4f70d`。原两轮阻塞（生产 dispatcher 的 pinned DNS 证据、畸形 redirect 分类）已闭合；Lead 完整验证与附加 reviewer 独立复核均通过，但 Architect G4 尚未签发，不得进入 candidate/merge。
-- D04 本地测试：`PASS`（T03 最终冻结 tree `aecccde31c1cd2aeca1cc60df816198c43c4f70d`；Lead 独立 full verify `39/39` 文件、`522/522` tests）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
+- D04-T03：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；Architect G4 已批准 tree `aecccde31c1cd2aeca1cc60df816198c43c4f70d`。精确 candidate `16cd09a56daa50b1b88a6325dbee5f02ddf9ce15` 已以 main `--no-ff` merge commit `c44237814a1171bd78f69b7ab4432502807737f7` 合入；合并后定向/full verify、branch/candidate 对齐、Worker/workspace 归档与目录移除均通过。
+- D04 本地测试：`PASS`（T03 merge commit `c44237814a1171bd78f69b7ab4432502807737f7`；合并后定向 `3/3` 文件、`175/175` tests，full verify `39/39` 文件、`522/522` tests；干净集成快照同结果）。D04 本地集成 Gate：`PASS`。远程 CI：`NOT_RUN`；最终里程碑验收：`PENDING · FINAL_PASS_NOT_ISSUED`。
 
 ## Lead 执行身份与恢复记录
 
@@ -44,7 +44,7 @@
 
 ## 下一步
 
-T03 最终冻结已交 Architect G4 独立复核。批准前不创建 candidate、不 merge、不 push；也不重复派发 Worker 或重复全量测试。Architect 批准后才进入精确 candidate、`--no-ff` merge、合并后验证、PASS、分支对齐及里程碑收尾。
+T03 已 PASS、合并验证并完成 Worker/workspace 归档；D04 干净 `npm ci --offline` + full verify 本地集成 Gate 已通过。下一步仅交 Architect 做 D04 最终里程碑验收；不 push、不创建新 Agent、不重复 full verify。远程 CI 保持 `NOT_RUN`，`FINAL_PASS` 未签发，心跳 `b31a1236` 保留至最终验收。
 
 ## D04-T01 Lead 第二轮复核记录
 
@@ -114,7 +114,16 @@ T03 最终冻结已交 Architect G4 独立复核。批准前不创建 candidate�
 - Lead 证据（最终冻结 tree）：精确 Node `26.13.1`/npm `11.20.0` 下 `npm run verify` 为 `PASS`；完整测试 `39/39` files、`522/522` tests；typecheck、build、SIGINT/SIGTERM/占用端口/forced-close/late-listen smoke、Source+Topic 跨重启持久化、database smoke 与 `116` 文件格式检查全部通过；`git diff --check` 通过。该 full verify 只对应最终 tree/patch，若 tree 或 patch 变化则失效，本次不再重复运行。
 - 附加 reviewer 证据（不替代 Architect）：reviewer agent `d9963d99-fe00-4c97-b164-97a526f2a24c` 对同一精确 patch 独立执行 3 个定向套件 `175/175` PASS、typecheck PASS，并完成 redirect 分类与生产 lookup 内存变异探针；其 PASS 仅作附加 review 证据，且其未独立重跑 full verify。Architect 本会话 G4 仍是唯一批准权威，不得以该 reviewer 或旧 Architect 报告替代。
 - 测试矩阵定位（冻结 tree 行号）：`tests/adapters/restricted-http.test.ts:71-218` 覆盖 URL/公网地址/DNS；`:220-1390` 覆盖 exact undici dispatcher、真实 Fixture、redirect、decompressed byte limit、stream cancel、status/MIME/encoding、dispatcher capability/cleanup、deadline/caller abort、DNS/fetch late settle 与 socket teardown；`tests/adapters/rss-http.test.ts:11-57` 覆盖 production seam 的 feed+article 本地集成；`tests/adapters/security.test.ts:18-49` 覆盖无全局 mutation/proxy、地址 pin、redirect downgrade 与公共导出边界；`tests/adapters/rss-content.test.ts:530-926` 覆盖取消/并发/默认 factory/transport 隔离，单条装配例外位于 `:781` 及其断言 `:798`。
-- 本次仅由 Lead 更新 `docs/milestones/D04/plan.md` 与 `docs/milestones/D04/progress.md` 并提交到 main 文档历史；文档提交不改变上述 `aecccde…` tree/patch，因此不使已完成的 full verify 失效。未修改生产代码、未 stage 生产 worktree、未 amend/reset 旧审计提交、未创建 candidate、未 merge、未 push。Architect G4 应对上述精确 base/tree/patch、对象库和 13 路径独立裁决；批准前 T03 仍为 `IN_PROGRESS · G4_PENDING`。
+- 上述冻结交接时仅由 Lead 更新文档并提交到 main 文档历史；当时未修改生产代码、未创建 candidate、未 merge、未 push。该记录保留为 G4 前的历史状态；后续批准、candidate、merge、验证与归档见下节。
+
+## D04-T03 G4 批准、合并与收尾
+
+- Architect 独立 G4 已批准精确 tree `aecccde31c1cd2aeca1cc60df816198c43c4f70d`、base `de0a2143c0f1c68721a09878f614df518b3238ed`、canonical patch SHA-256 `436d48c1e056f0631038c013e699e951bda1a8ea6a3eb3f5ecc8c929e2a1369e` 和 13 路径；Architect 核对 13 工作 blob、`rss-content` 单条授权例外及 `internal` 晚拒绝消费修复，并独立通过 typecheck/build/175 tests 与 redirect 探针。Architect 未重跑 full verify，采纳同一 tree 的 Lead `522/522` 证据；附加 reviewer 不替代该批准。
+- Candidate：`16cd09a56daa50b1b88a6325dbee5f02ddf9ce15`，tree 精确 `aecccde31c1cd2aeca1cc60df816198c43c4f70d`，唯一 parent 为原始 base `de0a2143c0f1c68721a09878f614df518b3238ed`。candidate 分支为 `candidate/d04-t03-restricted-http`；旧审计 commit `9253cf0721760778e4a3ace7c88d98dee4ec591e` 不是其祖先，历史对象保留且未改写。
+- Merge：main `c44237814a1171bd78f69b7ab4432502807737f7`，tree `69f13634613bd00f742d9d18632a596863cc7d94`，第一父 `b882e867bfdad2726a93163803d908618c120c60`、第二父 candidate。candidate→merge 的批准 13 文件 blob 全部一致；merge 仅额外保留 main 文档进展，无生产路径漂移。
+- 合并后验证：固定工具链 `/Users/noahshen/.local/share/pis/toolchains/node-v26.13.1-darwin-arm64/bin`（Node `v26.13.1` / npm `11.20.0`）；`npm ci --offline` 安装 124 packages、0 vulnerabilities；定向 `3/3` 文件 `175/175` tests；full `npm run verify` 为 `39/39` 文件 `522/522` tests，typecheck、build、SIGINT/SIGTERM/占用端口/forced-close/late-listen smoke、Source+Topic 跨重启持久化、database smoke 与 `116` 文件格式检查全通过。初始沙箱内定向运行因禁止 loopback 绑定在 fixture 启动阶段返回 `EPERM`，未进入业务断言；同一命令在受控沙箱外重跑通过，未改代码或测试。
+- 分支与归档：确认 worker worktree 全 tracked 内容等于 candidate tree、tracked 修改仅对应旧 HEAD 且 untracked 为 `0` 后，将 `feat/d04-t03-restricted-http` branch/index/worktree 对齐 candidate；candidate 与 feat tip 均为 `16cd09a…`，worktree clean。Paseo `archive_workspace` 返回 `workspaceId=wks_a80d292a6f275ae7`、`archivedAgentIds=[0e8e7175-670c-443e-ad93-5c7b60f79269]`、`removedDirectory=true`；活动 workspace 列表已无该 workspace，Worker `archivedAt=2026-11-17T13:44:25.857Z`，目录与 Git worktree 条目均已移除。`T03_STATUS=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`。
+- D04 干净集成 Gate：使用 `git archive` 从精确 merge commit `c44237814a1171bd78f69b7ab4432502807737f7` 生成 190-entry tar，快照 `/private/tmp/pis-d04-integration.55hmxG/tree`，source tar SHA-256 `ffad8481ca36355b1d896ca980594fe820422647b39b2445b2a5264b0de4208a`；快照无 `.git`、`node_modules` 或私有 `config/prompt/user-context.md`。固定工具链校验通过，干净 `npm ci --offline` 安装 124 packages、0 vulnerabilities；唯一一次 full verify 为 `39/39` 文件、`522/522` tests，typecheck、build、全部 process/database smoke 与 `116` 文件格式检查全部 PASS。`D04_LOCAL_INTEGRATION_GATE=PASS`；远程 CI `NOT_RUN`，`FINAL_PASS` 未签发，交 Architect 最终验收。
 
 ## D04-T01 Architect G4 审核记录
 
