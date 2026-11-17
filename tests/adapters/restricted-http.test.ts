@@ -295,8 +295,8 @@ describe("restricted URL and address policy", () => {
       }),
     ).resolves.toMatchObject({ body: "<rss/>" });
     await waitFor(
-      () => dispatchersClosed === 1,
-      "the pinned dispatcher to close",
+      () => dispatchersClosed === 1 && fixture.sockets.size === 0,
+      "the pinned dispatcher and fixture socket to close",
     );
 
     expect(resolverCalls).toBe(1);
