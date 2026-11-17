@@ -1,8 +1,8 @@
 # D05 Plan：Collection 采集、去重与检查点
 
-> 版本：v0.1
-> 状态：`REVIEW · Architect G3 待审核`
-> 版本轨迹：v0.1 首版 Lead Plan。
+> 版本：v0.2
+> 状态：`REVIEW · Architect G3 v0.2 待审核`
+> 版本轨迹：v0.1 首版 Lead Plan；v0.2 修复 G3 三项定位阻塞：raw_data 构造归属、single-flight 取消/token 清理、`config/prompt` tracked-diff 与事务回调表述。
 > Intent：`docs/milestones/D05/intent.md`（APPROVED · G1 PASS）
 > Spec：`docs/milestones/D05/spec.md`（APPROVED · G2 PASS）
 > 实现基线：`366d3d19c6dfe5cc4ef18057c4c17c6986a88bf2`
@@ -108,7 +108,7 @@ insert(draft: SourceItemDraft): SourceItemRecord;
 
 ### 2.3 raw_data v1
 
-T04 最终冻结 `raw_data` 为严格 JSON TEXT，形状如下：
+T02 交付并冻结 `src/collection/raw-data.ts`，包括严格 schema、构造和 round-trip 基础测试；T04 只复用该实现、通过公共入口导出所需类型，并在集成测试中验证持久化，不得重复实现或静默改变 v1 形态：
 
 ```ts
 interface RawDataSourceItemV1 {
@@ -156,8 +156,10 @@ T02 冻结 `CollectionError.code` 只含：
 
 ### 2.5 单飞、取消与日志
 
-- single-flight 键为 Source ID；同一 factory 内同 Source 只执行一次正常获取链路，finally 清理 key；不同 Source 不共享 Promise。
-- 第二个并发等待者需要取消时可结束自己的等待，但不得破坏另一未取消等待者的结果；首个执行者的取消按 Adapter/D05 契约终止该共享执行。
+- single-flight 键为 Source ID；同一 factory 内同 Source 只执行一次正常获取链路，不同 Source 不共享执行 Promise。
+- 首调用建立 `{ token, executionPromise }`。`executionPromise` 本身是“operation（D05 将首调用 signal 传给 Adapter）与首调用 abort 的 race”；所有调用共享该 Promise，但每个调用返回自己的 caller-wait race。等待 settle 或取消后移除 listener，晚到的共享结果/rejection 只消费，不形成 unhandled rejection。
+- 首调用取消时，共享 `executionPromise` 立即以 `aborted` 结束，所有等待者都收到 `aborted`。后续等待者取消只结束其独立 race，不 abort 或替换共享 `executionPromise`，首调用及其他未取消等待者继续。
+- 执行 settle 后以 token-aware `clearIfCurrent(key, token)` 清理：只有 Map 当前项仍是同一 token 时才删除。旧任务晚到的 cleanup 不得删除同 key 的新任务；cleanup 自身 rejection 必须消费。该内部 helper 可在 T02 单测中直接模拟“旧 token 清理晚于 new token 安装”的确定性竞态。
 - 在列表前、每个 `fetchContent` 前和写事务前检查 abort；已提交后不再接受取消回滚。
 - logger 只接收集合事件元数据：`sourceId`、stage、安全 reason、count。禁止完整 URL 查询串、正文、摘要、raw_data、Token 或底层异常文本。
 
@@ -166,9 +168,9 @@ T02 冻结 `CollectionError.code` 只含：
 | 时点 | 已可用能力 | 明确不可宣称 |
 |---|---|---|
 | T01 合并后 | Source Item 身份规则、批内去重判据、参数化查询/插入 | 不能采集、single-flight、推进 checkpoint 或返回公共结果 |
-| T02 合并后 | registry、错误、single-flight、Adapter 列表/仅新候选内容获取链 | 尚未原子保存、checkpoint 或公共 `collect` |
-| T03 合并后 | 短事务保存、事务内 recheck、checkpoint 原子推进、稳定 DB 失败 | 公共 raw_data schema、公共 factory 与最终集成未完成 |
-| T04 合并后 | 公共 factory/结果、raw_data v1、独立 fixture、真实 SQLite + D04 RSS Adapter 集成 | 不表示整个 D05 PASS，仍须单元/集成 Gate、远程 CI 与最终验收 |
+| T02 合并后 | registry、错误、single-flight 取消语义、raw_data v1 strict schema/构造、Adapter 列表/仅新候选内容获取链 | 尚未原子保存、checkpoint 或公共 `collect` |
+| T03 合并后 | 短事务保存、事务内 recheck、checkpoint 原子推进、稳定 DB 失败 | 公共 factory、raw_data 公共导出与最终集成未完成 |
+| T04 合并后 | raw_data 公共复用、公共 factory/结果、独立 fixture、真实 SQLite + D04 RSS Adapter 集成 | 不表示整个 D05 PASS，仍须单元/集成 Gate、远程 CI 与最终验收 |
 
 四卡严格串行，每卡新 Paseo Worker、固定前卡 merge SHA、独立 worktree。Worker 不得 stage/commit/merge/push，只报 `REVIEW`/`BLOCKED`；Lead 复核并冻结 tree，Architect 批准后才创建 candidate。未获批准 tree 不得进入 Git candidate。
 
@@ -221,7 +223,7 @@ git diff --check
 
 交回必须列出 base SHA、实际路径、Case 映射、命令结果、已知限制，并只报 `REVIEW`/`BLOCKED`。本卡通过只表示身份/Repository 能力 PASS。
 
-## 5. D05-T02 · Adapter Registry、single-flight 与新候选获取
+## 5. D05-T02 · Adapter Registry、single-flight、raw_data v1 与新候选获取
 
 ### 5.1 依赖与允许写集
 
@@ -229,9 +231,11 @@ git diff --check
 - 新增：`src/collection/collection-errors.ts`。
 - 新增：`src/collection/adapter-registry.ts`。
 - 新增：`src/collection/single-flight.ts`。
+- 新增：`src/collection/raw-data.ts`。
 - 新增：`src/collection/collector.ts`（内部采集/获取链，尚非最终公共入口）。
 - 新增：`tests/collection/adapter-registry.test.ts`。
 - 新增：`tests/collection/single-flight.test.ts`。
+- 新增：`tests/collection/raw-data.test.ts`。
 - 新增：`tests/collection/collector-acquisition.test.ts`。
 - 不得修改 T01 两个生产文件；若其契约不足，先报 Lead。
 - 依赖/包变更：`NONE`。
@@ -239,15 +243,16 @@ git diff --check
 ### 5.2 实现要求
 
 1. `SourceAdapterRegistry` 按精确 `Source.type` 返回 Adapter；未注册类型固定 `unsupported_source`。测试可注入 fake registry。
-2. `SingleFlight` 以 Source ID 为 key 复用执行 Promise 并在 finally 清理；不同 key 独立。不得使用模块级 Map。
+2. `SingleFlight` 以 Source ID 为 key 保存 `{ token, executionPromise }`。首调用构造 `executionPromise = caller-wait race(operation, 首调用 signal)`，并把该 signal 传入 D05 Adapter 请求；后续调用共享该 Promise，但各自使用独立 caller-wait race。首调用取消使共享 Promise 及所有等待者 `aborted`；后续等待者取消只拒绝自身等待，不 abort 共享执行。settle 后通过 token-aware helper 条件清理，旧 token 不得删除 new token；不得使用模块级 Map。
 3. 非空 Source ID 校验后才访问 Repository/Adapter；不存在或 disabled Source 正常返回内部空获取结果，不选择 Adapter、不请求网络、不推进任何状态。
 4. 进入实际执行后由 `Clock.now()` 取一次 `startedAt`，经现有 `formatTimestamp()` 形成 `+08:00` ISO 时间；在列表前、每个正文前检查 abort。
 5. 调用 `fetchEntries` 时传入 Source checkpoint 和 signal；Collection 不再按 `published_at` 与 checkpoint 比较过滤，保留来源顺序和晚到旧发布时间条目。
 6. 列表成功后先做 T01 明显非法过滤、批内去重和库内预筛；只有预筛后新候选调用 `fetchContent`，旧条目调用数必须为 0。
-7. 单条 `AdapterError`：`aborted` 立即映射取消并终止；其他固定 reason 构造 raw_data v1 NONE 证据并继续。未知异常不降级、不吞掉。
-8. 成功获取返回内部 `AcquisitionResult { startedAt, drafts }`；drafts 含 Source Entry、Adapter `SourceContent` 和按冻结 v1 形状生成的 `raw_data` TEXT，但本卡不写批次事务。
-9. 列表失败、未知 adapter 的稳定错误不包含底层 cause；单条降级日志只使用安全元数据。
-10. T02 不创建公共 `index.ts`、不修改 DB/checkpoint、不创建 Content、不派发任何任务。
+7. `raw-data.ts` 提供 strict Zod v1 schema、构造器和 round-trip；先验证 `SourceEntry` 与 content evidence，再 stringify。空正文/NONE 合法；unknown 字段、undefined/function/symbol/循环对象及 DOM/Response/Buffer/Error 形状必须拒绝。
+8. 单条 `AdapterError`：`aborted` 立即映射取消并终止；其他固定 reason 经 T02 raw-data 构造器生成 v1 NONE 证据并继续。未知异常不降级、不吞掉。
+9. 成功获取返回内部 `AcquisitionResult { startedAt, drafts }`；drafts 含 Source Entry、Adapter `SourceContent` 和 T02 raw-data 构造器生成的 `raw_data` TEXT，但本卡不写批次事务。
+10. 列表失败、未知 adapter 的稳定错误不包含底层 cause；单条降级日志只使用安全元数据。
+11. T02 不创建公共 `index.ts`、不修改 DB/checkpoint、不创建 Content、不派发任何任务。
 
 ### 5.3 测试矩阵
 
@@ -262,7 +267,11 @@ git diff --check
 | `COL-14` | 同 Source 并发只执行一条获取链；不同 Source 可并行且互不取消 |
 | `COL-15` | D04 安全 transport 回归仍 PASS；D05 无新增网络实现 |
 
-另测：同 Source 等待者取消不破坏未取消等待者；列表前、正文前预取消均零 fetchContent/零提交；列表失败与 unknown adapter 不留下 drafts；安全 logger 不含正文、摘要、URL 查询串或底层 message。
+另测：
+
+- `single-flight.test.ts`：首调用取消时所有等待者 `aborted` 且 operation 只启动一次；第二等待者取消时自身 `aborted`、首调用继续成功；预取消不启动 operation；不同 key 并行且互不取消；直接调用内部 token-aware helper 模拟旧 token cleanup 晚于新 token 安装，断言新 key 仍保留。
+- `raw-data.test.ts`：v1 strict schema 正反例、NONE/空正文合法、entry/content evidence 保留、stringify/parse round-trip，以及 unknown/undefined/function/symbol/cycle/runtime-object 形状拒绝。
+- Acquisition：列表前、正文前预取消均零 fetchContent/零写入；列表失败与 unknown adapter 不留下 drafts；安全 logger 不含正文、摘要、URL 查询串或底层 message。
 
 ### 5.4 验证命令与交回
 
@@ -270,13 +279,13 @@ git diff --check
 npm run verify:toolchain
 npm ci --offline
 npm run typecheck
-npx vitest run tests/collection/adapter-registry.test.ts tests/collection/single-flight.test.ts tests/collection/collector-acquisition.test.ts
+npx vitest run tests/collection/adapter-registry.test.ts tests/collection/single-flight.test.ts tests/collection/raw-data.test.ts tests/collection/collector-acquisition.test.ts
 npx vitest run tests/adapters/restricted-http.test.ts tests/adapters/rss-http.test.ts
 npm run verify
 git diff --check
 ```
 
-交回与冻结格式同 T01。本卡通过只表示获取/单飞内部能力 PASS。
+交回与冻结格式同 T01。本卡通过只表示获取/单飞/raw_data v1 内部能力 PASS。
 
 ## 6. D05-T03 · 短事务保存、事务内 recheck 与 checkpoint
 
@@ -293,7 +302,7 @@ git diff --check
 ### 6.2 实现要求
 
 1. 捕获列表成功结果后，在写事务前再次检查 abort；取消则零写入、零 checkpoint。
-2. 使用现有同步 `withTransaction(db, operation)`；回调必须同步，不含 `await`、thenable、网络、clock 读取或 Adapter 调用。函数若不接受 `AbortSignal` 时必须拒绝。
+2. 使用现有同步 `withTransaction(db, operation)`；回调必须同步且不得返回 thenable，不含网络、clock 读取或 Adapter 调用。取消在调用事务外立即检查；事务一旦开始，由同步回调执行到 COMMIT/ROLLBACK。不得臆造 helper 的 signal 参数或新增取消 API。
 3. 事务内按冻结身份规则逐 draft recheck；只插入仍 fresh 的 drafts，保留候选/插入顺序。无可靠身份的 title-only draft不在库内判重，按 V1 接受重复。
 4. 每行写 `content_id=NULL`，raw_data 使用 T02 生成 TEXT；ID 由 `SourceItemRepository` 的 `IdGenerator` 生成。返回 ID 只含本次实际插入行。
 5. Collection 私有 `updateLastCollectedAt(sourceId, startedAt)` 直接参数绑定更新 `sources.last_collected_at`；必须核验恰好命中一个 Source 行，不能经配置 API 或 `SourceRepository.update`，不得增加新的 enabled 竞态语义。
@@ -329,26 +338,25 @@ git diff --check
 
 交回与冻结格式同 T01。本卡通过只表示事务保存/checkpoint 内部能力 PASS。
 
-## 7. D05-T04 · raw_data、公共契约、独立 fixture 与集成
+## 7. D05-T04 · raw_data 公共复用、公共契约、独立 fixture 与集成
 
 ### 7.1 依赖与允许写集
 
 - 前置：`D05-T03` 已通过、合并并归档。
-- 新增：`src/collection/raw-data.ts`。
 - 新增：`src/collection/contracts.ts`。
 - 新增：`src/collection/index.ts`。
 - 修改：`src/collection/adapter-registry.ts`，接入仅 RSS 的稳定生产 registry 装配。
-- 修改：`src/collection/collector.ts`，接入 raw-data 严格校验和最终 factory 行为，不改变前三卡已冻结语义。
-- 新增：`tests/collection/raw-data.test.ts`。
+- 修改：`src/collection/collector.ts`，仅接入最终公共 factory 行为并复用 T02 raw-data，不改变前三卡已冻结语义。
 - 新增：`tests/collection/collection-service.test.ts`。
 - 新增：`tests/collection/collection-integration.test.ts`。
 - 新增：`tests/fixtures/collection.ts`。
+- 不得修改 `src/collection/raw-data.ts` 或 `tests/collection/raw-data.test.ts`；若集成暴露其严格 schema 缺陷，报 Lead 决定是否重走 T02，不得在 T04 重写。
 - 不得修改 D01 Schema、D03 configuration/API、D04 adapter、server/app/lifecycle、Prompt、CI 或上游文档。
 - 依赖/包变更：`NONE`。
 
 ### 7.2 实现要求
 
-1. `raw-data.ts` 用 strict Zod schema 固化 §2.3 v1 envelope；先验证 `SourceEntry` 和 content evidence，再 `JSON.stringify`，并验证 stringify/parse round-trip。拒绝未知字段、undefined、function、symbol、循环对象和运行时 DOM/Response/Buffer/Error 形状。
+1. 直接复用 T02 `raw-data.ts` 的 strict schema/构造器，并由 `index.ts` 公共导出必要类型；不得复制解析、重新定义 envelope 或修改 schema。集成测试验证写库值与 T02 round-trip 结果一致。
 2. `contracts.ts` 只暴露 Spec 的 `CollectResult`、`CollectOptions`、`CollectionService`、factory dependencies、稳定错误与必要接口 type；不能暴露内部 SQL、Map 或 draft mutation。
 3. `createCollection` 组合 T01 Repository、T02 registry/single-flight/获取链与 T03 persistence；构造后 `collect` 可重复调用，factory 私有 in-flight 状态在调用间正确清理。
 4. Source ID 为空或非字符串时，在 Repository/Adapter/事务前抛 `invalid_input`；不存在/disabled 正常空结果且不推进 checkpoint；unknown type 抛 `unsupported_source`。
@@ -367,7 +375,7 @@ git diff --check
 | `COL-16` | 无正文/摘要 NONE 合法保存，checkpoint 推进，后续仍可处理为无 Content |
 | `E2E-13` 采集部分 | 同 GUID 正文变化不新增；新 GUID 同正文新增独立 Source Item；均不创建 Content |
 
-另测：公共结果只有 `new_source_item_ids`，不含 Content、routes、队列；返回值与 DB 本次提交行一致；invalid ID、missing/disabled、unsupported type、abort、DB failure 的错误与零副作用符合 Spec；raw_data schema 版本固定 1、空正文/摘要往返、unknown/undefined/function/symbol/cycle 拒绝；配置 API checkpoint 不可写；`source_items` DDL/索引无 diff。
+另测：公共结果只有 `new_source_item_ids`，不含 Content、routes、队列；返回值与 DB 本次提交行一致；invalid ID、missing/disabled、unsupported type、abort、DB failure 的错误与零副作用符合 Spec；T02 raw_data v1 经公共 Collection 写入后 JSON round-trip、版本和 entry/content evidence 不变；配置 API checkpoint 不可写；`source_items` DDL/索引无 diff。
 
 ### 7.4 验证命令与交回
 
@@ -380,10 +388,10 @@ npx vitest run tests/configuration/source-api.test.ts tests/configuration/source
 npm run verify
 git diff --check
 rg -n '\bany\b|@ts-ignore|@ts-expect-error' src/collection tests/collection tests/fixtures/collection.ts || true
-git diff --name-only <BASE_SHA> -- src/database/schema.sql config/prompts .github
+git diff --name-only <BASE_SHA> -- src/database/schema.sql config/prompt .github
 ```
 
-最后一条命令输出必须为空。交回与冻结格式同 T01，并附一条真实 SQLite + D04 RSS Adapter 集成测试名/PASS。
+最后一条命令只枚举指定 tracked path 的 diff，输出必须为空；不得随后 `cat`、`rg`、复制或读取 `config/prompt/user-context.md` 等私有内容。交回与冻结格式同 T01，并附一条真实 SQLite + D04 RSS Adapter 集成测试名/PASS。
 
 ## 8. 每卡冻结、Candidate、Merge 与归档门禁
 
@@ -440,5 +448,6 @@ Lead 签发 `D05_LOCAL_GATE=PASS` 后交 Architect。按负责人持续授权，
 
 - 本 Plan 仅将已批准 D05 Intent/Spec 映射为四张串行、文件级可执行任务卡；没有新增需求、公共契约、DDL、依赖或替代任务 ID。
 - T01～T04 均有精确允许路径、依赖、Spec/Case 引用、禁止范围、验证命令、冻结/候选/合并/归档证据字段。
+- v0.2 已按 v0.1 G3 三项定位阻塞完成修订：T02 前移并冻结 raw_data v1；逐调用取消、首调用共享终止与 token-aware 清理有明确测试；路径改为 `config/prompt` 且只做 tracked-diff 枚举，事务要求与实际 helper 一致，待 Architect 复核。
 - 当前 `plan.md` 状态为 `REVIEW`，`progress.md` 全部任务为 `NOT_STARTED`；未创建 Worker、未编码、未创建开发心跳、未合并或推送。
 - 下一步仅交 Architect G3 审核；批准后方可创建 T01 新 Worker。

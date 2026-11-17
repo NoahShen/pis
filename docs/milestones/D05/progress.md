@@ -1,7 +1,7 @@
 # D05 Progress：Collection 采集、去重与检查点
 
-- Plan：`docs/milestones/D05/plan.md` v0.1
-- Plan 状态：`REVIEW · Architect G3 待审核`
+- Plan：`docs/milestones/D05/plan.md` v0.2
+- Plan 状态：`REVIEW · Architect G3 v0.2 待审核`
 - Intent：`APPROVED · G1 PASS`
 - Spec：`APPROVED · G2 PASS`
 - Plan/执行基线：`366d3d19c6dfe5cc4ef18057c4c17c6986a88bf2`
@@ -42,7 +42,7 @@
 |---|---|---|
 | `COL-01`～`18` D05 映射 | NOT_RUN | 四卡测试与最终矩阵待执行 |
 | fresh 条目 + checkpoint 原子事务 | NOT_RUN | T03/T04 待执行 |
-| raw_data v1 JSON round-trip | NOT_RUN | T04 待执行 |
+| raw_data v1 strict schema / JSON round-trip | NOT_RUN | T02 基础实现，T04 复用并集成 |
 | 真实 SQLite + D04 RSS Adapter 本地集成 | NOT_RUN | T04 待执行 |
 | 配置 API checkpoint 不可写 / DDL / Prompt / CI 不变 | NOT_RUN | T04 与 D05 Gate 待执行 |
 | D05 本地集成 Gate | NOT_RUN | 四卡 PASS 后执行 |
@@ -53,7 +53,7 @@
 ## 当前阻塞与待决策事项
 
 - 无设计阻塞。
-- 唯一当前门禁：Architect G3 审核 `plan.md`。
+- 唯一当前门禁：Architect 审核 v0.2 `plan.md`；v0.1 三项 G3 定位阻塞已在文档中修正，待 Architect 复核。
 - G3 前禁止：创建 Worker、修改生产代码、创建 heartbeat、candidate、merge、push 或标记任务 READY。
 
 ## 下一可执行动作
@@ -66,5 +66,5 @@
 
 - 提交者：D05 Lead
 - 日期：2026-11-17
-- 结论：`PENDING`
-- 阻塞项：待 Architect 审核后填写
+- v0.1：`CHANGES_REQUIRED`。阻塞为：raw_data 构造归属前移与路径自洽；single-flight 逐调用取消及 token 清理语义；`config/prompt` tracked-diff 检查与事务 helper 表述。
+- v0.2：`PENDING`。T02 已前移 `raw-data.ts`/`raw-data.test.ts`，T04 只复用和公共导出；已明确首调用/后续等待者取消、独立 wait race、token-aware 清理及对应测试；已修正路径和同步事务回调表述。
