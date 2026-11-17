@@ -7,7 +7,7 @@
 - D04 Intent：`APPROVED · G1 PASS`。负责人确认全文/摘要判定，并明确 RSS 仅为一种实现；财经资讯抓取 API Adapter 延期至 V1 全流程走通后另立里程碑。
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
-- D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。
+- D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。Architect 后续复核发现了归档时 branch tip 未按 Plan 对齐到 candidate 的收尾缺陷；工作区已无引用后已把 branch ref 精确指向 `a6a12e3a877812666cacde416a65332cfcada08b`，生产代码与 main 未变。
 - D04-T02：`IN_PROGRESS`；已在全新 Paseo 会话从 T01 PASS 后的 main `d3970ae753bfd241515935bcc2640b8792b46230` 创建独立 worktree 和 Worker，严格限定 Plan §6 的 11 路径写集，尚未 stage/commit/merge。D04-T03：`NOT_STARTED`，仅在 T02 PASS 并归档后串行启动。
 - D04 本地测试：`PASS`（frozen tree `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`；local merge `f8ff76230779c4e2444d1a3e2568d9431b42d123`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
@@ -42,7 +42,7 @@
 
 ## 下一步
 
-T01 已完整收尾；在后续新会话派发 T02，严格遵循已批准 Plan 和既有门禁。不 push、不新增心跳。
+T02 已在全新 Paseo Worker/worktree 中 `IN_PROGRESS`；等待其提交 `REVIEW` 或 `BLOCKED`，随后由 Lead 按批准 Plan 独立复核、必要时退回修复并冻结精确 tree。T03 仍为 `NOT_STARTED`，只能在 T02 PASS 并完成工作区收尾归档后启动。不 push、不新增心跳。
 
 ## D04-T01 Lead 第二轮复核记录
 
@@ -63,8 +63,9 @@ T01 已完整收尾；在后续新会话派发 T02，严格遵循已批准 Plan 
 - 合并前仅文档批准提交为 `91582488fc389566445e881d39c0bb5e42940fc9`；local main `--no-ff` merge commit 为 `f8ff76230779c4e2444d1a3e2568d9431b42d123`，merge tree 为 `b1c5c0901482b1412fe720402e407238be2634a2`。第一/第二 parent 分别为批准记录与 candidate；第一 parent 到 merge 恰 13 路径，patch SHA-256 仍精确一致，candidate/merge/worktree blob 为 13/13 匹配。
 - 合并后以精确 Node `26.13.1` / npm `11.20.0` 执行 `npm ci --offline`：102 packages、0 vulnerabilities；adapter 定向 `3/3` 文件、`99/99` tests；完整 `npm run verify` 为 `33/33` 文件、`290/290` tests，typecheck、build、SIGINT/SIGTERM/占用端口/forced-close/late-listen smoke、Source+Topic 跨重启持久化、database smoke 与 `100` 文件格式检查全部通过。
 - `npm ls --all` 退出 `0`；merge tree 与 13 路径 patch 复算一致，`git diff-tree --check` 通过，工作树 clean，默认 `data/` 目录与仓库内 SQLite/WAL/SHM 均不存在。`T01_STATUS=PASS · LOCAL_MERGE_VERIFIED`；`T01_REMOTE_CI=NOT_RUN`；未 push，最终验收尚未签发。
-- Worker branch tip 精确等于 candidate parent `7218d74f8da376d92d7b36798a40f93d218d8b52`；归档前未暂存路径集合与 candidate 13 路径精确相同，staged entries 为 `0`，13/13 工作文件 blob 与 candidate 完全匹配，唯一未提交成果为 `0`。
+- 归档时历史观察：Worker branch tip 为 candidate parent `7218d74f8da376d92d7b36798a40f93d218d8b52`，**不满足** Plan 的 branch tip=candidate 收尾要求；当时未暂存路径集合与 candidate 13 路径精确相同，staged entries 为 `0`，13/13 工作文件 blob 与 candidate 完全匹配，唯一未提交成果为 `0`。该缺陷按历史事实保留，不以后续修正覆盖。
 - Paseo `archive_workspace` 返回 `workspaceId=wks_2f570238f5eb4a0c`、`archivedAgentIds=[c1fe5080-e7ac-44c1-8dd4-916763b1dafd]`、`removedDirectory=true`。复核 active workspace 列表已无该 workspace，Worker agent 为 closed/archived，原 worktree 路径已不存在；归档前 main 于 PASS 记录提交 `f4497ecc43c6fa411304cd42363671b40b6c5d5c` clean，candidate object 仍可在 local main objects 解析。
+- T01 branch 引用收尾纠正：确认 `git worktree list` 中已无 `feat/d04-t01-contracts-rss-list` 引用后，以 compare-and-swap 将 branch ref 从 `7218d74f8da376d92d7b36798a40f93d218d8b52` 更新为已合入 candidate `a6a12e3a877812666cacde416a65332cfcada08b`；复核两者完全相等，main 与生产代码未改变。该操作仅补齐分支引用，不创建提交；后续每卡必须在归档前完成同一对齐。
 
 ## D04-T02 执行记录
 
@@ -77,6 +78,7 @@ T01 已完整收尾；在后续新会话派发 T02，严格遵循已批准 Plan 
 - Architect 已确认首轮 13 个文件 blob、tree `ee53ff73039af064c5a6d14d3089a38282f60faa` 与 full-index patch `93b813e7111a209bab2c7c4b56b0caaa8963d6ed2852860425a464175f6e5edc` 一致；独立 typecheck、3 文件 95 tests 与 build 通过。
 - 结论 `CHANGES_REQUIRED`：`raceWithAbort` 在 transport 调用后才监听 signal，同步 abort + 永久 pending 不能有限终止；RFC822 regex 错误要求 weekday；Atom HTML 在 XML 解码后再次解码并去标签，导致合法字面量丢失。必须补同步 abort+永久 pending/late reject、无 weekday GMT/数值 offset、Atom title/content/summary 嵌套实体/CDATA 回归。
 - 首轮 tree 不形成 candidate，真实 index 仍为空、HEAD 仍为 base；Architect 明确未授权 candidate 或 merge，已退回原 Worker 在同一白名单内修复。
+- 合并后 Architect 复核确认 candidate tree、merge 第二父、worktree 移除和 T02 基线记录正确；同时指出归档前 branch/candidate 未对齐，并要求仅修正 branch ref 与当前进度记录。该缺陷现已关闭，无遗留 T01 代码或 merge 阻塞；原两轮 `CHANGES_REQUIRED` 记录继续保留作为历史证据。
 
 ## Architect G3 审核记录
 
@@ -87,7 +89,7 @@ T01 已完整收尾；在后续新会话派发 T02，严格遵循已批准 Plan 
 
 ## 证据边界
 
-T01 Lead 复核阶段只更新本 Progress；Worker 分支独立承载生产候选，不得覆盖 main 的 Progress。全部证据以 Worker 收据、隔离 tree/patch、实际 diff 和 Lead 复核命令为准。未请求真实互联网，不读取或复制 User Context/私密配置；Architect G4 结论仍待签发。
+T01 Lead 复核阶段只更新本 Progress；Worker 分支独立承载生产候选，不得覆盖 main 的 Progress。全部证据以 Worker 收据、隔离 tree/patch、实际 diff 和 Lead 复核命令为准。未请求真实互联网，不读取或复制 User Context/私密配置。原文“Architect G4 结论仍待签发”属于历史阶段状态；后续 Architect 已确认 candidate/merge/worktree/T02 基线，branch 引用与文档状态亦已按指正更新，该项已不再 pending。T02 保持 `IN_PROGRESS`，本纠正未打断或重复派发 Worker。
 
 ## 历史 G2 审核记录
 
