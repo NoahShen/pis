@@ -8,7 +8,7 @@
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
 - D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。Architect 后续复核发现了归档时 branch tip 未按 Plan 对齐到 candidate 的收尾缺陷；工作区已无引用后已把 branch ref 精确指向 `a6a12e3a877812666cacde416a65332cfcada08b`，生产代码与 main 未变。
-- D04-T02：`IN_PROGRESS`；已在全新 Paseo 会话从 T01 PASS 后的 main `d3970ae753bfd241515935bcc2640b8792b46230` 创建独立 worktree 和 Worker，严格限定 Plan §6 的 11 路径写集，尚未 stage/commit/merge。D04-T03：`NOT_STARTED`，仅在 T02 PASS 并归档后串行启动。
+- D04-T02：`CANDIDATE_APPROVED · MERGE_PENDING`；candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084` 的 tree 为 Architect 批准的 `66a486f0873bf71c61bc1af9a3f5ea787575328f`，唯一 parent 为固定 base `d3970ae753bfd241515935bcc2640b8792b46230`，11 路径写集，尚未 merge。D04-T03：`NOT_STARTED`，仅在 T02 PASS 并归档后串行启动。
 - D04 本地测试：`PASS`（frozen tree `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`；local merge `f8ff76230779c4e2444d1a3e2568d9431b42d123`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
 ## Lead 执行身份与恢复记录
@@ -42,7 +42,7 @@
 
 ## 下一步
 
-T02 已在全新 Paseo Worker/worktree 中 `IN_PROGRESS`；等待其提交 `REVIEW` 或 `BLOCKED`，随后由 Lead 按批准 Plan 独立复核、必要时退回修复并冻结精确 tree。T03 仍为 `NOT_STARTED`，只能在 T02 PASS 并完成工作区收尾归档后启动。不 push、不新增心跳。
+T02 candidate 已获 Architect 精确 tree 批准，等待 `--no-ff` merge 与合并后复验。T03 仍为 `NOT_STARTED`，只能在 T02 PASS 并完成工作区收尾归档后启动。不 push、不新增心跳。
 
 ## D04-T01 Lead 第二轮复核记录
 
@@ -72,6 +72,13 @@ T02 已在全新 Paseo Worker/worktree 中 `IN_PROGRESS`；等待其提交 `REVI
 - Worker Agent：`e5a27406-fedf-4d6a-a6b0-c31476b2b0bc`；全新 Paseo Worker，采用 `codex-worker` profile（`codex-magpie/group/worker`、`auto-review`、thinking `high`），已严格限定为 single-task 实现和 `REVIEW`/`BLOCKED` 交回。
 - Workspace：`wks_21f5659a79f35681`，`/Users/noahshen/.paseo/worktrees/0eapmc43/d04-t02-content-extraction`；Branch：`feat/d04-t02-content-extraction`。
 - 固定 base/初始 HEAD：`d3970ae753bfd241515935bcc2640b8792b46230`；tree `4e3995c5b24753a771948bbc237ce257a993918e`，与 local main 一致，worktree clean。Worker 尚未产生提交或改变固定 base。
+
+## D04-T02 Lead 复冻结与 Architect 批准记录
+
+- Worker 首轮 `REVIEW` 后，Lead 独立复核并退回两项证据/行为问题：受限正文片段不得被普通最小字符阈值二次丢弃；`addEventListener` 后发生的晚到 abort 必须确定拒绝且不得启动 transport。Worker 在同一 11 路径白名单内修复，未修改 T01 文件。
+- Lead 复核后冻结 tree `66a486f0873bf71c61bc1af9a3f5ea787575328f`，归档 SHA-256 `c0a54a9cbf107cd1b259ca7b0274d97127957927430b1eef67c2ab2c12539cdb`；写集精确为 11 路径，T01 diff 为 `0`，staged 外无 tracked/untracked 变更。独立 `npm run verify` 为 `36/36` 文件、`347/347` tests，typecheck、build、lifecycle/database smoke 和 109 文件格式检查全部通过；定向正文套件 `3/3` 文件、`57/57` tests 通过。
+- 冻结 11 路径高置信私钥/云厂商/GitHub/OpenAI/Slack/Bearer secret 模式命中路径计数为 `0`；`git diff --cached --check` 通过；新增生产代码未引入 `any`/`ts-ignore` 或额外网络实现，除注入 transport 的 `fetch` 调用外无网络入口。
+- Architect 对同一 tree 完成独立复冻结，结论 `D04-T02 ARCHITECT REFREEZE: APPROVE 66a486f0873bf71c61bc1af9a3f5ea787575328f`。Lead 随即以该精确 tree 创建 candidate `b6566b0a60940e3593b84b7d8af29c0e57e4a084`，parent/base 与 tree 均逐字核验一致，Worker branch tip 已对齐 candidate；candidate archive SHA-256 为 `92787cf3252811972cb4c600ac764858108e18bf450a52db1c0b0637520b3b3b`。
 
 ## D04-T01 Architect G4 审核记录
 
