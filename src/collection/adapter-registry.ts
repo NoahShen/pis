@@ -1,4 +1,5 @@
 import type { SourceAdapter } from "../adapters/contracts.js";
+import { createRssAdapter } from "../adapters/rss-adapter.js";
 import { CollectionError } from "./collection-errors.js";
 
 export interface SourceAdapterRegistry {
@@ -20,4 +21,10 @@ export function createSourceAdapterRegistry(
       return adapter;
     },
   });
+}
+
+export function createRssAdapterRegistry(): SourceAdapterRegistry {
+  return createSourceAdapterRegistry(
+    new Map<string, SourceAdapter>([["RSS", createRssAdapter()]]),
+  );
 }
