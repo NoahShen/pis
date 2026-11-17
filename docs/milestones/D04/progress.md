@@ -7,7 +7,8 @@
 - D04 Intent：`APPROVED · G1 PASS`。负责人确认全文/摘要判定，并明确 RSS 仅为一种实现；财经资讯抓取 API Adapter 延期至 V1 全流程走通后另立里程碑。
 - D04 Spec v0.1：`APPROVED · G2 PASS`。本里程碑不修改 Spec/Intent。
 - D04 Plan：v0.1～v0.3 为历史未批准稿；v0.4 经 Architect 复核四项修订后为 `APPROVED · G3 PASS`。`USER_EXECUTION_APPROVAL=APPROVED`；授权范围为 T01～T03 按 Plan 串行实施，不包含 D04 push。
-- D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。D04-T02/T03：`NOT_STARTED`，按已批准 Plan 在后续新会话串行启动。
+- D04-T01：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已从 Architect 批准的精确 tree 创建 candidate 并完成 main `--no-ff` merge，13 路径写集、patch 与 blob 均保持一致。合并后定向/full verify 全部通过；Worker 无唯一未提交成果，工作区归档和目录移除已核验。
+- D04-T02：`IN_PROGRESS`；已在全新 Paseo 会话从 T01 PASS 后的 main `d3970ae753bfd241515935bcc2640b8792b46230` 创建独立 worktree 和 Worker，严格限定 Plan §6 的 11 路径写集，尚未 stage/commit/merge。D04-T03：`NOT_STARTED`，仅在 T02 PASS 并归档后串行启动。
 - D04 本地测试：`PASS`（frozen tree `bcc6d9d1fe4a306e440e70c6ad7088c7e78da503`；local merge `f8ff76230779c4e2444d1a3e2568d9431b42d123`）。远程 CI：`NOT_RUN`；最终验收：`NOT_ISSUED`。
 
 ## Lead 执行身份与恢复记录
@@ -64,6 +65,12 @@ T01 已完整收尾；在后续新会话派发 T02，严格遵循已批准 Plan 
 - `npm ls --all` 退出 `0`；merge tree 与 13 路径 patch 复算一致，`git diff-tree --check` 通过，工作树 clean，默认 `data/` 目录与仓库内 SQLite/WAL/SHM 均不存在。`T01_STATUS=PASS · LOCAL_MERGE_VERIFIED`；`T01_REMOTE_CI=NOT_RUN`；未 push，最终验收尚未签发。
 - Worker branch tip 精确等于 candidate parent `7218d74f8da376d92d7b36798a40f93d218d8b52`；归档前未暂存路径集合与 candidate 13 路径精确相同，staged entries 为 `0`，13/13 工作文件 blob 与 candidate 完全匹配，唯一未提交成果为 `0`。
 - Paseo `archive_workspace` 返回 `workspaceId=wks_2f570238f5eb4a0c`、`archivedAgentIds=[c1fe5080-e7ac-44c1-8dd4-916763b1dafd]`、`removedDirectory=true`。复核 active workspace 列表已无该 workspace，Worker agent 为 closed/archived，原 worktree 路径已不存在；归档前 main 于 PASS 记录提交 `f4497ecc43c6fa411304cd42363671b40b6c5d5c` clean，candidate object 仍可在 local main objects 解析。
+
+## D04-T02 执行记录
+
+- Worker Agent：`e5a27406-fedf-4d6a-a6b0-c31476b2b0bc`；全新 Paseo Worker，采用 `codex-worker` profile（`codex-magpie/group/worker`、`auto-review`、thinking `high`），已严格限定为 single-task 实现和 `REVIEW`/`BLOCKED` 交回。
+- Workspace：`wks_21f5659a79f35681`，`/Users/noahshen/.paseo/worktrees/0eapmc43/d04-t02-content-extraction`；Branch：`feat/d04-t02-content-extraction`。
+- 固定 base/初始 HEAD：`d3970ae753bfd241515935bcc2640b8792b46230`；tree `4e3995c5b24753a771948bbc237ce257a993918e`，与 local main 一致，worktree clean。Worker 尚未产生提交或改变固定 base。
 
 ## D04-T01 Architect G4 审核记录
 
