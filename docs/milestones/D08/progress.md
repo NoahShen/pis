@@ -193,3 +193,12 @@
 - 相对 D07 closeout `09640c3`：**24** 个 tracked 路径；受保护路径 diff = **0**。
 - 五个功能 Prompt 哈希与 D06/D07 基线一致；真实 `config/prompt/user-context.md` 未跟踪。
 - 结论：`D08_LOCAL_GATE=APPROVED`。
+
+## D08 远程 CI 与最终验收
+
+- 推送 SHA：`e1c23ceed888d408a587b53ea1876e732ec60db0`。
+- 精确 SHA 远程 CI：run #27 / `44350077255`，`WORKFLOW_RUN_CONCLUSION_SUCCESS`。
+- 双重条件满足：Architect 独立干净快照 Gate + 精确 pushed SHA CI Success。
+- `D08_FINAL_PASS=ISSUED`。
+- 四卡均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；24 个 tracked 路径，受保护路径 diff=0。
+- 未纳入：PMT-02（S0 真实模型语义回归）、D09 Event Analysis 写入与归属、Topic/Runtime。
