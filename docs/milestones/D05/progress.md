@@ -9,7 +9,7 @@
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`1a12839e`（已由 Architect 通过 `delete_heartbeat` 删除，`success=true`）
 - 当前 Worker：`NONE`；T01/T02/T03/T04、D05-CI01 与 D05-CI02 共六个 Worker 均已归档
-- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_TASKS=PASS`、`D05_LOCAL_GATE=PASS`、`D05_REMOTE_CI=FAIL`（run `44133384142`，commit `2482871`，rss-http 取消计数时序断言失败）、`D05_CI02=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`、`D05_FINAL_PASS=WITHDRAWN · NOT_ISSUED`。CI01 修复有效（run `44133078537` Success）；CI02 的 G4 candidate `23373eb9` 已 `--no-ff` 合并为 local main `1590a46e` 并通过合并后 full verify。尚未 push，必须由 Architect 推送并核验该精确 SHA 的远程 CI Success 后才可签发最终 PASS。
+- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_TASKS=PASS`、`D05_LOCAL_GATE=PASS`、`D05_REMOTE_CI=PASS`（run `44207186766`，commit `23908b1e4b2417f2ce52441f28a1bb8f63799ea6`）、`D05_CI01=PASS`、`D05_CI02=PASS`、`D05_FINAL_PASS=ISSUED`。历史失败 run `44128064463`（socket 关闭时序）与 `44133384142`（reader 取消计数时序）均由测试稳定性修复解决，未改生产代码。
 
 ## 任务状态
 
@@ -145,7 +145,7 @@
 - COL 映射：`COL-01/07/11/12/16` → T01/T03/T04 identity、事务、checkpoint、NONE service/persistence；`COL-02/03/04/05/13/17/18` → T01 identity/repository + T04 service；`COL-06/08/09/10/14` → T02 acquisition/single-flight + T04 RSS integration；`COL-15` → D04 restricted HTTP/RSS 安全回归。`COL-01` 的 Processing 派发部分按 D05 边界归 D15。
 - 边界 diff：执行批准 `fab28a5` → final `d83c1aa` 仅新增 `src/collection/**` 与对应 `tests/collection/**`、`tests/fixtures/collection.ts`；`src/database/schema.sql`、`config/prompts`、`config/prompt`、`.github`、`src/adapters` tracked diff 均为空，无 package/lock 变更。
 - 资源：T01～T04 Worker 全部 archived，独立 worktree 条目/目录均已移除；主工作区 clean，无 SQLite/WAL/SHM 残留。未 push。
-- Gate 结论：`D05_LOCAL_GATE=PASS`、`D05_ARCHITECT_GATE_REVIEW=PASS`、`D05_REMOTE_CI=FAIL`（2482871）、`D05_FINAL_PASS=NOT_ISSUED`（此前 ISSUED 记录作废）。
+- Gate 结论：`D05_LOCAL_GATE=PASS`、`D05_ARCHITECT_GATE_REVIEW=PASS`、`D05_REMOTE_CI=PASS`（23908b1，run `44207186766`）、`D05_FINAL_PASS=ISSUED`。此前在 CI 结果前过早记录 ISSUED 已撤回并更正；本次以精确 SHA CI Success 为前提。
 
 ## D05-CI01 Lead 复核与冻结记录
 
@@ -175,4 +175,4 @@
 - G4 后执行：candidate `23373eb97bbcecef7d970c80c6f99bfa0debb64d`，唯一 parent/base 为 `5b77839`、tree `b6530a8`、唯一测试路径。local main `--no-ff` merge commit `1590a46eacb451c150af404269e42f0d806ab7bd`，tree `b6530a8`，第一/第二 parent 分别为 `5b77839` / candidate；测试 blob 精确 `ee747a5`。
 - Merge 后复验：固定 Node `26.13.1`/npm `11.20.0`；定向 `1/1` file、`9/9` tests PASS；`npm run verify` 为 `49/49` files、`585/585` tests，typecheck/build/SIGINT/SIGTERM/端口/关闭/Source+Topic 持久化/database smoke/137 文件 format 全部 PASS。
 - Worker 收尾：`archive_workspace(wks_8f9dafb9319ee5cc)` 返回 `archivedAgentIds=[430a5c9a-4926-46e6-8845-01be103533e1]`、`removedDirectory=true`；离线 Agent 状态 `closed`、`archivedAt=2026-11-18T00:19:48.475Z`，活跃 workspace 列表已无该项，Git worktree 条目与目录已移除。feature 与 candidate 分支均对齐 `23373eb9`。
-- CI02 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未 push。Architect 需推送新 main 并核验精确 SHA 的远程 CI Success；`FINAL_PASS` 保持 `WITHDRAWN · NOT_ISSUED`。
+- CI02 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已推送 `23908b1`，远程 CI run `44207186766` Success。`D05_FINAL_PASS=ISSUED`；收尾归档见下。
