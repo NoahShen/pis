@@ -184,3 +184,12 @@
 - 变更范围：相对 D07 closeout `09640c3` 共 24 个 tracked 路径（4 D08 docs、11 src/event-search、9 tests）；受保护路径 diff 数量为 0。
 - Case Gate：EVT-06/10/11/21/22/23/24、DEDUPE、CANDIDATE_LIMIT、UPDATE_LIMIT、FTS_LITERAL、MISSING/INVALID/ABORT、ERROR、PMT-09、PMT-15、PRIVACY、PUBLIC_SHAPE 的 D08 P0 责任均有服务/集成或既有验证证据；PMT-02 保持 S0，不算 P0 PASS。
 - 结论：`D08_LOCAL_GATE=EVIDENCE_READY`；等待 Architect 独立 Gate、push/远程 CI 与最终验收；Lead 不 push。
+
+## D08 本地集成 Gate（Architect 独立复核）
+
+- Gate 输入：`5fd5478e7ed6b4b3a7005b3a3af9dcb2397f698f`；tree `cf1a164ddddab49bc8cbb436de96b15de405d896`。
+- Architect 独立快照：`git archive HEAD` 至 `/private/tmp/d08-arch-gate`；无 `.git`、无 `node_modules`；tar SHA-256 `fe3d2656b64bb358f7ea60c6bf2e58a276b15e65633944843752d66e023895d1`（与 Lead 不同打包命令，内容基于同一 commit tree）。
+- 快照独立验证：`npm ci --offline` 退出 0；typecheck 退出 0；`npm run verify` 全绿：`70/70` 文件、`844/844` 用例、build、全部 smoke、database smoke、`191` 文件 format PASS。
+- 相对 D07 closeout `09640c3`：**24** 个 tracked 路径；受保护路径 diff = **0**。
+- 五个功能 Prompt 哈希与 D06/D07 基线一致；真实 `config/prompt/user-context.md` 未跟踪。
+- 结论：`D08_LOCAL_GATE=APPROVED`。
