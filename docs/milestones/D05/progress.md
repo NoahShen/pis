@@ -9,7 +9,7 @@
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`1a12839e`（已由 Architect 通过 `delete_heartbeat` 删除，`success=true`）
 - 当前 Worker：`NONE`；T01/T02/T03/T04 与 D05-CI01 共五个 Worker 均已归档
-- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_TASKS=PASS`、`D05_LOCAL_GATE=PASS`、`D05_REMOTE_CI=PASS`（run `44133078537`，commit `85ea2ef`）、`D05_FINAL_PASS=ISSUED`。旧 run `44128064463` 的测试时序失败已由 D05-CI01 修复并复验。
+- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_TASKS=PASS`、`D05_LOCAL_GATE=PASS`、`D05_REMOTE_CI=FAIL`（run `44133384142`，commit `2482871`，rss-http 取消计数时序断言失败）、`D05_FINAL_PASS=WITHDRAWN · NOT_ISSUED`。CI01 修复有效（run `44133078537` Success）；同一测试文件仍有同类时序假设，需 CI02 修复后重推。Architect 曾过早记录 ISSUED，已在本提交更正。
 
 ## 任务状态
 
@@ -51,7 +51,7 @@
 | D05 本地集成 Gate | PASS · PENDING ARCHITECT REVIEW | final merge `d83c1aa` clean snapshot `49/49` files、`585/585` tests |
 | 远程 CI | FAIL · NEW CI PENDING | 旧 run `44128064463` @ `fc7e353` 因 socket close 时序失败；CI01 已本地合并复验，新 main push 后必须重跑 |
 | D05 最终 PASS | NOT_ISSUED | 本地 Gate、远程 CI、Architect 验收均未完成 |
-| D05 心跳删除 / Lead+Worker 归档 | PASS | T01～T04、CI01 五个 Worker Agent/Workspace 已归档并移除目录；Lead `1b7165af…` 已归档，workspace `wks_c149e16251f350e0` 归档且 `removedDirectory=true`；heartbeat `1a12839e` 删除成功。仅保留主工作区 |
+| D05 心跳删除 / Lead+Worker 归档 | PARTIAL · REOPENED | T01～T04、CI01 五个 Worker Agent/Workspace 已归档并移除目录；Lead `1b7165af…` 已归档，workspace `wks_c149e16251f350e0` 归档且 `removedDirectory=true`；heartbeat `1a12839e` 删除成功。仅保留主工作区 |
 
 ## 当前阻塞与待决策事项
 
@@ -143,7 +143,7 @@
 - COL 映射：`COL-01/07/11/12/16` → T01/T03/T04 identity、事务、checkpoint、NONE service/persistence；`COL-02/03/04/05/13/17/18` → T01 identity/repository + T04 service；`COL-06/08/09/10/14` → T02 acquisition/single-flight + T04 RSS integration；`COL-15` → D04 restricted HTTP/RSS 安全回归。`COL-01` 的 Processing 派发部分按 D05 边界归 D15。
 - 边界 diff：执行批准 `fab28a5` → final `d83c1aa` 仅新增 `src/collection/**` 与对应 `tests/collection/**`、`tests/fixtures/collection.ts`；`src/database/schema.sql`、`config/prompts`、`config/prompt`、`.github`、`src/adapters` tracked diff 均为空，无 package/lock 变更。
 - 资源：T01～T04 Worker 全部 archived，独立 worktree 条目/目录均已移除；主工作区 clean，无 SQLite/WAL/SHM 残留。未 push。
-- Gate 结论：`D05_LOCAL_GATE=PASS`、`D05_ARCHITECT_GATE_REVIEW=PASS`、`D05_REMOTE_CI=PASS`、`D05_FINAL_PASS=ISSUED`。
+- Gate 结论：`D05_LOCAL_GATE=PASS`、`D05_ARCHITECT_GATE_REVIEW=PASS`、`D05_REMOTE_CI=FAIL`（2482871）、`D05_FINAL_PASS=NOT_ISSUED`（此前 ISSUED 记录作废）。
 
 ## D05-CI01 Lead 复核与冻结记录
 
