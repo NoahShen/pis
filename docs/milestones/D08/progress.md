@@ -77,3 +77,9 @@
 - v0.2 修订：同步上游 `maxUpdates` 契约、T03 `LIMIT ?`/0 窗口、T04 独立 factory 配置及默认/调大/调小/0/窗口外 FTS 召回测试；四卡写集、禁止范围、冻结即交回硬门禁未变。
 - 非 P0：`PMT-02` 保持 S0；D07 RSS 清理时序失败保留观察项，若复现不弱化断言。
 - G3 提交：本次最终提交 SHA 由 Lead 返回给 Architect；提交前参考基线不构成批准。G3 通过前 D08 开发保持 `NOT_AUTHORIZED`。
+
+## D08 开发启动
+
+- G1/G2/G3 均已通过；main `2d9d764b27470aaf3b413941358249a9580d7b8e` 已推送。
+- 开发心跳：`c85e2b88`（`*/10 * * * *`，Asia/Shanghai，Architect 创建）。
+- T01 固定 base：`2d9d764b27470aaf3b413941358249a9580d7b8e`。
