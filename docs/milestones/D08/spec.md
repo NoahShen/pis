@@ -65,7 +65,7 @@ interface EventCandidateUpdate {
 6. D02 严格校验 P-02 输出；非法 JSON、缺字段、额外字段、错误类型映射 `llm_failed`。
 7. `clues=[]` → 空结果，候选 Repository 调用次数为 0。
 8. 对每个 clue 独立执行候选检索，跨 clue、跨检索来源按 Event ID 去重。
-9. 确定性排序、截断，再为每个入选候选读取基本资料和最近 10 条 Update。
+9. 确定性排序、截断，再为每个入选候选读取基本资料和按 `maxUpdates` 配置的最近 Update。
 10. 返回候选 DTO；不写任何业务数据。
 
 ## 3. 检索契约
@@ -109,15 +109,18 @@ FTS 查询使用**参数绑定的短语字面量**：把每个检索词作为独
 - 默认 `maxCandidates=10`，依赖注入可配置整数 `1..50`；生产默认 10。只对去重后的 Event 集合截断，不限制 SQL 检索的历史范围。
 - 该规则是 D08 的确定性实现定案，不引入第二次 LLM、向量、bm25 语义分数或新依赖。
 
-## 4. 最近 10 条 Update
+## 4. 可配置的最近 Update 窗口
 
-对每个入选候选：
+依赖显式包含可选 `maxUpdates`：默认 `10`，允许 `0..100` 的整数；非整数、负数或大于 100 在 factory 构造期同步抛 `RangeError("maxUpdates must be an integer from 0 to 100")`。每个服务实例保存自己的值，不使用模块级配置。
 
-- SQL 取数按 `discovered_at DESC, id DESC`，`LIMIT 10`。
-- DTO 输出将结果反转为旧→新；因此输出中最新一条在最后。
+- `maxUpdates > 0` 时，SQL 取数按 `discovered_at DESC, id DESC`，`LIMIT ?` 参数绑定该配置值。
+- `maxUpdates = 0` 时不执行 Update 查询，候选仍返回且 `updates: []`。
+- DTO 输出将查询结果反转为旧→新；因此输出中最新一条在最后。
 - `occurred_at` 原样可空，不造值。
 - 同一 discovered_at 必须按 ID 决胜，不能依赖 SQLite 自然顺序。
-- 不加载第 11 条及更早 Update 到 DTO，但它们已通过 D01 聚合 FTS 参与召回。
+- 不加载窗口以外的 Update 到 DTO，但它们已通过 D01 聚合 FTS 参与召回。
+- 调大或调小窗口只影响返回给 D09/P-03 的模型上下文，绝不改变全历史检索范围、候选集合或候选排序。
+- 该配置是 D08 的确定性实现定案；D09 可在自己的 factory 装配时按需调整，不改 DTO 形状。
 
 ## 5. 错误、取消与日志
 
@@ -148,10 +151,10 @@ FTS 查询使用**参数绑定的短语字面量**：把每个检索词作为独
 |---|---|
 | `EVT-06` | 同实体两个 Subject 分别检索；两个不同 Event 不被主体相同合并 |
 | `EVT-10` | 10 年前 Event 仍由标准名/确认别名/FTS 召回 |
-| `EVT-11` | 12 条 Update 只输出 10 条；同 discovered_at 按 id DESC 取数，DTO 旧→新 |
+| `EVT-11` | 默认窗口下 12 条 Update 只输出 10 条；同 discovered_at 按 id DESC 取数，DTO 旧→新；窗口调大/调小/0 均生效 |
 | `EVT-21` | clues=[] 返回空；Repository 零调用、LLM 恰一次、零业务写 |
 | `EVT-22` | 有 clues 但无候选返回空成功；不虚构 Event、不写库 |
-| `EVT-23` | 线索只在第 11 条以前 Update 仍经 FTS 召回；DTO 仅最近 10 条 |
+| `EVT-23` | 线索只在默认窗口以前的 Update 仍经 FTS 召回；DTO 仅配置窗口内的最近 Update |
 | `EVT-24` | 两个 Event 同别名文字均独立召回，各自 Update 不混淆 |
 | `DEDUPE` | 同 Event 被标准名、别名、多 search_terms、多 clue 命中仍只输出一次 |
 | `LIMIT` | 超过上限的候选按 §3.3 稳定截断；检索覆盖全历史 |
@@ -164,7 +167,7 @@ FTS 查询使用**参数绑定的短语字面量**：把每个检索词作为独
 
 1. T01 Content 点读、P-02 六字段输入与单次调用/错误/取消。
 2. T02 三路候选 Repository、FTS 字面量、安全只读与跨来源去重。
-3. T03 确定性排序、上限、最近 10 条 Update 与候选上下文。
+3. T03 确定性排序、上限、可配置最近 Update 窗口与候选上下文。
 4. T04 公共 factory/contracts/index、真实 SQLite + StubLLM + 合成 Prompt 集成。
 
 四卡串行，Worker 不修改已批准上游。若接口缺陷暴露，由 Lead 重走受影响任务卡。
