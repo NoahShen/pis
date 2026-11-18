@@ -8,8 +8,8 @@
 - Plan/执行基线：`366d3d19c6dfe5cc4ef18057c4c17c6986a88bf2`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`1a12839e`（已由 Architect 通过 `delete_heartbeat` 删除，`success=true`）
-- 当前 Worker：`NONE`；T01/T02/T03/T04 与 D05-CI01 共五个 Worker 均已归档
-- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_TASKS=PASS`、`D05_LOCAL_GATE=PASS`、`D05_REMOTE_CI=FAIL`（run `44133384142`，commit `2482871`，rss-http 取消计数时序断言失败）、`D05_FINAL_PASS=WITHDRAWN · NOT_ISSUED`。CI01 修复有效（run `44133078537` Success）；同一测试文件仍有同类时序假设，需 CI02 修复后重推。Architect 曾过早记录 ISSUED，已在本提交更正。
+- 当前 Worker：`NONE`；T01/T02/T03/T04、D05-CI01 与 D05-CI02 共六个 Worker 均已归档
+- 当前结论：`D05_PLAN_G3=APPROVED`、`D05_TASKS=PASS`、`D05_LOCAL_GATE=PASS`、`D05_REMOTE_CI=FAIL`（run `44133384142`，commit `2482871`，rss-http 取消计数时序断言失败）、`D05_CI02=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`、`D05_FINAL_PASS=WITHDRAWN · NOT_ISSUED`。CI01 修复有效（run `44133078537` Success）；CI02 的 G4 candidate `23373eb9` 已 `--no-ff` 合并为 local main `1590a46e` 并通过合并后 full verify。尚未 push，必须由 Architect 推送并核验该精确 SHA 的远程 CI Success 后才可签发最终 PASS。
 
 ## 任务状态
 
@@ -20,6 +20,7 @@
 | D05-T03 | PASS · LOCAL_MERGE_VERIFIED | `34339c19499e37d92a796e67c80a63159c7b3405` | PASS（merge 后专项 2/2 files、14/14 tests；full 47/47 files、574/574 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D05-T04 | PASS · LOCAL_MERGE_VERIFIED | `c0e1cdeb1a5b2ed314612053a1100e6b663b89c1` | PASS（merge 后 Collection 3/3 files、23/23 tests；配置/RSS 3/3 files、31/31；full 49/49 files、585/585 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D05-CI01 | PASS · LOCAL_MERGE_VERIFIED | `fc7e35312a64a4993c1162c08e25b8020c812a11` | PASS（目标单测 10/10；merge 后 full 49/49 files、585/585 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档；新 main CI 待重跑 |
+| D05-CI02 | PASS · LOCAL_MERGE_VERIFIED · ARCHIVED | `5b778394d190d3d29cc4af1b5fecde9b1f0c5808` | PASS（merge 后定向 1/1 file、9/9 tests；full 49/49 files、585/585 tests；typecheck/build/smoke/format PASS） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档；远程 CI 待新 main push 后重推 |
 
 状态语义：`NOT_STARTED → READY → IN_PROGRESS → REVIEW → PASS`；失败转 `FAIL/IN_PROGRESS`，设计/外部依赖缺失转 `BLOCKED`。Worker 不得自行写 PASS。
 
@@ -32,6 +33,7 @@
 | D05-T03 | `34339c19499e37d92a796e67c80a63159c7b3405` | `93faad84-feac-401e-94bd-9aa0d197ec18` / `wks_e14b152cb3581a7e` / `feat/d05-t03-transaction-checkpoint` | 精确 4 路径：persistence 新增、collector 接线、两事务测试 | `e5f9980d576f4f9caad68318da1e21b8d6fbf697` / `32723195e01978a700b1e46840b6c1039983bf0aa423b2e7cec8e78a719014a1` | APPROVED · G4 | `fb3631c297e792a766748c95861371cf97cb2139` / `c0e1cdeb1a5b2ed314612053a1100e6b663b89c1` | PASS（merge 后 typecheck/专项/full verify/build/smoke/format/diff-check） | `archive_workspace` success；agent closed；directory removed |
 | D05-T04 | `c0e1cdeb1a5b2ed314612053a1100e6b663b89c1` | `58438af5-eb91-42d2-9a2f-21fdd618251e` / `wks_cd84ce831f63f6e0` / `feat/d05-t04-public-contract-integration` | 精确 7 路径：公共 contracts/index、RSS registry/collector 接线、service/integration 测试与独立 fixture | `d5f50e66f0ce91b904d1b63022763162f6a5a92a` / `44afcd9e0919b42165637832c6892bf2538355a449bc50e6b7efdc08755dd7ba` | APPROVED · G4 | `5cbabc3ffcfe7a69a7f6df1046c2e4a4ecf8ca32` / `d83c1aaffae1e2ca6ff4584d913a9724a8babea8` | PASS（merge 后 Collection/配置/RSS/full verify/build/smoke/format/diff-check） | `archive_workspace` success；agent closed；directory removed |
 | D05-CI01 | `fc7e35312a64a4993c1162c08e25b8020c812a11` | `adb5dc7e-5b56-449f-9449-5eb53fac6a7d` / `wks_d98e75523e89ca07` / `fix/d05-ci01-restricted-http-close-race` | 精确 1 路径：`tests/adapters/restricted-http.test.ts`（2 insertions/2 deletions） | `643b3bf240812c4b5c4887aa4a574c9b22800526` / `68d3fe3ca5dccba41f61746c92165e69ddbd130936a85eef481fdedff0cc24ef` | APPROVED · G4 | `25d22bcf2aaf3cc6da60acab4db5590d34f9d001` / `16052b516fd5e9e84481e2960aca1afefd68b383` | PASS（merge 后 full verify/build/smoke/format/diff-check） | `archive_workspace` success；agent closed；directory removed |
+| D05-CI02 | `5b778394d190d3d29cc4af1b5fecde9b1f0c5808` | `430a5c9a-4926-46e6-8845-01be103533e1` / `wks_8f9dafb9319ee5cc` / `feat/d05-ci02-rss-reader-cancel-race` | 精确 1 路径：`tests/adapters/rss-http.test.ts`（18 insertions/11 deletions） | `b6530a831b7ad4d5f919d63b9e8879da48bdcfe2` / `81c7e2db0794e09c21c68ccf204510bd4a9f762ac197bc3aafd86b73ed233d0e` | APPROVED · G4 | `23373eb97bbcecef7d970c80c6f99bfa0debb64d` / `1590a46eacb451c150af404269e42f0d806ab7bd` | PASS（merge 后定向 9/9；full 49/49 files、585/585 tests；typecheck/build/SIGINT/SIGTERM/端口/关闭/持久化/database smoke/137 文件 format/diff-check） | `archive_workspace` success；agent closed；directory removed |
 
 记录要求：
 
@@ -49,20 +51,20 @@
 | 真实 SQLite + D04 RSS Adapter 本地集成 | PASS · T04 | 独立 fixture + in-memory RSS transport，无公网 |
 | 配置 API checkpoint 不可写 / DDL / Prompt / CI 不变 | PASS · T04 | 配置/RSS 回归通过；T02 raw-data、D04、DDL/Prompt/CI diff 均为空 |
 | D05 本地集成 Gate | PASS · PENDING ARCHITECT REVIEW | final merge `d83c1aa` clean snapshot `49/49` files、`585/585` tests |
-| 远程 CI | FAIL · NEW CI PENDING | 旧 run `44128064463` @ `fc7e353` 因 socket close 时序失败；CI01 已本地合并复验，新 main push 后必须重跑 |
+| 远程 CI | FAIL · NEW CI PENDING | CI01 后 run `44133384142` @ `2482871` 因 reader cancel 计数时序失败；CI02 已本地合并，Architect 推送新 main 后必须核验新 SHA 的 CI Success |
 | D05 最终 PASS | NOT_ISSUED | 本地 Gate、远程 CI、Architect 验收均未完成 |
-| D05 心跳删除 / Lead+Worker 归档 | PARTIAL · REOPENED | T01～T04、CI01 五个 Worker Agent/Workspace 已归档并移除目录；Lead `1b7165af…` 已归档，workspace `wks_c149e16251f350e0` 归档且 `removedDirectory=true`；heartbeat `1a12839e` 删除成功。仅保留主工作区 |
+| D05 心跳删除 / Lead+Worker 归档 | CI02 WORKER ARCHIVED · FINAL CLOSEOUT PENDING | T01～T04、CI01、CI02 六个 Worker Agent/Workspace 已归档并移除目录；旧 Lead `1b7165af…` 已归档；heartbeat `1a12839e` 删除成功。当前保留 main 与 D05 CI02 Lead 工作区，最终验收后再归档本 Lead |
 
 ## 当前阻塞与待决策事项
 
-- 无代码阻塞；D05 四卡、本地 Gate 与 CI01 定向稳定化均已完成。
-- 唯一当前门禁：Architect 推送新 main 后，核验该精确 SHA 的 CI Success。
+- D05-CI02 G4、candidate、local merge、合并后 full verify、分支对齐和 Worker 归档均已完成，当前无代码阻塞。
+- 唯一当前门禁：Architect 推送含本 progress 同步的精确 main SHA，并核验该 SHA 的远程 CI Success。
 
 ## 下一可执行动作
 
-1. 将 D05-CI01 PASS、candidate/merge、post-merge verify 与归档证据交 Architect。
-2. Architect push 新 main 后核验远程分支 SHA 与该精确 SHA 的 CI Success。
-3. CI 成功且最终验收后才可删除 heartbeat `1a12839e` 并归档 D05 Lead；当前不得签发 FINAL PASS。
+1. 完成 docs-only progress 同步并交 Architect push；不得自行 push。
+2. Architect 推送新 main 后核验远程分支 SHA 与该精确 SHA 的 CI Success。
+3. CI 成功且最终验收后才可签发 FINAL PASS；当前保持 `WITHDRAWN · NOT_ISSUED`。
 
 ## Plan G3 审核记录
 
@@ -157,3 +159,20 @@
 - Post-merge verify：`npm ci --offline` 124 packages、0 vulnerabilities；full verify `49/49` files、`585/585` tests；typecheck/build/SIGINT/SIGTERM/端口/关闭/持久化/database smoke/137 文件 format 全部 PASS；diff-check PASS。
 - Worker 收尾：branch `fix/d05-ci01-restricted-http-close-race` 与 candidate 分支均对齐 `25d22bcf`，index empty、worktree clean。Paseo `archive_workspace(wks_d98e75523e89ca07)` 返回 `archivedAgentIds=[adb5dc7e-5b56-449f-9449-5eb53fac6a7d]`、`removedDirectory=true`；活跃列表无该项，worktree 条目/目录已移除，Agent `closed/archivedAt=2026-11-17T17:03:29.433Z`。
 - D05-CI01 结论：`D05-CI01_STATUS=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未 push。production-layer tree 为 `643b3bf240812c4b5c4887aa4a574c9b22800526`。
+
+## D05-CI02 Lead 复核与冻结记录
+
+- 触发：远程 CI run `44133384142` @ `2482871` 的 `tests/adapters/rss-http.test.ts` 用例 `isolates two sequential canceled hanging feeds` 在 Linux 上因 `await expect(...).rejects` 已完成而后台 reader cancel/dispatcher cleanup 尚未完全回调时立即检查 `cancelledReads`。生产语义为调用方立即收到 `aborted`、清理后台继续；未发现非时序根因。
+- Worker 交回：`REVIEW`；base/HEAD 均 `5b778394d190d3d29cc4af1b5fecde9b1f0c5808`，真实 index 为空，无 staged/untracked 文件，无 commit/merge/push。固定 Node `v26.13.1` / npm `11.20.0`；`npm ci --offline` 成功（124 packages、0 vulnerabilities）。
+- 精确 diff：仅 `tests/adapters/rss-http.test.ts` 18 insertions/11 deletions；6 个取消计数同步点分别覆盖首次顺序取消、第二次顺序取消、随后成功 Feed 复验、并行取消、并行 live Feed 复验、参数化文章 closed/destroyed 分支。全部优先扩展现有 `waitFor` 条件并加入精确 `cancelledReads === n`；随后原 `expect(cancelledReads).toBe(n)`、期望值、默认 1000ms timeout 与其他断言均保留，未新增 waitFor。
+- 根因复核：`src/adapters/http/restricted-client.ts` 的调用方 abort race 可先结束请求 Promise；`readBody` 中 `cancelReader()` 与 dispatcher 清理仍可在后台继续，`readerCancelled` 计数属于该清理链。现测例未等待计数即可断言，平台调度差异造成伪失败。
+- Worker 验证：修改前目标基线 `1/1` file、`9/9` tests PASS（首次沙箱内 loopback `EPERM`，允许 loopback 后同命令通过）；修改后目标测试连续 `10/10` 次，每次 `9/9` PASS，共 `90/90` test executions；typecheck/diff-check PASS。未运行全量 suite。
+- Lead 独立验证：目标测试连续 `10/10` 次，每次 `1/1` file、`9/9` tests PASS，共 `90/90` test executions；`npm run typecheck`、`npm run format:check`（137 files）、`git diff --check` PASS。未运行全量 suite。
+- 精确冻结：base tree `520ec7d384d95ffdeb1765835849ac4cf0680858`；tree `b6530a831b7ad4d5f919d63b9e8879da48bdcfe2`；patch `3869` bytes；SHA-256 `81c7e2db0794e09c21c68ccf204510bd4a9f762ac197bc3aafd86b73ed233d0e`；冻结目录 `/private/tmp/d05-ci02-final-freeze.kggGsI`（`index`、`patch.bin`）。补丁经临时 index 从 base 重放后得到同一 tree；唯一路径 blob `ee747a5d234a00ca4c5183d73291422fe57ee5bd` 与 Worker 工作文件一致。
+- 对象库：common dir `/Users/noahshen/workspace/pis/.git`；objects `/Users/noahshen/workspace/pis/.git/objects`；base/tree 对象均可读取。首次未授权冻结因共享对象库写入沙箱限制失败，受控批准后以新临时目录成功生成上述证据，生产工作区未受影响。
+- 边界：生产代码、fixture、其他测试、package/lock、DDL、Prompt、CI 均无 diff；Worker 未 stage/commit/merge/push。当前仅保留 CI02 Worker/workspace 供 G4 复核或修复，不归档。
+- Architect G4：`APPROVED`；批准 base `5b778394d190d3d29cc4af1b5fecde9b1f0c5808`、tree `b6530a831b7ad4d5f919d63b9e8879da48bdcfe2`、canonical patch SHA-256 `81c7e2db0794e09c21c68ccf204510bd4a9f762ac197bc3aafd86b73ed233d0e`、唯一测试路径/blob `ee747a5d234a00ca4c5183d73291422fe57ee5bd`。Architect 独立重复目标文件 6 次均 9/9 PASS，并独立 full verify `49` files、`585` tests PASS。
+- G4 后执行：candidate `23373eb97bbcecef7d970c80c6f99bfa0debb64d`，唯一 parent/base 为 `5b77839`、tree `b6530a8`、唯一测试路径。local main `--no-ff` merge commit `1590a46eacb451c150af404269e42f0d806ab7bd`，tree `b6530a8`，第一/第二 parent 分别为 `5b77839` / candidate；测试 blob 精确 `ee747a5`。
+- Merge 后复验：固定 Node `26.13.1`/npm `11.20.0`；定向 `1/1` file、`9/9` tests PASS；`npm run verify` 为 `49/49` files、`585/585` tests，typecheck/build/SIGINT/SIGTERM/端口/关闭/Source+Topic 持久化/database smoke/137 文件 format 全部 PASS。
+- Worker 收尾：`archive_workspace(wks_8f9dafb9319ee5cc)` 返回 `archivedAgentIds=[430a5c9a-4926-46e6-8845-01be103533e1]`、`removedDirectory=true`；离线 Agent 状态 `closed`、`archivedAt=2026-11-18T00:19:48.475Z`，活跃 workspace 列表已无该项，Git worktree 条目与目录已移除。feature 与 candidate 分支均对齐 `23373eb9`。
+- CI02 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未 push。Architect 需推送新 main 并核验精确 SHA 的远程 CI Success；`FINAL_PASS` 保持 `WITHDRAWN · NOT_ISSUED`。
