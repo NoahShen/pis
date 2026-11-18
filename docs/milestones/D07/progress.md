@@ -205,3 +205,11 @@
 - 四卡全部 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`。
 - 变更范围：相对 D06 closeout `5ff151b` 共 20 个 tracked 路径，受保护路径 diff = 0。
 - 未纳入：KNO-07/09/10（S0/S1 真实模型语义回归，需真实 Provider 配置）；TopicMatching 派发（D15）；Event/Published Item/Runtime（后续里程碑）。
+
+## D07 收尾归档
+
+- 开发心跳 `22b52665` 已删除（`delete_heartbeat`）。
+- D07 Lead agent `27f89205-1a33-4364-ac8c-af90ea6ad716` 已归档；Lead workspace `wks_97619c3e0b3fc244` 已归档（含 `archivedAgentIds`，`removedDirectory=true`）。
+- D07 四个 Worker 及其 workspace 均已在前序各卡完成后归档：`wks_f5b697be70db6123`、`wks_3360fd32abb031e7`、`wks_b4a70e178836e4f7`、`wks_eca585a7f2de1b97`。
+- `Team_Main` 共享工作区保留，未归档。
+- 收尾后无活跃 D07 agent 或 workspace 残留。
