@@ -7,8 +7,8 @@
 - G3 追加审查基线：`835c9de2e98d12815d7ca3751de1835886c11cca`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`145d2753`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
-- 当前 Worker：`NONE · T01/T02/T03 Worker 均已归档`
-- 当前结论：`D06_PLAN_G3=APPROVED`、`D06-T01/T02=PASS`、`D06-T03=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T04 等待派发
+- 当前 Worker：`NONE · T01/T02/T03/T04 Worker 均已归档`
+- 当前结论：`D06_PLAN_G3=APPROVED`、`D06_TASKS=PASS`；D06 集成 Gate、远程 CI 与最终验收待 Architect 执行
 
 ## 任务状态
 
@@ -17,7 +17,7 @@
 | D06-T01 | PASS · LOCAL_MERGE_VERIFIED · ARCHIVED | `2b1fec673cd1af27498013d6dd08776944eaaac1` | PASS（merge 后定向 1/1 files、16/16 tests；full 50/50 files、601/601 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D06-T02 | PASS · LOCAL_MERGE_VERIFIED · ARCHIVED | `b8c0c8f44efc33734d009d41f694f80712b47a81` | PASS（merge 后定向 4/4 files、25/25 tests；full 53/53 files、619/619 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D06-T03 | PASS · LOCAL_MERGE_VERIFIED · ARCHIVED | `1e96d46a31a70c9bd8178e415a6bfa6da43e66aa` | PASS（merge 后定向 2/2 files、27/27 tests；full 54/54 files、636/636 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
-| D06-T04 | NOT_STARTED | D06-T03 merge SHA `ab8bcf1904ff32d144fc21797c5113f66ffa4fcd` | NOT_RUN | PENDING | PENDING · G4 | 等待 Architect 确认 T03 并派发 |
+| D06-T04 | PASS · LOCAL_MERGE_VERIFIED · ARCHIVED | `9d13ebc34b036e0a318db82cacf0a49235e95a24` | PASS（merge 后定向 12/12 files、120/120 tests；full 56/56 files、663/663 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 
 状态语义：`NOT_STARTED → READY → IN_PROGRESS → REVIEW → PASS`；失败转 `FAIL/IN_PROGRESS`，设计/外部依赖缺失转 `BLOCKED`。Worker 不得自行写 PASS。
 
@@ -28,9 +28,9 @@
 | D06-T01 | `2b1fec673cd1af27498013d6dd08776944eaaac1` | `870214c3-7db5-48d2-8b8a-902ce765d935` / `wks_4c994b6425ebaab9` / `feat/d06-t01-normalization` | 精确 2 路径：`src/processing/content-normalization.ts`、`tests/processing/content-normalization.test.ts` | `7136e91e0ac75becd25972b78f84daf068a00d31` / `3813fc544c46a49d7023bdfeb0a0c9e39d196fbdd3770cfc575b12e71d3e5ad3` | APPROVED · G4 | `87a2370334299e89ecf223de923ecc72f7512984` / `a16ba1e095ba7f283c310d4b44530b08c42df1e6` | PASS（merge tree `7136e91`；定向 1/1 files、16/16 tests；full 50/50 files、601/601 tests；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；agent closed/archived；directory removed |
 | D06-T02 | `b8c0c8f44efc33734d009d41f694f80712b47a81` | `61991d1c-b607-499d-9ff1-26d89ad0f4ca` / `wks_22af23aed35f36ee` / `feat/d06-t02-content-persistence` | 精确 6 路径：3 个 Processing Repository/persistence 生产文件 + 3 个对应测试 | `ea20afb845a14eb6381174a9bd266c7d455dec4e` / `fae4876c7544d7845dbdc7ed77bd625ff2f4cf290d3857a30e1ecf76d1c2f16b` | APPROVED · G4 | `5b4fb25108ae7dce323d9316986a4635fafee8e3` / `57430c17724386d4ab50acde3e2026d96c80f421` | PASS（merge tree `ea20afb`；定向 4/4 files、25/25 tests；full 53/53 files、619/619 tests；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；agent closed/archived；directory removed |
 | D06-T03 | `1e96d46a31a70c9bd8178e415a6bfa6da43e66aa` | `e63d8113-3b3f-4a43-b307-ad980d7f3c37` / `wks_9edc6b6004e339c4` / `feat/d06-t03-content-router` | 精确 4 路径：errors/logger/router 生产文件 + content-router 测试 | `a8db193c6c2f234d8b01d492ade1f6fc0d691414` / `ec4e2e12f86d6539a9d67ee61d26a7b841c1f8a3c4e03ddbbc0ef0a1f923b85e` | APPROVED · G4 | `8270fccd80f3a3c817bbf545ead6d71f419299aa` / `ab8bcf1904ff32d144fc21797c5113f66ffa4fcd` | PASS（merge tree `a8db193`；定向 2/2 files、27/27 tests；full 54/54 files、636/636 tests；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；agent closed/archived；directory removed |
-| D06-T04 | PENDING | PENDING / PENDING / PENDING | PENDING | PENDING / PENDING | PENDING · G4 | PENDING / PENDING | NOT_RUN | PENDING |
+| D06-T04 | `9d13ebc34b036e0a318db82cacf0a49235e95a24` | `e25f2fde-c62e-45b6-ad02-9c9193d768a5` / `wks_edb834c1fbcd5c4e` / `feat/d06-t04-processing-integration` | 精确 6 路径：contracts/processing/index 生产文件 + fixture + 两项测试 | `f9309baa36046120cf56d158b4aa5313b19a2e1d` / `ff98593e9111c6dab2c4a5dc385c5db7ddfb3d6e358b66578b36a622bf9adb7e` | APPROVED · G4 | `693582ad9700ffbe0bedae68793394377f8d5205` / `01b9dd69e3f2599055f903203a92469a3d83955b` | PASS（merge tree `f9309ba`；定向 12/12 files、120/120 tests；full 56/56 files、663/663 tests；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；agent closed/archived；directory removed |
 
-T01 `MERGE_TREE=7136e91e0ac75becd25972b78f84daf068a00d31`；T02 `MERGE_TREE=ea20afb845a14eb6381174a9bd266c7d455dec4e`；T03 `MERGE_TREE=a8db193c6c2f234d8b01d492ade1f6fc0d691414`。其余未发生门禁只能写 `PENDING`/`NOT_RUN`，不得用 `N/A` 冒充已完成证据。
+T01 `MERGE_TREE=7136e91e0ac75becd25972b78f84daf068a00d31`；T02 `MERGE_TREE=ea20afb845a14eb6381174a9bd266c7d455dec4e`；T03 `MERGE_TREE=a8db193c6c2f234d8b01d492ade1f6fc0d691414`；T04 `MERGE_TREE=f9309baa36046120cf56d158b4aa5313b19a2e1d`。
 
 ## Spec / Case 覆盖
 
@@ -55,13 +55,14 @@ T01 `MERGE_TREE=7136e91e0ac75becd25972b78f84daf068a00d31`；T02 `MERGE_TREE=ea20
 - T01 保留一个低风险 `FOLLOW_UP`：`FULL_BODY + body=null + summary` 矛盾输入没有独立命名测试；同一分支已由 summary-only 测试覆盖，Architect 已裁定不阻塞、不追加任务。
 - T02 本地复核、G4、candidate、merge、合并后 full verify 与 Worker 归档均已完成，无代码阻塞。
 - T03 本地复核、G4、candidate、merge、合并后 full verify 与 Worker 归档均已完成，无代码阻塞。
-- T04 尚未获得派发授权；不得在 Architect 确认前创建 Worker 或开始编码。T04 必须显式验证：Content COMMIT 后发生路由取消或失败时，Content 与关联不得回滚。
+- T04 本地复核、G4、candidate、merge、合并后 full verify 与 Worker 归档均已完成，无代码阻塞。
+- D06 四卡均已 PASS・LOCAL_MERGE_VERIFIED・ARCHIVED；里程碑集成 Gate、main 合并、push/远程 CI 与最终验收仍待 Architect 执行。
 
 ## 下一可执行动作
 
-1. 将本 progress 的 T03 合并与归档证据交 Architect。
-2. Architect 确认后，Lead 固定 T03 merge `ab8bcf1904ff32d144fc21797c5113f66ffa4fcd` 并创建 T04 全新 Worker。
-3. 不 push；push 与远程 CI 由 Architect 按持续授权执行。
+1. 将本 progress 的 T04 合并与归档证据交 Architect。
+2. Architect 复核并 ff 合入 T04 merge `01b9dd69e3f2599055f903203a92469a3d83955b`。
+3. 由 Architect 执行 D06 集成 Gate、push/远程 CI 与最终验收；Lead 不自行签发 D06_FINAL_PASS。
 
 ## Plan G3 审核记录
 
@@ -124,3 +125,29 @@ T01 `MERGE_TREE=7136e91e0ac75becd25972b78f84daf068a00d31`；T02 `MERGE_TREE=ea20
 - Merge 后复验：定向 `2/2` files、`27/27` tests；full `54/54` files、`636/636` tests；typecheck/build/SIGINT/SIGTERM/端口/关闭/持久化/database smoke/149 文件 format 全部 PASS；工作区 clean。
 - Worker 归档：`archive_workspace(wks_9edc6b6004e339c4)` 返回 `archivedAgentIds=[e63d8113-3b3f-4a43-b307-ad980d7f3c37]`、`removedDirectory=true`；Agent `closed`、`archivedAt=2026-11-18T06:40:37.923Z`，活跃 workspace 列表无该项，Git worktree 条目与目录均已移除。
 - T03 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未 push。
+
+## D06-T04 Lead 复核、冻结、合并与归档记录
+
+- Worker 交回：`REVIEW`；固定 base `9d13ebc34b036e0a318db82cacf0a49235e95a24`，初始 index 为空，仅六路径 untracked，无 commit/merge/push。
+- 精确写集：`src/processing/contracts.ts`、`processing.ts`、`index.ts`、`tests/fixtures/processing.ts`、`tests/processing/processing-service.test.ts`、`tests/processing/processing-integration.test.ts`；无既有文件修改。
+- 公共边界：`index.ts` 仅有 `createProcessing`、`ProcessingError` 两个运行时值导出；其余为 type。contracts 只暴露批准 contract、必要 Repository Pick type、错误码与 logger。
+- 编排边界：invalid input 在 DB 前；missing/raw null/NONE 正常空结果；已有 Content 直接复用；新 Content 经 T02 事务 COMMIT 后调用 T03 路由；返回严格 `{content_id,routes}`。
+- COMMIT 时序：真实 SQLite 的 StubLLM complete 回调内断言 `db.inTransaction===false`、contents 行可见且 count=1、source_items.content_id 已回写；若路由进入事务内必失败。
+- 调用/入参：成功路径 requests=1；全部零 LLM 路径 requests=0；userContent 精确为七字段 task_data，无 content_id/raw_data/原始 HTML；raw/Token sentinel 不进入 user/system，正文 sentinel 仅进入规范 body，systemContent 使用合成 Prompt fixture。
+- 失败/取消：route `llm_failed` 与 COMMIT 后 `aborted` 均断言 Content/关联保留；二次 process 复用同一 Content，requests=2、contents count=1；零原文 HTTP 由 fetchContent/globalThis.fetch 双 spy=0 证明。
+- 安全/范围：无 `any`/TS 抑制；无空断言、`.only`、`.skip`；T01/T02/T03 冻结文件、LLM、Collection、Adapter、DDL、App/Server/Lifecycle、configuration、Prompt、CI、package/lock 零 diff。
+- Lead 定向验证：`12/12` files、`120/120` tests PASS；Lead full verify `56/56` files、`663/663` tests PASS，typecheck/build/smoke/database smoke/155 文件 format 全部 PASS。
+- 精确冻结：tree `f9309baa36046120cf56d158b4aa5313b19a2e1d`；canonical patch SHA-256 `ff98593e9111c6dab2c4a5dc385c5db7ddfb3d6e358b66578b36a622bf9adb7e`；冻结目录 `/private/tmp/d06-t04-freeze.fObs8h`。
+- 路径 blob：`contracts.ts=eb81d465a64bf0d35bf45eedb91c4da99af75a52`；`processing.ts=61dc40db8a2cec7a1d81cb98e8027344598d2768`；`index.ts=8448c1551f41df732f00cf8bea1fe5ceccbf8e3c`；`tests/fixtures/processing.ts=1eb4889fa0d8cc2d37e532e84905925ea17ffb9e`；`processing-service.test.ts=bc7e306d81dfea0b76dde5694c190b533d6bbfbc`；`processing-integration.test.ts=b73e9015c9c6de66e9ee493aef44e217c7d12835`；路径数 6；`git diff-tree --check` 无输出。
+- Architect G4：`APPROVED`；独立验证冻结 tree、6 路径、patch SHA、冻结树 typecheck、Processing 7 files/78 tests、跨模块 5 files/42 tests 与运行时 public export 探针均通过。
+- Candidate：`693582ad9700ffbe0bedae68793394377f8d5205`，唯一 parent `9d13ebc`，tree `f9309ba`，精确六路径；Worker branch tip 对齐且 clean。
+- Merge：`01b9dd69e3f2599055f903203a92469a3d83955b`；第一 parent `9d13ebc`、第二 parent candidate `693582a`，merge tree `f9309ba`，六个 blob 与 candidate 一致。
+- Merge 后复验：定向 `12/12` files、`120/120` tests；full `56/56` files、`663/663` tests；typecheck/build/SIGINT/SIGTERM/端口/关闭/持久化/database smoke/155 文件 format 全部 PASS；工作区 clean。
+- Worker 归档：`archive_workspace(wks_edb834c1fbcd5c4e)` 返回 `archivedAgentIds=[e25f2fde-c62e-45b6-ad02-9c9193d768a5]`、`removedDirectory=true`；Agent `closed`、`archivedAt=2026-11-18T07:05:15.763Z`，活跃 workspace 列表无该项，Git worktree 条目与目录均已移除。
+- T04 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未 push。
+
+## D06 任务完成与后续门禁
+
+- `D06_TASKS=PASS`：T01/T02/T03/T04 均已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
+- `D06_LOCAL_GATE=PENDING`：由 Architect 在 T04 merge `01b9dd6` ff 合入 main 后执行里程碑集成 Gate。
+- `D06_REMOTE_CI=PENDING`、`D06_FINAL_PASS=NOT_ISSUED`：Lead 不 push、不自行签发最终 PASS；由 Architect 执行 push/远程 CI 与最终验收。
