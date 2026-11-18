@@ -9,7 +9,7 @@
 
 实现 V1 的 `process(sourceItemId)`：读取 D05 已保存的 Source Item，从 `raw_data` 提取并清洗可用内容，生成规范 Content 并回写 `source_items.content_id`；在 Content **已提交**之后调用 P-01 路由，返回 `{contentId, routes}`。
 
-D06 把“已采集的来源条目”变成“可分析的规范内容”，但不调用事件分析、知识分析或主题匹配，也不直接派发下游任务。
+D06 把“已采集的来源条目”变成“可分析的规范内容”，并只执行一次 P-01 路由 LLM 调用；不调用事件分析、知识分析或主题匹配，也不直接派发下游任务。
 
 ## 2. 已确认业务规则
 
@@ -28,14 +28,24 @@ D06 把“已采集的来源条目”变成“可分析的规范内容”，但�
 
 - Processing 公共契约、`raw_data` 读取与解析、内容清洗与规范化 DTO、FULL/PARTIAL 判定。
 - Content Repository：按 `source_items.content_id` 读取、插入 Content、回写关联、事务内 recheck。
-- Processing 编排：复用已有 Content、提交后路由、稳定错误与安全日志。
-- 独立 Processing fixtures/测试，覆盖 PRO-01～12 中属于 Processing 的规则；用 Test Spy 证明 Processing 期间零原文 HTTP。
+- Processing 编排：复用已有 Content、提交后调用 P-01 `routeProcessing`、稳定错误与安全日志。
+- 独立 Processing fixtures/测试，覆盖 PRO-01～12 中属于 Processing 的规则；用 Test Spy 证明 Processing 期间零原文 HTTP，并证明路由调用次数与时机正确。
+
+### LLM 调用边界
+
+- D06 **只**调用 D02 已实现的 `routeProcessing`（P-01），使用已批准且不可修改的 `config/prompts/processing-route.md`。
+- 输入只含本次 Content 的规范字段（标题、正文/摘要、completeness 等），不含原始 HTML 全量、凭据或私有上下文。
+- 调用时机严格在 Content COMMIT 之后；不得在事务内调用 LLM，不得用 LLM 结果决定是否插入 Content。
+- 单次调用沿用 D02 已冻结行为：非流式、总超时 60 秒、响应上限 2 MiB、不自动重试；D06 不新增重试或退避策略。
+- 路由失败不回滚已保存 Content；重试由调用方再次 `process` 时复用旧 Content 再路由。
+- 测试一律注入 stub typed calls，不访问真实模型、不读取真实 API Key 或私有 Prompt 上下文。
 
 ## 4. 非目标
 
 - 不实现 Event/Knowledge/Topic 分析，不写 events、knowledge、published_items。
+- 不新增或修改 Prompt；P-01 只读取已批准文件，内容与哈希不得变化。
+- 不实现 LLM 重试、限流、缓存、并发控制或降级策略（属 Runtime/后续里程碑）。
 - 不实现 Runtime、队列、重试调度或提交后派发（D15）；不宣称解决 COMMIT 后崩溃漏派。
-- 不新增或修改 Prompt；P-01 使用已批准的五份功能 Prompt 之一，内容不变。
 - 不实现跨 Content 去重、正文 Hash、语言识别或翻译。
 - 不改 Collection、Adapter、配置 API、DDL 或 CI。
 
@@ -53,4 +63,4 @@ D06 把“已采集的来源条目”变成“可分析的规范内容”，但�
 
 ## 6. 待负责人确认
 
-请确认 D06 边界，尤其是：Processing 完全不访问网络；`NONE` 内容不创建 Content 且不路由；路由结果不落库，只作为任务返回值交给 Runtime。确认后进入 Spec G2。
+请确认 D06 边界，尤其是：Processing 自身不访问任何原文 HTTP，但会在 Content 提交后调用一次 P-01 路由 LLM；`NONE` 内容不创建 Content 且不调用路由；路由结果不落库，只作为任务返回值交给 Runtime。确认后进入 Spec G2。
