@@ -7,15 +7,15 @@
 - Spec：`APPROVED · G2 PASS`
 - 执行基线：main `1836a89028f8ce8290737ffee706790254c25dcb` / tree `e7d8e7b22e4d506336a0568eaabd4bf81acc03e9`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 当前 Worker：`NONE · D07-T01 Worker 已归档`
-- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T02=READY`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
+- 当前 Worker：`2b77c1e1-3033-4b8f-931a-eba6d04001ba` / `wks_3360fd32abb031e7` / `feat/d07-t02-knowledge-call`
+- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T02=IN_PROGRESS`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
 | 任务 ID | 状态 | 前置/固定 base | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
 | D07-T01 Content 输入 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `1836a89028f8ce8290737ffee706790254c25dcb` | PASS（merge 后定向 3 files/24 tests；full 57 files/669 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
-| D07-T02 严格边界/错误 | `READY` | `00ba917563b902a8731d432366c169450879abf6` | `NOT_RUN` | `READY` | `PENDING` | 等待 Lead 派发全新 T02 Worker |
+| D07-T02 严格边界/错误 | `IN_PROGRESS` | `eb9ef1d38ffa2f62455de0498c92dad07fb77a31` | `NOT_RUN` | `IN_PROGRESS` | `PENDING` | Worker 已派发；等待 REVIEW/BLOCKED |
 | D07-T03 Repository/事务 | `NOT_STARTED` | `PENDING_T02_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T02 |
 | D07-T04 公共 factory/集成 | `NOT_STARTED` | `PENDING_T03_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T03 |
 
@@ -26,7 +26,7 @@
 | 任务 ID | BASE_SHA | WORKER_AGENT | WORKER_WORKSPACE | WORKER_BRANCH | CHANGED_PATHS | FROZEN_TREE | PATCH_SHA256 | ARCHITECT_TREE_APPROVAL | CANDIDATE_SHA | MERGE_SHA | MERGE_TREE | VERIFICATION | ARCHIVE_RESULT |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | D07-T01 | `1836a89028f8ce8290737ffee706790254c25dcb` | `a88d7a0e-49f2-480b-a16c-04975abd2128` | `wks_f5b697be70db6123` | `feat/d07-t01-content-input` | 精确 2 路径：`src/knowledge/content-input.ts`、`tests/knowledge/content-input.test.ts` | `6797a68b18ed94fd5972ca804bb70c256d700984` | `12763a85062183ef53cb548f9eb7584a79ecba313780405f09c71cd376155c76` | `APPROVED · G4` | `ff1dea429c986038bf9bfd0c95826aa1fe438879` | `00ba917563b902a8731d432366c169450879abf6` | `6797a68b18ed94fd5972ca804bb70c256d700984` | PASS（merge 后定向 3/24；full 57/669；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
-| D07-T02 | `00ba917563b902a8731d432366c169450879abf6` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D07-T02 | `eb9ef1d38ffa2f62455de0498c92dad07fb77a31` | `2b77c1e1-3033-4b8f-931a-eba6d04001ba` | `wks_3360fd32abb031e7` | `feat/d07-t02-knowledge-call` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T03 | `PENDING_T02_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T04 | `PENDING_T03_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 
@@ -51,14 +51,14 @@
 ## 当前阻塞与待决策事项
 
 - T01 已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
-- T02 已具备 `READY` 状态和固定 base `00ba917563b902a8731d432366c169450879abf6`，等待 Lead 派发全新 Worker。
+- T02 Worker 正在 `feat/d07-t02-knowledge-call` 执行，只允许新增 Plan §5 的四个文件。
 - 当前无 push、无远程 CI、无最终验收。
 
 ## 下一可执行动作
 
-1. Lead 为 D07-T02 创建全新 Paseo Worker，固定 base 为 T01 merge `00ba917563b902a8731d432366c169450879abf6`。
-2. T02 只允许 Plan §5 的四个新增文件；不得修改 T01 文件或任何既有文件。
-3. T02 完成后执行 Worker 自测、Lead 独立复核与精确冻结，再交 Architect G4。
+1. 等待 T02 Worker 返回 `REVIEW` 或 `BLOCKED`。
+2. Lead 独立复核四文件写集、CALL_COUNT、signal/abort、错误安全、logger 与禁止依赖。
+3. Lead 精确冻结后立即交回 Architect G4，不得静默等待。
 
 ## D07-T01 Lead 复核与冻结记录
 
