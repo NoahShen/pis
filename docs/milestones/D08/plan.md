@@ -1,13 +1,13 @@
 # D08 Plan：Event Search 历史候选召回
 
 > 版本：v0.1
-> 状态：`DRAFT · G3_PENDING_ARCHITECT_APPROVAL`
+> 状态：`APPROVED · Architect G3 PASS`
 > 日期：2026-11-18
 > 计划参考基线：main `717897f375ef3eff3cb24f48da5a0317701df70e` / tree `921c70201e6b503cce4bd59be91dcc0c07ec8955`
 > Intent：`docs/milestones/D08/intent.md`（`DRAFT · G1_PENDING_OWNER_APPROVAL`）
 > Spec：`docs/milestones/D08/spec.md`（`DRAFT · G1_PENDING_OWNER_APPROVAL`）
 
-本文只把当前 D08 Intent/Spec 映射成四张文件级、严格串行的任务卡；不批准 G1/G2/G3，不创建 Worker，不构成开发、合并、推送或最终验收授权。D08 只能只读候选召回：不执行 P-03，不写 Event、Update、证据、别名或 FTS，不接 Runtime/HTTP/生产配置。
+本文只把当前 D08 Intent/Spec 映射成四张文件级、严格串行的任务卡。Architect 已批准 G3；G1/G2 仍待负责人审核，未获开发确认前不创建 Worker、心跳或 candidate。D08 只能只读候选召回：不执行 P-03，不写 Event、Update、证据、别名或 FTS，不接 Runtime/HTTP/生产配置。
 
 固定运行时前置：
 
@@ -609,3 +609,5 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D08 推进心跳�
 - D08 只读：一次 P-02、三路全历史召回、Event ID 去重、五级排序/上限、最近 10 条上下文；`clues=[]` 与空候选均为成功空结果；不执行 P-03 或任何业务/FTS 写。
 - `PMT-02` 明确为 S0 非 P0；`PMT-09`/`PMT-15` 的事件搜索部分由 T01/T04 覆盖；D07 RSS 时序失败不弱化。
 - 当前结论：`D08_PLAN=DRAFT_READY_FOR_ARCHITECT_G3`。G3 通过前任务状态保持 `NOT_STARTED`，不创建 Worker、心跳、candidate、merge、push 或最终验收。
+
+- v0.1 `APPROVED`：Architect 核对 commit `69a2f0d16ac74405d1e7596ca48767aa772fc61b`、tree `6484e947eaf845edfb887d1128563dd3419486ca`；四卡精确写集、三路召回、FTS 字面量、五级排序、最近 10 条上下文、只读与隐私证明均符合 Spec。G1/G2 批准前不得启动 Worker。
