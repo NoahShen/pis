@@ -1,7 +1,8 @@
 # D06 Plan：Processing 内容标准化与路由
 
 > 版本：v0.2
-> 状态：`REVIEW · PENDING ARCHITECT G3`
+> 版本轨迹：v0.1 首版；v0.2 修复 G3 唯一阻塞——raw_data body/summary/title 固定为 D04 已清洗纯文本，仅允许纯文本规范化，禁止二次 HTML 剥离。
+> 状态：`APPROVED · Architect G3 PASS`
 > Intent：`docs/milestones/D06/intent.md`（APPROVED · G1 PASS）
 > Spec：`docs/milestones/D06/spec.md`（APPROVED · G2 PASS）
 > 实现基线：`24608343f65f3e600fccc60c0798e68731abdf3c`
@@ -530,4 +531,5 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D06 推进心跳�
 - T01～T04 均列出精确允许写集、依赖、Spec/Case 映射、禁止范围、验证命令及冻结/candidate/merge/archive 证据字段。
 - Processing 无原文 HTTP；只有 Content COMMIT 后才调用 `routeProcessing`；NONE 不建 Content/不路由；路由不落库；不改 DDL/Prompt/CI/Collection；测试不接真实模型或私有配置。
 - v0.2 按 G3 唯一阻塞完成修订：raw_data title/body/summary 固定为 D04 已清洗纯文本，仅使用 `normalizeCleanText()`/`cleanTextValue()`；禁止 DOM/HTML 二次清洗，并增加尖括号逐字保留、负向对照与静态禁用检查。
-- 本版待 Architect G3 审核。G3 通过前不创建心跳、不创建 Worker、不开始正式开发；Lead 不自批 G3。
+- v0.2 `APPROVED`：Architect 确认清洗契约闭合——raw_data 三字段按纯文本规范化，`cleanHtmlValue()`/`cleanReadabilityContent()`/DOM 解析全部禁用，尖括号 sentinel 逐字保留并有负向对照；四卡写集、事务、路由时机、零 HTTP 与冻结证据自洽。批准 commit `017a6f7386e12a994338ffe552829605a753295a`，tree `0b63e06d6eb0504f52119f5e7c5a468e11a8223a`。
+- G3 已通过；按持续执行授权进入 T01，开发心跳由 Architect 创建。
