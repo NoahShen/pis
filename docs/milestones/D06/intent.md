@@ -8,7 +8,7 @@
 
 ## 1. 目标
 
-实现 V1 的 `process(sourceItemId)`：读取 D05 已保存的 Source Item，从 `raw_data` 提取并清洗可用内容，生成规范 Content 并回写 `source_items.content_id`；在 Content **已提交**之后调用 P-01 路由，返回 `{contentId, routes}`。
+实现 V1 的 `process(sourceItemId)`：读取 D05 已保存的 Source Item，从 `raw_data` 提取并清洗可用内容，生成规范 Content 并回写 `source_items.content_id`；在 Content **已提交**之后调用 P-01 路由，返回 `{content_id, routes}`。
 
 D06 把“已采集的来源条目”变成“可分析的规范内容”，并只执行一次 P-01 路由 LLM 调用；不调用事件分析、知识分析或主题匹配，也不直接派发下游任务。
 
@@ -21,7 +21,7 @@ D06 把“已采集的来源条目”变成“可分析的规范内容”，并�
 6. 创建 Content 与回写 `source_items.content_id` 在同一短事务提交；任一步失败整体回滚，不留下半完成状态。
 7. **只有 Content 已 COMMIT 后才调用 `routeProcessing`**；路由是本次任务结果，不落库为字段。路由失败不回滚已保存 Content，重试时复用旧 Content 再路由。
 8. 路由结果只允许 EVENT、KNOWLEDGE 两者或空；合法重复值去重，未知或非法值由既有 D02 校验拒绝，不得派发非法任务。
-9. 返回 `{contentId, routes}`；空路由时 Content 仍保留。D06 不提交队列任务，派发由 D15 Runtime 依据返回值完成。
+9. 返回 `{content_id, routes}`；空路由时 Content 仍保留。D06 不提交队列任务，派发由 D15 Runtime 依据返回值完成。
 10. 沿用 better-sqlite3、冻结 11 表 DDL、D02 typed calls 与现有同步事务 helper；不新增表、字段或 ORM。
 
 ## 3. Processing 具体职责
@@ -71,7 +71,7 @@ D06 只做五件事，前四件不调用 LLM。
 ### 3.6 返回结果
 
 ```ts
-{ contentId: string | null, routes: Array<"EVENT" | "KNOWLEDGE"> }
+{ content_id: string | null, routes: Array<"EVENT" | "KNOWLEDGE"> }
 ```
 
 D06 到此结束；不派发任何任务，由 D15 Runtime 依据 `routes` 决定后续分析。
