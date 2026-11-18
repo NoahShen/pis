@@ -3,19 +3,18 @@
 - Plan：`docs/milestones/D07/plan.md` v0.2
 - Plan 状态：`APPROVED · Architect G3 PASS`（v0.2）
 - 开发心跳：`22b52665`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
-- Intent：`DRAFT · G1_PENDING_OWNER_APPROVAL`
-- Spec：`DRAFT · G1_PENDING_OWNER_APPROVAL`；已应用 Architect G3 的 Clock 依赖修订
-- 计划参考基线：main `9f70eac273fabc498cf7c8dce9607ad74f3340bf` / tree `f087a32e3541fed197175c11f9463f0e6f7ac4c0`
+- Intent：`APPROVED · G1 PASS`
+- Spec：`APPROVED · G2 PASS`
+- 执行基线：main `1836a89028f8ce8290737ffee706790254c25dcb` / tree `e7d8e7b22e4d506336a0568eaabd4bf81acc03e9`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 开发心跳：`NOT_CREATED（G3 批准并正式开发后由 Architect 创建）`
-- 当前 Worker：`NONE`
-- 当前结论：`D07_PLAN=DRAFT_V0.2`、`G3=PENDING`、`D07_TASKS=NOT_STARTED`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
+- 当前 Worker：`a88d7a0e-49f2-480b-a16c-04975abd2128` / `wks_f5b697be70db6123` / `feat/d07-t01-content-input`
+- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=IN_PROGRESS`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
 | 任务 ID | 状态 | 前置/固定 base | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
-| D07-T01 Content 输入 | `NOT_STARTED` | `PENDING_G3_EXECUTION_BASELINE` | `NOT_RUN` | `PENDING` | `PENDING` | G3 未批准；不得创建 Worker |
+| D07-T01 Content 输入 | `IN_PROGRESS` | `1836a89028f8ce8290737ffee706790254c25dcb` | `NOT_RUN` | `IN_PROGRESS` | `PENDING` | Worker 已派发；等待 REVIEW/BLOCKED |
 | D07-T02 严格边界/错误 | `NOT_STARTED` | `PENDING_T01_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T01 |
 | D07-T03 Repository/事务 | `NOT_STARTED` | `PENDING_T02_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T02 |
 | D07-T04 公共 factory/集成 | `NOT_STARTED` | `PENDING_T03_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T03 |
@@ -26,7 +25,7 @@
 
 | 任务 ID | BASE_SHA | WORKER_AGENT | WORKER_WORKSPACE | WORKER_BRANCH | CHANGED_PATHS | FROZEN_TREE | PATCH_SHA256 | ARCHITECT_TREE_APPROVAL | CANDIDATE_SHA | MERGE_SHA | MERGE_TREE | VERIFICATION | ARCHIVE_RESULT |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| D07-T01 | `PENDING_G3_EXECUTION_BASELINE` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D07-T01 | `1836a89028f8ce8290737ffee706790254c25dcb` | `a88d7a0e-49f2-480b-a16c-04975abd2128` | `wks_f5b697be70db6123` | `feat/d07-t01-content-input` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T02 | `PENDING_T01_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T03 | `PENDING_T02_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T04 | `PENDING_T03_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
@@ -51,26 +50,26 @@
 
 ## 当前阻塞与待决策事项
 
-- `UPSTREAM_GATE_PENDING`：Intent 与 Spec 当前均为 `DRAFT · G1_PENDING_OWNER_APPROVAL`；上游获批前不得进入开发。
-- `G3_BLOCKER`：Plan v0.2 尚未由 Architect 审核；不得创建 Worker、启动开发、创建心跳或写入生产代码。
-- 当前无 Worker、无候选、无 merge、无归档、无 push、无 CI、无最终验收。
+- T01 Worker 正在 `feat/d07-t01-content-input` 执行，只允许新增 `src/knowledge/content-input.ts` 与 `tests/knowledge/content-input.test.ts`。
+- 当前无候选、无 merge、无归档、无 push、无 CI、无最终验收。
 
 ## 下一可执行动作
 
-1. Architect 审核本 Plan 的 T01～T04 写集、依赖、Case 映射、验证与证据字段，并返回 `APPROVED · G3 PASS` 或 `CHANGES_REQUIRED`。
-2. 仅在 G3 PASS 且正式开发被触发后，由 Architect 创建唯一 D07 推进心跳并记录准确 ID。
-3. Lead 依据 G3 批准的精确执行基线创建全新 Paseo Worker 执行 T01；不得在本 Progress 初始提交时提前启动。
+1. 等待 T01 Worker 返回 `REVIEW` 或 `BLOCKED`。
+2. Lead 独立复核 diff、测试、隐私与禁止路径，生成精确冻结 tree/patch。
+3. 将 T01 冻结证据交 Architect G4；批准后才创建 candidate/merge，并决定 T02。
 
 ## Plan G3 审核记录
 
 - 提交者：D07 Lead
 - 日期：2026-11-18
 - 参考基线：`9f70eac273fabc498cf7c8dce9607ad74f3340bf`
-- 结论：`PENDING · Architect G3`
+- 结论：`APPROVED · Architect G3 PASS`
 - v0.1 `3b64bb7`：`CHANGES_REQUIRED`；Architect 已修正上游 Clock 错误与文档状态，并要求 Plan 删除全部 Clock 依赖。
 - v0.2 修订：`KnowledgeDependencies` 不含 Clock；同步清理任务卡、fixture、测试与风险段相关表述，并明确禁止以时间列/时间戳/日志时间字段凑依赖。
+- v0.2 批准：批准 commit `5bfe30c88824caff12dda972084b164f2ba7bc93`，tree `aa40531a6a322078f8f4f53746e65a2186c4cf3e`；随后由 main `1836a89` 记录 G1/G2 批准与开发心跳。
 - Plan 提交：本次最终提交 SHA 由 Lead 返回给 Architect；本文件提交前的参考基线不是 G3 批准。
-- G3 通过前：不创建 Worker、不启动开发、不批准 Plan、不签发任务或里程碑 PASS。
+- G3 已通过；已按授权创建 T01 Worker。Worker 不得自批，Lead 与 Architect 审核仍待完成。
 
 ## D07 边界确认
 
