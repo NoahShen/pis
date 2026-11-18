@@ -176,3 +176,4 @@
 - Merge 后复验：固定 Node `26.13.1`/npm `11.20.0`；定向 `1/1` file、`9/9` tests PASS；`npm run verify` 为 `49/49` files、`585/585` tests，typecheck/build/SIGINT/SIGTERM/端口/关闭/Source+Topic 持久化/database smoke/137 文件 format 全部 PASS。
 - Worker 收尾：`archive_workspace(wks_8f9dafb9319ee5cc)` 返回 `archivedAgentIds=[430a5c9a-4926-46e6-8845-01be103533e1]`、`removedDirectory=true`；离线 Agent 状态 `closed`、`archivedAt=2026-11-18T00:19:48.475Z`，活跃 workspace 列表已无该项，Git worktree 条目与目录已移除。feature 与 candidate 分支均对齐 `23373eb9`。
 - CI02 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；已推送 `23908b1`，远程 CI run `44207186766` Success。`D05_FINAL_PASS=ISSUED`；收尾归档见下。
+- 最终收尾：Architect 推送 `23908b1`（CI run `44207186766` Success）后签发 PASS；最终记录提交 `fc979cf`，其 CI run `44207387696` Success。CI02 Lead `0a3fa123-a1e9-4afd-bafd-37af4f2fe8fd` 已归档，workspace `wks_50d5235de15e3034` 归档且 `removedDirectory=true`；全部 D05 Worker/Lead 工作区已移除，仅保留主工作区。
