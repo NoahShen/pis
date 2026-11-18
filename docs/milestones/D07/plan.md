@@ -2,7 +2,7 @@
 
 > 版本：v0.2
 > 版本轨迹：v0.1 首版；v0.2 按 Architect G3 修订移除 Clock 依赖（`knowledge` 表无时间字段）。
-> 状态：`DRAFT · G3_PENDING_ARCHITECT_REVIEW`
+> 状态：`APPROVED · Architect G3 PASS`
 > 日期：2026-11-18
 > 计划参考基线：main `9f70eac273fabc498cf7c8dce9607ad74f3340bf` / tree `f087a32e3541fed197175c11f9463f0e6f7ac4c0`
 > Intent：`docs/milestones/D07/intent.md`（`DRAFT · G1_PENDING_OWNER_APPROVAL`）
