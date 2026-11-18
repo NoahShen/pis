@@ -49,6 +49,10 @@ function createProcessing(dependencies: ProcessingDependencies): ProcessingServi
 | `SUMMARY` / `FRAGMENT` | 创建 Content，`completeness=PARTIAL` |
 | `NONE`，或清洗后 `body` 为空 | 不创建 Content、不调用路由，返回空结果 |
 
+3a. **`raw_data` 中的 `body`/`summary` 已是 D04 清洗后的纯文本**（D04 已在 Adapter 内完成去标签、去脚本/样式与实体解码）。Processing 只做纯文本规范化（统一换行、折叠空白、去空行），**不得再次执行 HTML 标签剥离**。否则正文中的合法尖括号内容（如 `<algorithm>`、`List<T>`、`<Foo/>`）会被误删，违反 PRO-11“不丢失有效文字”。
+
+3b. 标题同样按纯文本规范化处理，不做标签剥离或实体二次解码。
+
 4. 清洗后正文为空但摘要可用时，按 PARTIAL 处理，`body` 使用可用文本；两者都为空则按 NONE 处理。
 5. 不虚构标题、时间、作者；`entry` 缺失字段写入 `NULL`。
 
@@ -111,7 +115,7 @@ function createProcessing(dependencies: ProcessingDependencies): ProcessingServi
 - PRO-08 四种路由结果 → 返回 1/1/2/0 个 routes，空路由保留 Content。
 - PRO-09 `fetchContent` spy 调用 0 次。
 - PRO-10 重复 enum 去重；未知 enum 拒绝且不产生 Content 之外的副作用。
-- PRO-11 标题/正文含 XML/HTML、Unicode、换行空白 → 可存储、不丢有效文字、不新增事实。
+- PRO-11 标题/正文含 XML/HTML、Unicode、换行空白 → 可存储、不丢有效文字、不新增事实；其中 `raw_data` 已是纯文本，正文含 `<algorithm>`、`List<T>` 等合法尖括号文字时必须原文保留。
 - PRO-12 PARTIAL 进入路由时保持标记与实际正文。
 
 另验证：`NONE` 零 LLM 调用；事务内无 LLM；取消时 `aborted`；DDL/Prompt/CI/Collection 无 diff。
