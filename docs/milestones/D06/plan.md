@@ -2,7 +2,7 @@
 
 > 版本：v0.3
 > 版本轨迹：v0.1 首版；v0.2 修复纯文本清洗契约并在 `835c9de` 记录过一次 G3 PASS；v0.3 根据追加 G3 要求补入 COMMIT 先于 LLM 的真实 SQLite 时序、调用次数/入参、sentinel 与失败重试直接证据，当前重新处于 G3 REVIEW。
-> 状态：`REVIEW · PENDING ARCHITECT G3`
+> 状态：`APPROVED · Architect G3 PASS`
 > Intent：`docs/milestones/D06/intent.md`（APPROVED · G1 PASS）
 > Spec：`docs/milestones/D06/spec.md`（APPROVED · G2 PASS）
 > G3 追加审查基线：`835c9de2e98d12815d7ca3751de1835886c11cca`
@@ -554,4 +554,5 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D06 推进心跳�
 - v0.2 按 G3 唯一阻塞完成修订：raw_data title/body/summary 固定为 D04 已清洗纯文本，仅使用 `normalizeCleanText()`/`cleanTextValue()`；禁止 DOM/HTML 二次清洗，并增加尖括号逐字保留、负向对照与静态禁用检查。
 - v0.2 历史审批：Architect 曾在 `835c9de` 确认清洗契约闭合并记录 G3 PASS（批准输入 commit `017a6f7386e12a994338ffe552829605a753295a`，tree `0b63e06d6eb0504f52119f5e7c5a468e11a8223a`）。
 - v0.3 追加复核：G3 指出仅有“结构上不持有事务”不足以证明 COMMIT 边界；本版增加真实 SQLite `db.inTransaction=false`、Content/关联可见、调用次数、精确 task_data、隐私 sentinel、合成 Prompt 来源及失败后复用证据。
-- 当前状态恢复为 `REVIEW · PENDING ARCHITECT G3`，追加要求通过前不得创建心跳、Worker 或开始开发；Lead 不自批 G3。
+- v0.3 `APPROVED`：Architect 确认追加要求全部闭合——真实 SQLite 的 `db.inTransaction===false`、Content/关联可见且 count=1、requests 1/0、精确七字段 task_data、三类 sentinel、合成 Prompt 来源与 `llm_failed` 后复用均写入 T03/T04 矩阵与 §9 Gate。批准 commit `5a99ea0200adf1117d0dea10015385ac4cfea46f`，tree `461a9c9e4d2c170f1af61c7b3ea098d960246ef1`。
+- G3 已通过；按持续执行授权进入 T01，开发心跳由 Architect 创建。

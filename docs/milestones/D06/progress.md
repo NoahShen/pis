@@ -1,20 +1,20 @@
 # D06 Progress：Processing 内容标准化与路由
 
 - Plan：`docs/milestones/D06/plan.md` v0.3
-- Plan 状态：`REVIEW · PENDING ARCHITECT G3`（v0.3 追加复核）
+- Plan 状态：`APPROVED · Architect G3 PASS`（v0.3）
 - Intent：`APPROVED · G1 PASS`
 - Spec：`APPROVED · G2 PASS`
 - G3 追加审查基线：`835c9de2e98d12815d7ca3751de1835886c11cca`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 开发心跳：`NOT_CREATED · 等待追加 G3 批准`
+- 开发心跳：由 Architect 在开发启动时创建并记录准确 ID
 - 当前 Worker：`NONE · Lead 未创建 Worker`
-- 当前结论：`D06_PLAN_G3=PENDING`；无任务 READY/PASS，未开始开发
+- 当前结论：`D06_PLAN_G3=APPROVED`、`D06_DEVELOPMENT=STARTING`；T01 READY，其余等待前卡
 
 ## 任务状态
 
 | 任务 ID | 状态 | 前置/固定 base | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
-| D06-T01 | NOT_STARTED | 追加 G3 批准后的精确基线 | NOT_RUN | PENDING | PENDING · G4 | 等待追加 G3 与执行授权 |
+| D06-T01 | READY | `5a99ea0200adf1117d0dea10015385ac4cfea46f` | NOT_RUN | PENDING | PENDING · G4 | 等待 Worker 创建与执行 |
 | D06-T02 | NOT_STARTED | D06-T01 merge SHA | NOT_RUN | PENDING | PENDING · G4 | 等待 T01 PASS 与归档 |
 | D06-T03 | NOT_STARTED | D06-T02 merge SHA | NOT_RUN | PENDING | PENDING · G4 | 等待 T02 PASS 与归档 |
 | D06-T04 | NOT_STARTED | D06-T03 merge SHA | NOT_RUN | PENDING | PENDING · G4 | 等待 T03 PASS 与归档 |
