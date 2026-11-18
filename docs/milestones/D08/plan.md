@@ -1,13 +1,13 @@
 # D08 Plan：Event Search 历史候选召回
 
-> 版本：v0.1
-> 状态：`APPROVED · Architect G3 PASS`
+> 版本：v0.2
+> 状态：`G3_PENDING_ARCHITECT_REVIEW`
 > 日期：2026-11-18
-> 计划参考基线：main `717897f375ef3eff3cb24f48da5a0317701df70e` / tree `921c70201e6b503cce4bd59be91dcc0c07ec8955`
+> 计划参考基线：main `4104f15ad706b3165358b3f0108ae9bff282809c` / tree `69089c9993577bdb8c8a25dded4b4c95da3b607f`
 > Intent：`docs/milestones/D08/intent.md`（`DRAFT · G1_PENDING_OWNER_APPROVAL`）
 > Spec：`docs/milestones/D08/spec.md`（`DRAFT · G1_PENDING_OWNER_APPROVAL`）
 
-本文只把当前 D08 Intent/Spec 映射成四张文件级、严格串行的任务卡。Architect 已批准 G3；G1/G2 仍待负责人审核，未获开发确认前不创建 Worker、心跳或 candidate。D08 只能只读候选召回：不执行 P-03，不写 Event、Update、证据、别名或 FTS，不接 Runtime/HTTP/生产配置。
+本文只把当前 D08 Intent/Spec 映射成四张文件级、严格串行的任务卡。v0.1 曾获 G3 批准；负责人随后确认 D08 并要求可配置 Update 窗口，故 v0.2 须重新交由 Architect 审核。Git 中 Intent/Spec 状态行仍标 G1 pending，待 Architect 按门禁同步；当前不创建 Worker、心跳或 candidate。D08 只能只读候选召回：不执行 P-03，不写 Event、Update、证据、别名或 FTS，不接 Runtime/HTTP/生产配置。
 
 固定运行时前置：
 
@@ -34,7 +34,8 @@ D08 交付无 HTTP route 的只读 Event Search 服务：
 - 同一 Event 跨 clue/索引只保留一个候选；同一别名文字属于不同 Event 时按 Event ID 保持独立。
 - 先覆盖全部历史召回、去重和确定性排序，再按 `maxCandidates` 截断；默认 10，可在依赖构造时配置整数 `1..50`。
 - 排序严格依次使用：直接实体或别名命中优先、命中不同 clue 数 DESC、FTS 命中检索词数 DESC、`discovered_at` DESC、Event `id` BINARY ASC。首次出现 clue 序号只作为内部证据，不增加第六级排序键。
-- 只对截断后的每个候选读取 Event 基本资料和按 `discovered_at DESC, id DESC LIMIT 10` 选出的 Update；DTO 将 Update 反转为旧→新。第 11 条及更早历史仍已由 FTS 参与召回。
+- 只对截断后的每个候选读取 Event 基本资料和最近 Update 窗口；`maxUpdates` 默认 10，可配置为 `0..100` 的整数。`maxUpdates > 0` 时 SQL 按 `discovered_at DESC, id DESC LIMIT ?` 取数并把配置值作为参数绑定；`maxUpdates = 0` 时不执行 Update 查询，候选仍返回且 `updates: []`。DTO 将查询结果反转为旧→新。
+- Update 窗口仅影响 DTO/P-03 上下文，不影响全历史 FTS 召回、候选集合或候选排序；窗口外历史仍由 D01 聚合 FTS 参与召回。
 - 所有 Content、候选、上下文和 FTS 读取均在写事务外；D08 从不开启写事务。
 
 公共返回契约固定为：
@@ -103,7 +104,7 @@ interface EventCandidateUpdate {
 | `src/event-search/fts-phrase.ts` | FTS 双引号短语字面量编码 | T02 |
 | `src/event-search/event-candidate-repository.ts` | 三路只读召回、参数绑定、内部 clue 证据与 Event ID 去重 | T02 |
 | `src/event-search/candidate-ranking.ts` | 五级确定性排序与上限截断 | T03 |
-| `src/event-search/candidate-context.ts` | Event 基本资料与最近 10 条 Update 参数化读取 | T03 |
+| `src/event-search/candidate-context.ts` | Event 基本资料与可配置 `0..100` 的最近 Update 窗口读取 | T03 |
 | `src/event-search/contracts.ts` | 公共 Options/Result/Service/DTO/Dependencies 类型 | T04 |
 | `src/event-search/event-search-logger.ts` | 白名单安全日志与 best-effort 包装 | T04 |
 | `src/event-search/event-search.ts` | 最终服务编排与 `createEventSearch` factory | T04 |
@@ -163,6 +164,7 @@ T01 固定四码和安全 message：
 ### 2.5 配置与事务边界
 
 - 服务构造器保存 `maxCandidates = dependencies.maxCandidates ?? 10`；若不是 `1..50` 的整数，factory 同步抛 `RangeError("maxCandidates must be an integer from 1 to 50")`。这是依赖配置错误，不进入 `search()` 的四码业务错误表。
+- 服务构造器保存 `maxUpdates = dependencies.maxUpdates ?? 10`；若不是 `0..100` 的整数，factory 同步抛 `RangeError("maxUpdates must be an integer from 0 to 100")`。每个服务实例持有自己的 `maxUpdates`，禁止模块级配置。
 - `database` 只用于 T03 的候选上下文参数化读取；候选检索 Repository 自身持有同一 Database。依赖不含 Clock、IdGenerator。
 - 服务不调用 `withTransaction()`；T04 在 StubLLM hook、候选 Repository wrapper 和上下文读取 wrapper 内直接断言 `db.inTransaction === false`。
 
@@ -172,7 +174,7 @@ T01 固定四码和安全 message：
 |---|---|---|
 | T01 合并后 | Content 六字段投影、单次 P-02、错误/取消、空 clues 响应 | 无候选检索、排序、上下文或公共 factory |
 | T02 合并后 | 三路全历史召回、FTS 字面量、跨来源 Event ID 去重 | 无排序截断、Update 上下文或最终服务 |
-| T03 合并后 | 五级排序、上限、Event 详情与最近 10 条 Update | 无公共 factory、loader 或真实 SQLite 端到端 |
+| T03 合并后 | 五级排序、候选上限、Event 详情与可配置 `0..100` 的最近 Update 窗口 | 无公共 factory、loader 或真实 SQLite 端到端 |
 | T04 合并后 | 公共契约/factory、fixture、真实 SQLite + StubLLM + 合成 Prompt 集成 | 只表示实现及本地任务能力，仍须 G4、合并、集成 Gate、CI 与最终验收 |
 
 四卡严格串行。每卡使用全新 Paseo Worker、固定前卡 merge SHA 和独立 worktree；Worker 不 stage/commit/merge/push，只交 `REVIEW`/`BLOCKED`。未获 Architect 对精确冻结 tree 的 G4 批准，不得创建 candidate。
@@ -181,13 +183,14 @@ T01 固定四码和安全 message：
 |---|---|---|
 | `EVT-06` | T02 同实体不同 Subject 的独立 clue 证据；T04 两事项端到端 | 同名实体不被自动合并 |
 | `EVT-10` | T02 十年前 Event 的标准名/别名/FTS 三路召回 | T04 全历史成功结果 |
-| `EVT-11` | T03 12 条 Update 的最近 10 条与同时间 ID 决胜 | T04 DTO 旧→新 |
+| `EVT-11` | T03 默认窗口 10、窗口调大/调小/0、同时间 ID 决胜 | T04 DTO 旧→新与实例配置 |
 | `EVT-21` | T01 空 clues 成功；T04 Repository 零调用/零写入 | P-02 恰一次 |
 | `EVT-22` | T02 空命中的 SearchResult；T04 成功空候选 | 不虚构 Event |
-| `EVT-23` | T02 旧 Update FTS 召回；T03 上下文不偷加旧 Update | T04 端到端 |
+| `EVT-23` | T02 窗口外旧 Update FTS 召回；T03/T04 上下文不偷加窗口外 Update | 不改变候选集合 |
 | `EVT-24` | T02 同别名两个 Event 独立；T03 各自上下文 | T04 不混淆 |
 | `DEDUPE` | T02 Event ID 去重与 clue 证据合并 | T03/T04 只输出一个候选 |
-| `LIMIT` | T03 全集合排序后截断 | T04 默认/可配置上限 |
+| `CANDIDATE_LIMIT` | T03 全集合排序后按 `maxCandidates` 截断 | T04 默认 10、可配置 1..50 |
+| `UPDATE_LIMIT` | T03 按 `maxUpdates` 读取 Update 窗口 | T04 默认 10、可配置 0..100、0 零 Update SQL |
 | `FTS_LITERAL` | T02 引号、操作符、SQL 样式文本均为参数短语 | T04 恶意检索词零写入 |
 | `MISSING/INVALID/ABORT` | T01/T04 顺序与次数 | DB/LLM 前拒绝 |
 | `ERROR` | T01 LLM；T04 DB/Content/候选/上下文 | 安全错误不透底 |
@@ -263,7 +266,7 @@ git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters 
 
 | key | 初始值 |
 |---|---|
-| `BASE_SHA` | `PENDING_G3_EXECUTION_BASELINE`（必须是 `717897f375ef3eff3cb24f48da5a0317701df70e` 的后代且只增加已批准 D08 文档） |
+| `BASE_SHA` | `PENDING_G3_EXECUTION_BASELINE`（必须是 `4104f15ad706b3165358b3f0108ae9bff282809c` 的后代且只增加已批准 v0.2 D08 文档） |
 | `WORKER_AGENT` | `PENDING` |
 | `WORKER_WORKSPACE` | `PENDING` |
 | `WORKER_BRANCH` | `PENDING` |
@@ -321,7 +324,7 @@ git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters 
 | `EVT-06 / CLUE_IDENTITY` | 同一 entity 两个不同 subject 各保留 clueIndex；候选不被主体名相同吞并 |
 | `EVT-10 / THREE_ROUTES` | 十年前 Event 分别可经标准名、确认别名、FTS 召回；无时间过滤 |
 | `EVT-22 / EMPTY` | 有合法 clues、无命中时返回 `{hits: [], ignoredIndexRows: 0}` 而非异常；不创建 Event |
-| `EVT-23 / OLD_UPDATE` | 检索词只在第 1 条历史 Update 时仍由 FTS 命中；候选召回不 LIMIT 10 |
+| `EVT-23 / OLD_UPDATE` | 检索词只在默认 Update 窗口以外的第 1 条历史 Update 时仍由 FTS 命中；候选召回不受 `maxUpdates` 限制 |
 | `EVT-24 / SAME_ALIAS` | 两 Event 同 alias 返回两个独立 hits，各自 discoveredAt 正确 |
 | `DEDUPE` | 同一 Event 被标准名、别名、多个 terms/多 clues 命中仍只有一项，证据合并完整 |
 | `FTS_LITERAL` | 双引号、括号、冒号、星号、NEAR、SQL 样式文本无 FTS 语法错/注入；表快照不变 |
@@ -366,7 +369,7 @@ git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters 
 | `VERIFICATION` | `NOT_RUN` |
 | `ARCHIVE_RESULT` | `PENDING` |
 
-## 6. D08-T03 · 确定性排序、上限与最近 10 条候选上下文
+## 6. D08-T03 · 确定性排序、候选上限与可配置 Update 窗口
 
 ### 6.1 依赖与精确允许写集
 
@@ -378,12 +381,12 @@ git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters 
 - 只读复用：T02 `EventCandidateHit`、`src/database/open-database.ts`/`schema.ts`、`src/database/event-search.ts`、tests/fixtures/database.ts。
 - 依赖/包变更：`NONE`。
 - 其他任何 tracked/untracked 路径：禁止。
-- Spec/Case 映射：Spec §1、§3.3、§4、§5、§6、§7；`EVT-11`、`EVT-23`、`EVT-24`，`LIMIT`，并为 `EVT-10` 提供上下文阶段证据。
+- Spec/Case 映射：Spec §1、§3.3、§4、§5、§6、§7；`EVT-11`、`EVT-23`、`EVT-24`，`CANDIDATE_LIMIT`、`UPDATE_LIMIT`，并为 `EVT-10` 提供上下文阶段证据。
 
 ### 6.2 禁止范围
 
 - 不得修改 T01/T02 文件、DDL/FTS 刷新、D02、Processing、Knowledge、app/server/lifecycle、配置 API、CI、package/lock。
-- 不得重新做三路 SQL 召回、按时间过滤 Event、加载全历史 Update 到 DTO、写入/刷新任何表。
+- 不得重新做三路 SQL 召回、按时间过滤 Event、加载窗口外 Update 到 DTO、写入/刷新任何表。
 - 不得生成时钟、ID、别名、证据、Event/Update，或调用 LLM/Adapter/HTTP/Runtime。
 - 不得把测试 matcher 或测试专用 seam 放进生产接口；不得暴露 clues、检索词、bm25 或内部排序分数。
 
@@ -397,29 +400,33 @@ git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters 
    5. `eventId` BINARY ASC。
 2. `firstClueIndex` 可保留但不进入比较器；不得以 `bm25`、相关度浮点、当前时间或插入顺序补充排序。
 3. 先对全部 hits 完整排序，再 `slice(0, maxCandidates)`；函数不得接收或添加 SQL 召回限制。测试覆盖 1/10/50 与超过上限集合。
-4. `loadEventCandidateContexts(database, rankedHits, signal?)` 只处理排序后的候选 ID，按稳定输入顺序读取 Event 基本字段；若 Event 在读取时已不存在则跳过，不创建替代对象。
+4. `loadEventCandidateContexts(database, rankedHits, maxUpdates, signal?)` 只处理排序后的候选 ID，按稳定输入顺序读取 Event 基本字段；若 Event 在读取时已不存在则跳过，不创建替代对象。
 5. Event 查询只选 `id/title/entity_name/subject/scope/description/occurred_at/discovered_at`，参数绑定当前 Event ID。
-6. Update 查询精确为 `WHERE event_id = ? ORDER BY discovered_at DESC, id DESC LIMIT 10`；所有列参数绑定，row 映射区分 null 与空字符串。
-7. 查询结果在 DTO 中整体 `.reverse()`，因此旧→新；同一 discovered_at 的选取由 id DESC 决定，反转后同时间按 id ASC 呈现。
-8. 不加载第 11 条及更早 Update 到 DTO；该历史已由 T02 FTS 覆盖。无候选时零上下文 SQL。
-9. 上下文读取不开启事务；每个候选/Update 读取前后检查 signal，已取消映射 `aborted`，其他 SQLite 错误交 T04 映射 `event_search_failed`。不吞错。
+6. `maxUpdates > 0` 时 Update 查询精确为 `WHERE event_id = ? ORDER BY discovered_at DESC, id DESC LIMIT ?`；event ID 与窗口值均参数绑定，row 映射区分 null 与空字符串。
+7. `maxUpdates = 0` 时对每个候选仍读取 Event 基本资料，但完全不执行 Update SQL，并返回 `updates: []`。
+8. 查询结果在 DTO 中整体 `.reverse()`，因此旧→新；同一 discovered_at 的选取由 id DESC 决定，反转后同时间按 id ASC 呈现。
+9. 不加载窗口以外 Update 到 DTO；窗口外历史仍已由 T02 FTS 覆盖。无候选时零上下文 SQL。
+10. `maxUpdates` 只传入 T03 上下文阶段；不得传给 T02、改变 hits、候选顺序或 `maxCandidates` 截断。
+11. 上下文读取不开启事务；每个候选/Update 读取前后检查 signal，已取消映射 `aborted`，其他 SQLite 错误交 T04 映射 `event_search_failed`。不吞错。
 
 ### 6.4 测试矩阵
 
 | Case | 必测断言 |
 |---|---|
-| `EVT-11 / UPDATE_WINDOW` | 12 条 Update 仅选最新 10；最新两条同 discovered_at 按 id DESC 取，DTO 反转后顺序精确 |
-| `EVT-23 / HISTORY_SPLIT` | 旧线索已在 T02 hits 中，但 T03 候选上下文只含最近 10，不偷加第 1 条 |
+| `EVT-11 / UPDATE_WINDOW` | 同一 12 条 Update 在 `maxUpdates=0/1/10/100` 下分别输出 `[]`、最近 1、默认最近 10、全部 12；最新两条同 discovered_at 按 id DESC 取，DTO 反转后顺序精确 |
+| `WINDOW_ZERO` | `maxUpdates=0` 仍返回候选/Event 基本资料，但 Update SQL 零调用；不是空候选 |
+| `WINDOW_BINDING` | `LIMIT ?` 第二参数绑定当前实例的 1/10/100；SQL 文本不含写死窗口常量 |
+| `EVT-23 / HISTORY_SPLIT` | 旧线索已在 T02 hits 中，但 T03 在当前 `maxUpdates` 窗口下不偷加窗口外 Update |
 | `EVT-24 / ISOLATION` | 两个候选各自 Update 只按自身 event_id 读取，不串上下文 |
 | `RANK_DIRECT` | 标准名/别名任一命中均优先于仅 FTS；direct 与 alias 同级 |
 | `RANK_CLUE_COUNT` | 命中不同 clue 数多者优先；重复 clue evidence 不双计 |
 | `RANK_FTS_COUNT` | 唯一 FTS 命中词数多者优先；重复词不虚增 |
 | `RANK_TIME_ID` | 前三级相同后 discovered_at DESC；再同则 id ASC；`firstClueIndex` 不改变结果 |
-| `LIMIT` | 全集合先排序后截断；1/10/50 边界；超过上限时保留稳定前 N |
+| `CANDIDATE_LIMIT` | `maxCandidates` 全集合先排序后截断；1/10/50 边界；超过上限时保留稳定前 N；与 `maxUpdates` 互不替代 |
 | `CONTEXT_SHAPE` | Event/Update 公共字段精确；occurred_at null 原样；无 clue/score/额外字段 |
 | `READ_ONLY / NO_MATCHES` | 调用前后业务/FTS 快照一致，无 transaction；空 hits 零 SQL |
 
-另测：Update 插入顺序与输出无关；候选 Event 不存在时跳过；Event discovered_at 与 Update 时间互不替代；不调用 `refreshEventSearch`/`rebuildEventSearch`/`withTransaction`；SQL 不拼接 ID。
+另测：Update 插入顺序与输出无关；候选 Event 不存在时跳过；Event discovered_at 与 Update 时间互不替代；0/1/10/100 窗口不改变 hits 与候选顺序；配置 0 时通过 Database wrapper 证明 `event_updates` 查询次数为 0；非零窗口通过 wrapper 捕获参数绑定；不调用 `refreshEventSearch`/`rebuildEventSearch`/`withTransaction`；SQL 不拼接 ID 或窗口值。
 
 ### 6.5 验证命令与交回
 
@@ -482,21 +489,22 @@ git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters 
 
 ### 7.3 实现要求
 
-1. `contracts.ts` 暴露 Spec 的 Options/Result/Service/EventCandidate/EventCandidateUpdate 与依赖类型；依赖显式包含 `database`、只读 Content `getById`、T02 `EventCandidateRepository`、仅 `searchEvents` 的 typed calls、logger、可选 `maxCandidates`。不得含 Clock/IdGenerator。
+1. `contracts.ts` 暴露 Spec 的 Options/Result/Service/EventCandidate/EventCandidateUpdate 与依赖类型；依赖显式包含 `database`、只读 Content `getById`、T02 `EventCandidateRepository`、仅 `searchEvents` 的 typed calls、logger、可选 `maxCandidates` 与可选 `maxUpdates`。不得含 Clock/IdGenerator。
 2. `index.ts` 运行时只导出 `createEventSearch` 和 `EventSearchError`；DTO/Options/Service/Dependencies 只作 type export，不导出内部 hit/SQL/parser。
-3. `createEventSearch()` 先验证 `maxCandidates`；服务入口顺序固定：非法 Content ID → `invalid_input`；pre-abort → `aborted`；Content 点读一次 → 缺失空结果；六字段 task data → 事务外恰一次 P-02；空 clues → 空结果；仅按 `{entity_name, subject, search_terms}` 完全相等做稳定去重并保留首次出现，不 trim/归一化或按 entity 合并；T02 全历史召回；T03 排序/截断；T03 上下文；返回 `{candidates}`。
-4. Content 读取异常映射 `event_search_failed`；候选/上下文/FTS/SQLite 异常映射 `event_search_failed`；LLM/Prompt/JSON/Schema 异常由 T01 映射 `llm_failed`；任何阶段已中止 signal 优先 `aborted`。候选 Repository 返回 `ignoredIndexRows>0` 时只写 `stage=search` 的白名单安全日志，记录孤儿行被忽略但不写 ID/text。
+3. `createEventSearch()` 分别验证 `maxCandidates` 与 `maxUpdates`；服务入口顺序固定：非法 Content ID → `invalid_input`；pre-abort → `aborted`；Content 点读一次 → 缺失空结果；六字段 task data → 事务外恰一次 P-02；空 clues → 空结果；仅按 `{entity_name, subject, search_terms}` 完全相等做稳定去重并保留首次出现，不 trim/归一化或按 entity 合并；T02 全历史召回；T03 排序/`maxCandidates` 截断；T03 使用本实例 `maxUpdates` 读取上下文；返回 `{candidates}`。
+4. Content 读取异常映射 `event_search_failed`；候选/上下文/FTS/SQLite 异常映射 `event_search_failed`；LLM/Prompt/JSON/Schema 异常由 T01 映射 `llm_failed`；任何阶段已中止 signal 优先 `aborted`。候选 Repository 返回 `ignoredIndexRows>0` 时只写 `stage=search` 的白名单安全日志，记录孤儿行被忽略但不写 ID/text。`maxUpdates` 不得改变候选集合、候选顺序或 FTS 召回。
 5. 每个同步读取/LLM 返回后检查 signal；取消不得继续下一阶段。不得把底层 cause/SQL/Zod issues/模型原文/Prompt/正文/检索词放进公共 error。
 6. logger 入口只接受白名单字段，运行时重组对象；在 invalid/pre-abort/缺失/空 clues/空候选/成功/错误及 `ignoredIndexRows>0` 路径 best-effort 记录允许的 `stage` 与计数；logger failure 不改变结果/错误。
 7. 仅在 Content 存在且 clues 非空时调用候选 Repository；clues=[]/缺失/非法/pre-abort/LLM 失败必须候选 Repository 零调用。
 8. `tests/fixtures/event-search.ts` 提供：合成 Content、Event/Update/别名、D01 FTS 建 fixture、业务与 FTS 快照、临时 `event-search.md`、StubLLM request capture、candidate/context spy、captured logger、真实临时 DB harness 与隐私 sentinel。
 9. 集成使用公共 factory、真实 `SqliteContentRepository`、T02 真实候选 Repository、T03 真实上下文读取、真实 `createTypedLlmCalls`/`PromptRepository`/StubLLM 与仅含 `event-search.md` 的临时目录。
-10. 在 StubLLM、候选 Repository wrapper、上下文 wrapper 中直接断言 `db.inTransaction===false`；不得通过代码结构间接声称“事务外”。
+10. 在 StubLLM、候选 Repository wrapper、上下文 wrapper 中直接断言 `db.inTransaction===false`；上下文 wrapper 还要记录当前实例传入的 `maxUpdates` 与 Update SQL 次数，不得通过代码结构间接声称“事务外”。
 11. 每路径精确断言 `typed.searchEvents` 次数：缺失/非法/pre-abort 为 0；正常/空 clues/空候选/Schema 失败为 1；无重试。候选 Repository 次数：空 clues/缺失/非法/pre-abort/LLM 失败为 0；有 clues 恰 1。
 12. `maxCandidates` 默认 10；测试 1、50、非法 0/51/小数/非数字同步 RangeError。构造超过上限的 Event 集，证明召回覆盖所有候选后再截断。
-13. 解析 StubLLM user JSON：顶层只有 `task_data`；task_data 精确六字段；无 `user_context`、Content ID、raw/Topic/history/Token sentinel。system 只含合成 event-search 指令和 D02 schema，不含正文/背景 sentinel。
-14. 真实 SQLite 断言三路召回、跨 clue/来源去重、同 alias 两 Event、旧 Update 召回、最近 10 条 DTO、稳定排序和空结果；调用前后业务表及 FTS 全快照不变。
-15. 测试后关闭 SQLite；无 server/socket/timer/unhandled rejection、WAL/SHM 或真实网络依赖残留；`globalThis.fetch` 与 Adapter spy 为零。
+13. `maxUpdates` 默认 10；测试 0、1、10、100，非法 -1/101/小数/非数字同步抛精确 `RangeError`。两个实例配置相同 clues/候选但不同 `maxUpdates`，证明各自 Update 窗口独立，候选 ID/顺序和输入 clues 不变。
+14. 解析 StubLLM user JSON：顶层只有 `task_data`；task_data 精确六字段；无 `user_context`、Content ID、raw/Topic/history/Token sentinel。system 只含合成 event-search 指令和 D02 schema，不含正文/背景 sentinel。
+15. 真实 SQLite 断言三路召回、跨 clue/来源去重、同 alias 两 Event、窗口外旧 Update 仍召回、默认/调大/调小/0 Update 窗口、稳定排序和空结果；调用前后业务表及 FTS 全快照不变。
+16. 测试后关闭 SQLite；无 server/socket/timer/unhandled rejection、WAL/SHM 或真实网络依赖残留；`globalThis.fetch` 与 Adapter spy 为零。
 
 ### 7.4 测试矩阵
 
@@ -504,13 +512,14 @@ git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters 
 |---|---|
 | `EVT-06` | 同实体两 Subject 产生两个相关候选/各自 clue 证据；不被实体名合并；输出仍按确定性顺序 |
 | `EVT-10` | 十年前 Event 经标准名/别名/FTS 均可在集成服务召回 |
-| `EVT-11` | 12 Update 只输出最近 10；同时间 ID 决胜；DTO 旧→新 |
+| `EVT-11` | 同一 12 Update 默认输出最近 10；调大为 100 输出全部、调小为 3 输出最近 3、0 输出 `[]`；同时间 ID 决胜；DTO 旧→新 |
 | `EVT-21` | clues=[] → 空；P-02 1 次、候选 Repository 0、零写入/零下游 |
 | `EVT-22` | 有 clues 无候选 → 空成功；不虚构 Event/不写库 |
-| `EVT-23` | 第 1 条 Update 线索经 FTS 召回，DTO 只含最近 10 条 |
+| `EVT-23` | 第 1 条 Update 线索经 FTS 召回，DTO 只含当前实例 `maxUpdates` 窗口内记录；改变窗口不改变候选 |
 | `EVT-24` | 同 alias 两 Event 都输出且各自上下文隔离 |
 | `DEDUPE` | 多 clue/多来源同 Event 只一个 DTO；同 alias 不同 Event 保持两个 |
-| `LIMIT` | 超过上限的全历史集合按五级键稳定截断；默认 10，支持 1/50 |
+| `CANDIDATE_LIMIT` | `maxCandidates` 超过上限的全历史集合按五级键稳定截断；默认 10，支持 1/50 |
+| `UPDATE_LIMIT` | `maxUpdates` 默认 10，支持 0/1/10/100；0 零 Update SQL，非零 `LIMIT ?` 参数绑定；与 `maxCandidates` 独立 |
 | `FTS_LITERAL` | 引号/括号/冒号/星号/NEAR/SQL sentinel 正常参数化；无注入、无快照变化 |
 | `MISSING/INVALID/ABORT` | 缺失空结果；非法/pre-abort DB/LLM 前失败；中途/返回后取消 `aborted` |
 | `ERROR` | DB/Content/候选/上下文 → `event_search_failed`；LLM/Schema → `llm_failed`；message 固定、无 cause |
@@ -519,7 +528,7 @@ git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters 
 | `PRIVACY` | task_data/system/logger/error 无正文/Topic/history/raw/Token/Prompt sentinel |
 | `PUBLIC_SHAPE` | 结果只有 `{candidates}`；candidate/update 键集精确；未暴露 score/clues/source |
 
-另测：factory 无共享状态；两个实例不同 maxCandidates 互不影响；logger throw/reject 不改变结果；公开类型不允许 Clock/IdGenerator；空候选时上下文零调用；FTS 孤儿行被忽略；candidate Event 详情缺失时跳过且不虚构。
+另测：factory 无共享状态；两个实例的 `maxCandidates` 与 `maxUpdates` 分别互不影响，不得把两个配置混用；logger throw/reject 不改变结果；公开类型不允许 Clock/IdGenerator；空候选时上下文零调用；FTS 孤儿行被忽略；candidate Event 详情缺失时跳过且不虚构。
 
 ### 7.5 验证命令与交回
 
@@ -537,7 +546,7 @@ rg -n 'config/prompts|config/prompt|process\.env|apiKey|user_context' src/event-
 git diff --name-only <BASE_SHA> -- src/database src/llm src/prompt src/adapters src/collection src/processing src/knowledge src/config.ts src/configuration src/time src/id src/app.ts src/server.ts src/lifecycle.ts config/prompts config/prompt .github package.json package-lock.json
 ```
 
-禁止 diff 必须为空；生产扫描中合法 `event_search MATCH` 或目录名命中须逐条解释。测试只允许临时合成 Prompt、StubLLM 与真实临时 SQLite。交回须附真实 SQLite + D02 StubLLM 集成测试名/PASS、call/repository 次数、transaction wrapper、五级排序/上限、12→10 Update、旧 Update 召回、只读快照、隐私与 fetch 零调用证据，并只报 `REVIEW`/`BLOCKED`。
+禁止 diff 必须为空；生产扫描中合法 `event_search MATCH` 或目录名命中须逐条解释。测试只允许临时合成 Prompt、StubLLM 与真实临时 SQLite。交回须附真实 SQLite + D02 StubLLM 集成测试名/PASS、call/repository 次数、transaction wrapper、五级排序、两个独立上限、默认/调大/调小/0 Update 窗口、窗口外旧 Update 召回、只读快照、隐私与 fetch 零调用证据，并只报 `REVIEW`/`BLOCKED`。
 
 ## 8. 每卡冻结、Candidate、Merge 与归档门禁
 
@@ -580,8 +589,9 @@ Gate 必须保留：
 - P-02 恰一次且事务外调用的直接证据；六字段 task_data、无 `user_context`、合成 Prompt 唯一来源。
 - clues=[] 的 P-02 1 次、候选 Repository 0 次、业务/FTS 零写入；有 clues 无候选为成功空结果。
 - 三路全历史召回、FTS 字面量注入测试、跨 clue/来源 Event 去重、同 alias 不同 Event 独立。
-- 五级排序/默认 10/可配置 1..50/去重后截断的顺序证据；候选上限不进入召回 SQL。
-- 12 条 Update 的 `DESC,id DESC LIMIT 10` 与 DTO 反转；旧第 1 条 Update 可召回但不进入上下文。
+- 五级排序/`maxCandidates` 默认 10、可配置 1..50/去重后截断的顺序证据；候选上限不进入召回 SQL。
+- `maxUpdates` 默认 10、可配置 0..100、每实例独立；非零按 `DESC,id DESC LIMIT ?` 参数绑定，0 零 Update SQL 且候选不消失；DTO 反转旧→新。
+- 同一候选集在默认、调大、调小、0 Update 窗口下候选 ID/顺序不变；窗口外第 1 条 Update 仍可经 FTS 召回但不进入上下文。
 - 对业务表与 `event_search` 的前后快照不变、`db.inTransaction=false`、`globalThis.fetch`/Adapter 零调用。
 - 受保护路径 diff 为空；无 Prompt/DDL/FTS 刷新/Package/App/Server/Lifecycle 变化；无真实 Prompt/User Context/模型/API Key。
 - 测试资源全部关闭。失败不得用重跑成功覆盖首次真实失败；D07 RSS 清理时序失败若复现，记录测试名/次数/环境并以定向复现区分已知观察项与 D08 回归，不弱化断言，也不擅自修改 D05。
@@ -592,11 +602,11 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D08 推进心跳�
 
 ## 10. 风险、回滚与停止条件
 
-- **上游门禁**：Intent/Spec 当前仍为 `DRAFT · G1_PENDING_OWNER_APPROVAL`。本 Plan 可供 G3 审核，但 G1/G2 未通过前不得进入开发；Plan 不自行确认批准状态。
+- **上游门禁**：负责人本轮已明确确认 D08，但 Git 中 Intent/Spec 仍为 `DRAFT · G1_PENDING_OWNER_APPROVAL`，两者状态待 Architect 按权威流程同步。本 Plan 可供 v0.2 G3 审核，但在上游门禁记录和开发授权明确前不得进入开发；Plan 不自行修改或批准上游状态。
 - **D02 契约漂移**：D02 是唯一 strict Schema。若实际行为与 Spec §2/§5 或严格的 task-data-only 输入不符，标 `BLOCKED` 交 Architect，不在 D08 复制/修补 Schema。
 - **FTS trigram 边界**：1-2 字符不依赖 trigram；标准名/确认别名普通精确索引仍负责短词。不得为提升短词召回改用 LIKE、通配符或未批准语义评分。
 - **排序口径**：`firstClueIndex` 是内部证据但不参与 Spec 五级排序；`discovered_at` 与 `id` 必须使用明确比较，不依赖 JS/SQLite 自然顺序。
-- **配置边界**：`maxCandidates` 是构造期依赖配置，非法值同步 RangeError；不得把范围错误伪装成空结果或退化为默认值。
+- **配置边界**：`maxCandidates`（默认 10，`1..50`）与 `maxUpdates`（默认 10，`0..100`）是独立构造期依赖配置；非法值分别同步抛出规定的 RangeError，不得混淆、静默截断、退化为默认值或使用模块级值。
 - **只读风险**：任何生产 SQL 写、FTS refresh/rebuild、事务开启或同进程 fixture 泄漏均判 BLOCKER；测试 seeding 与生产调用边界必须清楚。
 - **已知观察项**：D07 报告的 RSS HTTP 清理时序失败保留为观察项；若 D08 full verify 复现，不得弱化/跳过测试，按 D05 先例定位环境与根因。
 - **回滚**：每卡 candidate 以固定 base 单一 parent，必要时 revert merge commit；不得 reset 主线、覆盖其他里程碑或修改已批准上游来“修复”D08。
@@ -606,8 +616,9 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D08 推进心跳�
 
 - 本 Plan 只把当前 D08 Intent/Spec 映射为四张严格串行、文件级可执行任务卡，没有新增公共返回字段、DDL、Prompt、依赖、Worker 或替代任务 ID。
 - T01～T04 均列出精确允许写集、固定 base、Spec/Case 映射、禁止范围、验证命令及冻结/candidate/merge/archive 证据字段。
-- D08 只读：一次 P-02、三路全历史召回、Event ID 去重、五级排序/上限、最近 10 条上下文；`clues=[]` 与空候选均为成功空结果；不执行 P-03 或任何业务/FTS 写。
+- D08 只读：一次 P-02、三路全历史召回、Event ID 去重、五级排序/`maxCandidates` 上限、每实例 `maxUpdates` 的默认/可配置 Update 窗口；`clues=[]` 与空候选均为成功空结果；不执行 P-03 或任何业务/FTS 写。
 - `PMT-02` 明确为 S0 非 P0；`PMT-09`/`PMT-15` 的事件搜索部分由 T01/T04 覆盖；D07 RSS 时序失败不弱化。
-- 当前结论：`D08_PLAN=DRAFT_READY_FOR_ARCHITECT_G3`。G3 通过前任务状态保持 `NOT_STARTED`，不创建 Worker、心跳、candidate、merge、push 或最终验收。
+- 当前结论：`D08_PLAN=G3_PENDING_ARCHITECT_REVIEW`。G3 复核通过前任务状态保持 `NOT_STARTED`，不创建 Worker、心跳、candidate、merge、push 或最终验收。
 
-- v0.1 `APPROVED`：Architect 核对 commit `69a2f0d16ac74405d1e7596ca48767aa772fc61b`、tree `6484e947eaf845edfb887d1128563dd3419486ca`；四卡精确写集、三路召回、FTS 字面量、五级排序、最近 10 条上下文、只读与隐私证明均符合 Spec。G1/G2 批准前不得启动 Worker。
+- v0.1 `APPROVED`：Architect 核对 commit `69a2f0d16ac74405d1e7596ca48767aa772fc61b`、tree `6484e947eaf845edfb887d1128563dd3419486ca`；四卡精确写集、三路召回、FTS 字面量、五级排序、默认 Update 窗口、只读与隐私证明均符合当时 Spec。
+- v0.2 `G3_PENDING_ARCHITECT_REVIEW`：同步负责人确认的 `maxUpdates` 可选依赖（默认 10，`0..100`，0 零 Update SQL，非零 `LIMIT ?` 参数绑定）；更新 T03 上下文、T04 factory/实例隔离与 0/1/10/100 集成证据。四卡写集、禁止范围及冻结即交回硬门禁保持不变；v0.1 的 G3 批准不自动覆盖本修订。
