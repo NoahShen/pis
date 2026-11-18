@@ -7,8 +7,8 @@
 - Spec：`APPROVED · G2 PASS`
 - 执行基线：main `1836a89028f8ce8290737ffee706790254c25dcb` / tree `e7d8e7b22e4d506336a0568eaabd4bf81acc03e9`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 当前 Worker：`NONE · D07-T03 Worker 已归档`
-- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T02=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T03=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T04=READY`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
+- 当前 Worker：`c02ce1b2-e37d-4a15-923f-03298aaf64ef` / `wks_eca585a7f2de1b97` / `feat/d07-t04-knowledge-integration`
+- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T02=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T03=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T04=IN_PROGRESS`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
@@ -17,7 +17,7 @@
 | D07-T01 Content 输入 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `1836a89028f8ce8290737ffee706790254c25dcb` | PASS（merge 后定向 3 files/24 tests；full 57 files/669 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D07-T02 严格边界/错误 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `eb9ef1d38ffa2f62455de0498c92dad07fb77a31` | PASS（merge 后定向 4 files/48 tests；full 58 files/689 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D07-T03 Repository/事务 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `ccd5ca9c5f128684dfd7a5eaf86e4938ec3c3275` | PASS（merge 后定向 4 files/34 tests；full 60 files/708 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
-| D07-T04 公共 factory/集成 | `READY` | `a16ac8cc54d7b049bde8fb9c0040bbbf20785227` | `NOT_RUN` | `READY` | `PENDING` | 等待 Lead 派发；冻结必须与交回报告在同一次回复中给出，否则退回重做 |
+| D07-T04 公共 factory/集成 | `IN_PROGRESS` | `f1d05cdab19391059cc76988d0534b69289ff769` | `NOT_RUN` | `IN_PROGRESS` | `PENDING` | Worker 已派发；T04_HARD_GATE 生效 |
 
 状态语义：`NOT_STARTED → READY → IN_PROGRESS → REVIEW → PASS`；失败转 `FAIL/IN_PROGRESS`，设计/外部依赖缺失转 `BLOCKED`。Worker 不得自行写 PASS。
 
@@ -28,7 +28,7 @@
 | D07-T01 | `1836a89028f8ce8290737ffee706790254c25dcb` | `a88d7a0e-49f2-480b-a16c-04975abd2128` | `wks_f5b697be70db6123` | `feat/d07-t01-content-input` | 精确 2 路径：`src/knowledge/content-input.ts`、`tests/knowledge/content-input.test.ts` | `6797a68b18ed94fd5972ca804bb70c256d700984` | `12763a85062183ef53cb548f9eb7584a79ecba313780405f09c71cd376155c76` | `APPROVED · G4` | `ff1dea429c986038bf9bfd0c95826aa1fe438879` | `00ba917563b902a8731d432366c169450879abf6` | `6797a68b18ed94fd5972ca804bb70c256d700984` | PASS（merge 后定向 3/24；full 57/669；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
 | D07-T02 | `eb9ef1d38ffa2f62455de0498c92dad07fb77a31` | `2b77c1e1-3033-4b8f-931a-eba6d04001ba` | `wks_3360fd32abb031e7` | `feat/d07-t02-knowledge-call` | 精确 4 路径：`knowledge-errors.ts`、`knowledge-logger.ts`、`knowledge-call.ts`、`knowledge-call.test.ts` | `60f904b24f735474b1c41f33fb1227a5ec4d0649` | `d5854d0aef348ae6702e7339b96daf0f0fc13dd01e723b1c8ed6406f859f021c` | `APPROVED · G4` | `256e7c902063c3cfc173c88e0fd742edb682acc2` | `aa53026e7b6bae11b6b96b9f7b94692ed4ed485e` | `60f904b24f735474b1c41f33fb1227a5ec4d0649` | PASS（merge 后定向 4/48；full 58/689；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
 | D07-T03 | `ccd5ca9c5f128684dfd7a5eaf86e4938ec3c3275` | `c6eddbfd-b9b7-49bd-b726-62564e28b2dd` | `wks_b4a70e178836e4f7` | `feat/d07-t03-knowledge-persistence` | 精确 4 路径：`knowledge-repository.ts`、`knowledge-persistence.ts`、两个对应测试 | `06f9459768fa3d96d9b2d0d526315f349f52f541` | `fcde2ad9f9df21fa35bcccc1703c57666dec8c3639160eb0c5c8954224338571` | `APPROVED · G4` | `8fb49bc89bab760efd064a67313fca572cc7057e` | `a16ac8cc54d7b049bde8fb9c0040bbbf20785227` | `06f9459768fa3d96d9b2d0d526315f349f52f541` | PASS（merge 后定向 4/34；full 60/708；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
-| D07-T04 | `a16ac8cc54d7b049bde8fb9c0040bbbf20785227` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D07-T04 | `f1d05cdab19391059cc76988d0534b69289ff769` | `c02ce1b2-e37d-4a15-923f-03298aaf64ef` | `wks_eca585a7f2de1b97` | `feat/d07-t04-knowledge-integration` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 
 任一 evidence 缺失时不得用 `N/A` 冒充已完成门禁；未发生写 `PENDING`/`NOT_RUN`。candidate/merge 只记录精确 SHA，不以 branch 名或目录代替。
 
@@ -53,15 +53,15 @@
 - T01 已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
 - T02 已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
 - T03 已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
-- T04 已具备 `READY` 状态和固定 base `a16ac8cc54d7b049bde8fb9c0040bbbf20785227`，等待 Lead 派发全新 Worker。
+- T04 Worker 正在 `feat/d07-t04-knowledge-integration` 执行，只允许新增 Plan §7 的六个文件。
 - `T04_HARD_GATE`：冻结与交回 G4 报告必须在同一次回复中给出；若 Architect 再次只能从磁盘发现冻结产物，T04 直接退回重做，不接受事后补报。
 - 当前无 push、无远程 CI、无最终验收。
 
 ## 下一可执行动作
 
-1. Lead 为 D07-T04 创建全新 Paseo Worker，固定 base 为 T03 merge `a16ac8cc54d7b049bde8fb9c0040bbbf20785227`。
-2. T04 只允许 Plan §7 的六个新增文件；不得修改 T01/T02/T03 文件或任何既有文件。
-3. T04 冻结完成后，Lead 必须在同一份最终交回中同时给出冻结 tree/patch、验证数字与 G4 请求。
+1. 等待 T04 Worker 返回 `REVIEW` 或 `BLOCKED`。
+2. Lead 独立复核六文件写集、公共 factory、真实 SQLite/StubLLM 集成、隐私与调用次数。
+3. T04 冻结完成后，Lead 必须在同一份最终交回中同时给出冻结 tree/patch、验证数字与 G4 请求；否则退回重做。
 
 ## D07-T03 Lead 复核与冻结记录
 
