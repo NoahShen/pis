@@ -8,7 +8,7 @@
 - 执行基线：main `1836a89028f8ce8290737ffee706790254c25dcb` / tree `e7d8e7b22e4d506336a0568eaabd4bf81acc03e9`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 当前 Worker：`NONE · D07-T04 Worker 已归档`
-- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T02=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T03=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T04=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_LOCAL_GATE=PENDING_SNAPSHOT`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
+- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T02=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T03=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T04=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_LOCAL_GATE=PASS`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
@@ -54,13 +54,13 @@
 - T02 已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
 - T03 已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
 - T04 已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
-- 四张任务卡均已完成本地合并与归档；当前进入 D07 本地集成 Gate，尚未 push、无远程 CI、无最终验收。
+- 四张任务卡均已完成本地合并与归档；D07 本地集成 Gate PASS。尚未 push、无远程 CI、无最终验收。
 
 ## 下一可执行动作
 
-1. 从干净的 Git tar 快照执行 typecheck、定向回归、full verify/build/smoke/database smoke/format。
-2. 记录 tar SHA-256、相对 D06 closeout `5ff151b` 的变更路径数、受保护路径 diff=0。
-3. 将 `D07_LOCAL_GATE` 证据交 Architect；Lead 不签发最终 PASS、不 push。
+1. 将 `D07_LOCAL_GATE=PASS` 与 tar/路径/受保护 diff 证据交 Architect。
+2. 由 Architect 复核本地 Gate、push 已批准 main SHA 并核验精确 SHA 远程 CI。
+3. 最终 PASS 后由 Architect 删除心跳并完成 Lead/Worker/workspace 收尾；Lead 不 push、不签发最终 PASS。
 
 ## D07-T03 Lead 复核与冻结记录
 
@@ -112,6 +112,16 @@
 - 触发条款原文：`冻结与交回 G4 报告必须在同一次回复中给出；若 Architect 再次只能从磁盘发现冻结产物，T04 直接退回重做，不接受事后补报。`
 - 处理：T04_HARD_GATE 已触发，T04 退回重做的是交回流程，不是生产代码。保留 Worker、workspace 与原冻结 tree `142cd11ec4c32c8b083c50a88cbd9ba62b22f2fb`；不新建 Worker、不归档、不创建 candidate/merge。
 - 重做交回：本次 Lead 回复与冻结证据同次给出冻结 tree、patch SHA-256、6 路径、定向/full 验证数字及 `T04_REVIEW_PASS_TO_ARCHITECT`，等待 Architect G4 后再执行 candidate → merge → 归档。
+
+## D07 本地集成 Gate
+
+- Gate 输入 commit：`96e00ecaa9d388054bafa76b5861cc6a53148eb7`（T04 merge 与四卡 Progress 均已完成，尚未写入本 Gate 记录）。
+- 干净快照：`git archive` tar `41163c7ac3e90dce2b97e5fb379e664fa31698cfcbf355af7115aa430de765e0`，解包到独立 `/private/tmp/pis-d07-gate.X5ytoE/source`；不包含 `.git`、`node_modules` 或未跟踪文件。
+- 变更范围：相对 D06 closeout `5ff151b` 共 20 个 tracked 路径；受保护路径 diff（DDL、Adapter、Collection、LLM、Prompt、app/server/lifecycle、CI、package/lock）为空。
+- 快照验证：`verify:toolchain`、`npm ci --offline`、typecheck PASS；Knowledge/Database/Processing 定向 `22/22` files、`186/186` tests PASS。
+- 快照 full Gate：`npm run verify` PASS；full `62/62` files、`738/738` tests；build、全部 smoke、database smoke、171 文件 format 均 PASS。
+- Case Gate：KNO-01～06、KNO-08、KNO-11、KNO-12 的 D07 P0 责任已覆盖；KNO-07/09/10 保持 S0/S1 真实模型语义回归，不冒充 P0 PASS。
+- 结论：`D07_LOCAL_GATE=PASS`；未 push，远程 CI 与 `D07_FINAL_PASS` 仍由 Architect 负责。
 
 ## D07-T02 Lead 复核与冻结记录
 
