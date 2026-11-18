@@ -1,10 +1,10 @@
 # D06 Plan：Processing 内容标准化与路由
 
-> 版本：v0.1
+> 版本：v0.2
 > 状态：`REVIEW · PENDING ARCHITECT G3`
 > Intent：`docs/milestones/D06/intent.md`（APPROVED · G1 PASS）
 > Spec：`docs/milestones/D06/spec.md`（APPROVED · G2 PASS）
-> 实现基线：`4052f168df184e5206845dc8e7f33e3ca0288eb8`
+> 实现基线：`24608343f65f3e600fccc60c0798e68731abdf3c`
 > 本文只把已批准 Intent/Spec 映射为文件级实施计划；不构成 G3 批准、Worker 创建或开发执行授权。
 
 固定运行时前置：
@@ -102,7 +102,11 @@ parseRawDataSourceItemV1(rawData)
 
 不得复制 envelope、放宽 strict schema 或修改 D05 `raw-data.ts`。解析失败视为无可用内容并返回安全 reason；公共错误/日志不暴露 JSON parser、Zod、SQL 或底层 cause。
 
-清洗直接复用 D04 `src/adapters/content-cleaning.ts` 的既有能力，不复制 DOM/实体/空白清洗器。T01 内部返回可判别结果：
+`raw_data.content.body`、`raw_data.content.summary` 与 `raw_data.entry.title` 已是 D04 清洗后的纯文本：RSS Adapter 对 `SourceText` 使用 `cleanSourceText()` → `cleanHtmlValue()`，Article Extractor 使用 `cleanReadabilityContent()`；进入 raw_data 时标签、script/style 与实体解码已经完成。Processing 不得再次执行 HTML 标签剥离或实体解码。
+
+Processing 只允许复用 D04 `src/adapters/content-cleaning.ts` 的纯文本规范化能力：`normalizeCleanText()` / `cleanTextValue()`，统一换行、折叠空白、去空行。禁止对 raw_data 的 title/body/summary 调用 `cleanHtmlValue()`、`cleanReadabilityContent()`、`parseHtmlDocument()` 或任何 DOM 解析；不得引入格式探测分支或新字段。合法尖括号文字如 `<algorithm>`、`List<T>`、`<Foo/>` 必须逐字保留。
+
+T01 内部返回可判别结果：
 
 ```ts
 type NormalizationResult =
@@ -127,7 +131,7 @@ type NormalizationResult =
 5. 原始正文为空但摘要可用：按 `PARTIAL`，将清洗后的实际可用摘要作为 `body`；不得生成文章未给出的正文。
 6. 清洗后正文与摘要都为空：无可用内容。
 7. `title/url/author/published_at` 来自 raw_data `entry`；缺失字段保持 `NULL`，不得用 Source Item 行字段、文件名、URL 片段或 LLM 补造。
-8. 清洗必须去除 script/style/标签、处理 HTML 实体并规范空白/换行，保留 Unicode 与有效文字，不新增事实。
+8. 清洗只做纯文本空白与换行规范化；保留 Unicode、尖括号和全部有效字符，不做标签剥离、实体二次解码，不新增事实。
 
 本卡只读取 strict schema 已保证的字段；不以字符数阈值二次猜测 FULL/PARTIAL，不做语言识别、翻译、摘要生成或跨 Content 去重。
 
@@ -249,12 +253,13 @@ Source Item 不存在、`raw_data` 缺失、raw_data 无有效内容均不是异
 
 1. 调用 D05 `parseRawDataSourceItemV1()` 严格解析，不复制 schema，不修改原始 D05 文件。
 2. 解析失败映射安全 `raw_data_invalid`，不抛 parser/Zod 细节。
-3. 用 D04 既有清洗函数处理标题、正文、摘要；不得生成/补写标题、正文、作者、URL 或时间。
-4. 按 §2.2 固定规则返回 `NormalizedContentDraft` 或安全不可用 reason。
-5. `content_kind=NONE` 始终不可用；`SUMMARY`/`FRAGMENT` 不得被猜测为 FULL。
-6. 正文为空但摘要可用时，`body` 取实际摘要且 `completeness=PARTIAL`；摘要字段保留清洗后的摘要。
-7. 全部元数据来自 raw_data `entry`，缺失保持 `NULL`；没有 ID/created_at 生成。
-8. 不访问网络、Adapter、数据库、Clock、LLM、Repository 或 queue；不导出公共 Processing factory。
+3. 仅用 D04 `normalizeCleanText()` / `cleanTextValue()` 处理标题、正文、摘要的纯文本空白/换行；禁止调用 `cleanHtmlValue()`、`cleanReadabilityContent()`、`parseHtmlDocument()` 或任何 DOM 解析。
+4. 同一纯文本规则适用于标题、正文、摘要；`<algorithm>`、`List<T>`、`<Foo/>` 等合法尖括号内容必须逐字保留，不得引入格式探测分支或新字段。
+5. 按 §2.2 固定规则返回 `NormalizedContentDraft` 或安全不可用 reason。
+6. `content_kind=NONE` 始终不可用；`SUMMARY`/`FRAGMENT` 不得被猜测为 FULL。
+7. 正文为空但摘要可用时，`body` 取实际摘要且 `completeness=PARTIAL`；摘要字段保留规范化后的摘要。
+8. 全部元数据来自 raw_data `entry`，缺失保持 `NULL`；没有 ID/created_at 生成。
+9. 不访问网络、Adapter、数据库、Clock、LLM、Repository 或 queue；不导出公共 Processing factory。
 
 ### 4.3 测试矩阵
 
@@ -263,7 +268,7 @@ Source Item 不存在、`raw_data` 缺失、raw_data 无有效内容均不是异
 | `PRO-01` | `FULL_BODY` + 可用正文 → `FULL`，正文清洗后保留有效文字与顺序 |
 | `PRO-02` | `SUMMARY`/`FRAGMENT` → `PARTIAL`；无正文但有摘要时 body 仅含实际摘要 |
 | `PRO-03` | `NONE`、坏 JSON/schema、空标题、空正文+空摘要 → 不可用安全 reason，不抛底层细节 |
-| `PRO-11` | XML/HTML、script/style、实体、Unicode、CRLF/空白 → 去标签/脚本并保留有效文字，不新增事实 |
+| `PRO-11` | 纯文本中的 `<algorithm>`、`List<T>`、`<Foo/>`、Unicode、CRLF/空白 → 逐字保留有效文字并仅规范空白/换行；负向对照必须证明误用 HTML 剥标签会丢失这些 sentinel 并使测试失败 |
 | `PRO-12` | 仅摘要 → PARTIAL body/summary 可用于后续路由，completeness 不丢失 |
 
 另测：缺失 URL/author/published_at 保持 null；D05 v1 round-trip 样本可直接解析；strict 多余字段仍拒绝；相同输入重复调用输出确定且无共享可变状态。
@@ -280,6 +285,7 @@ npx vitest run tests/processing/content-normalization.test.ts
 npm run verify
 git diff --check
 rg -n '\bany\b|@ts-ignore|@ts-expect-error' src/processing tests/processing || true
+! rg -n 'cleanHtmlValue|cleanReadabilityContent|parseHtmlDocument' src/processing/content-normalization.ts
 git diff --name-only <BASE_SHA> -- src/collection src/adapters src/database/schema.sql config/prompts .github
 ```
 
@@ -438,7 +444,7 @@ git diff --name-only <BASE_SHA> -- src/llm src/adapters src/collection src/datab
 | `PRO-08` | EVENT / KNOWLEDGE / BOTH / 空 → 1/1/2/0 routes；空 routes 保留 Content；零下游 queue 调用 |
 | `PRO-09` | Processing 全程 `fetchContent` spy=0、`globalThis.fetch` spy=0 |
 | `PRO-10` | StubLLM 返回重复 enum → D02 去重；未知 enum/额外字段 → `llm_failed`，Content 状态符合提交边界 |
-| `PRO-11` | HTML/XML/Unicode/空白经 collect→process 样本清洗后可存，不丢失有效文字 |
+| `PRO-11` | 纯文本尖括号/Unicode/空白经 collect→process 后可存，`<algorithm>`、`List<T>`、`<Foo/>` 不丢失 |
 | `PRO-12` | 仅摘要 PARTIAL 进入 P-01，taskData completeness/body 正确，无抓取 HTTP |
 
 另测：invalid ID 在 Repository/LLM 前抛 `invalid_input`；pre-abort 零 DB/LLM；Content COMMIT 后取消/路由失败仍保留 Content；已有 `content_id` 指向不存在 Content 时 `processing_failed`；factory 可重复调用且无模块级状态；返回字段严格为 snake_case `content_id` + routes；logger 不含正文/摘要/raw_data/Token；DDL/Prompt/CI/Collection/App 无 diff。
@@ -510,7 +516,7 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D06 推进心跳�
 
 ## 10. 风险、回滚与停止条件
 
-- raw_data 形态冲突：D05 v1 不单独保存 body format；只复用 D05 strict parser 与 D04 确定性清洗，不新增 envelope/字段。若 strict schema 无法支持批准行为，标 `BLOCKED` 并回 Architect，不在 D06 私改版本。
+- raw_data 形态冲突：D05 v1 的 title/body/summary 已是 D04 纯文本；只复用 D05 strict parser 与 `normalizeCleanText()`/`cleanTextValue()`，禁止 DOM/HTML 二次清洗，不新增 envelope/字段或格式探测。若 strict schema 无法支持批准行为，标 `BLOCKED` 并回 Architect，不在 D06 私改版本。
 - 标题 NOT NULL：raw_data `entry.title` 缺失或清洗后为空时正常 NONE；不得用 URL/文件名/LLM 补造。
 - 并发写入：SQLite 无 Source Item 处理唯一约束，事务内 recheck 是正常竞态保护；不得改 DDL 或假设单线程。
 - 提交边界：路由代码从结构上不能持有 DB 事务；COMMIT 后路由失败/取消不回滚；不得扩展 Runtime 自动重试。
@@ -523,4 +529,5 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D06 推进心跳�
 - 本 Plan 只将已批准 D06 Intent/Spec 映射为四张严格串行、文件级可执行任务卡，没有新增业务需求、公共契约、枚举、DDL、依赖或替代任务 ID。
 - T01～T04 均列出精确允许写集、依赖、Spec/Case 映射、禁止范围、验证命令及冻结/candidate/merge/archive 证据字段。
 - Processing 无原文 HTTP；只有 Content COMMIT 后才调用 `routeProcessing`；NONE 不建 Content/不路由；路由不落库；不改 DDL/Prompt/CI/Collection；测试不接真实模型或私有配置。
+- v0.2 按 G3 唯一阻塞完成修订：raw_data title/body/summary 固定为 D04 已清洗纯文本，仅使用 `normalizeCleanText()`/`cleanTextValue()`；禁止 DOM/HTML 二次清洗，并增加尖括号逐字保留、负向对照与静态禁用检查。
 - 本版待 Architect G3 审核。G3 通过前不创建心跳、不创建 Worker、不开始正式开发；Lead 不自批 G3。

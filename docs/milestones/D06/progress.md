@@ -1,10 +1,10 @@
 # D06 Progress：Processing 内容标准化与路由
 
-- Plan：`docs/milestones/D06/plan.md` v0.1
+- Plan：`docs/milestones/D06/plan.md` v0.2
 - Plan 状态：`REVIEW · PENDING ARCHITECT G3`
 - Intent：`APPROVED · G1 PASS`
 - Spec：`APPROVED · G2 PASS`
-- 实现基线：`4052f168df184e5206845dc8e7f33e3ca0288eb8`
+- 实现基线：`24608343f65f3e600fccc60c0798e68731abdf3c`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`NOT_CREATED · 等待 Architect G3 批准`
 - 当前 Worker：`NONE · Lead 未创建 Worker`
@@ -51,7 +51,7 @@
 
 ## 当前阻塞与待决策事项
 
-- 唯一当前门禁：Architect 审核本 Plan v0.1 并签发 G3 `APPROVED`/`CHANGES_REQUIRED`。
+- 唯一当前门禁：Architect 审核本 Plan v0.2 并签发 G3 `APPROVED`/`CHANGES_REQUIRED`。
 - G3 通过前不得创建开发心跳、不得创建 Worker、不得开始编码或创建 candidate。
 - 若 Architect 要求修改 Plan，Lead 只修订 `plan.md`/`progress.md` 并重新提交精确 commit/tree，不自行批准。
 
@@ -65,6 +65,8 @@
 
 - 提交者：D06 Lead
 - 日期：2026-11-18
-- 基线：`4052f168df184e5206845dc8e7f33e3ca0288eb8`
+- 基线：`24608343f65f3e600fccc60c0798e68731abdf3c`
 - 结论：`PENDING · Architect G3`
-- 阻塞项：待 Architect 审核四卡串行依赖、精确写集、PRO-01～12 映射、验证命令和冻结/合并/归档门禁。
+- v0.1（`dba67c9e5a20adf2c8d72445a9eacb85aaa904c6`）：`CHANGES_REQUIRED`。唯一阻塞为 Plan §2.2 错误要求对 D04 已清洗纯文本 body/summary 再次调用 `cleanHtmlValue()`，会删除合法尖括号文字并违反 `PRO-11`。
+- v0.2 修订：title/body/summary 只允许 `normalizeCleanText()` / `cleanTextValue()` 纯文本规范化；禁止 `cleanHtmlValue()`、`cleanReadabilityContent()`、`parseHtmlDocument()` 或任何 DOM 解析。T01 增加 `<algorithm>`、`List<T>`、`<Foo/>` 逐字保留、误用 HTML 清洗的负向对照和静态禁用检查。
+- 当前阻塞项：等待 Architect 复核 v0.2 上述唯一修订；G3 仍未通过。
