@@ -7,15 +7,15 @@
 - Spec：`APPROVED · G2 PASS`
 - 执行基线：main `1836a89028f8ce8290737ffee706790254c25dcb` / tree `e7d8e7b22e4d506336a0568eaabd4bf81acc03e9`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 当前 Worker：`a88d7a0e-49f2-480b-a16c-04975abd2128` / `wks_f5b697be70db6123` / `feat/d07-t01-content-input`
-- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=REVIEW_G4_PENDING`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
+- 当前 Worker：`NONE · D07-T01 Worker 已归档`
+- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D07_T02=READY`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
 | 任务 ID | 状态 | 前置/固定 base | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
-| D07-T01 Content 输入 | `REVIEW` | `1836a89028f8ce8290737ffee706790254c25dcb` | PASS（定向 3 files/24 tests；full 57 files/669 tests） | APPROVED | PENDING · G4 | 精确冻结完成，等待 Architect G4 |
-| D07-T02 严格边界/错误 | `NOT_STARTED` | `PENDING_T01_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T01 |
+| D07-T01 Content 输入 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `1836a89028f8ce8290737ffee706790254c25dcb` | PASS（merge 后定向 3 files/24 tests；full 57 files/669 tests） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
+| D07-T02 严格边界/错误 | `READY` | `00ba917563b902a8731d432366c169450879abf6` | `NOT_RUN` | `READY` | `PENDING` | 等待 Lead 派发全新 T02 Worker |
 | D07-T03 Repository/事务 | `NOT_STARTED` | `PENDING_T02_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T02 |
 | D07-T04 公共 factory/集成 | `NOT_STARTED` | `PENDING_T03_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T03 |
 
@@ -25,8 +25,8 @@
 
 | 任务 ID | BASE_SHA | WORKER_AGENT | WORKER_WORKSPACE | WORKER_BRANCH | CHANGED_PATHS | FROZEN_TREE | PATCH_SHA256 | ARCHITECT_TREE_APPROVAL | CANDIDATE_SHA | MERGE_SHA | MERGE_TREE | VERIFICATION | ARCHIVE_RESULT |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| D07-T01 | `1836a89028f8ce8290737ffee706790254c25dcb` | `a88d7a0e-49f2-480b-a16c-04975abd2128` | `wks_f5b697be70db6123` | `feat/d07-t01-content-input` | 精确 2 路径：`src/knowledge/content-input.ts`、`tests/knowledge/content-input.test.ts` | `6797a68b18ed94fd5972ca804bb70c256d700984` | `12763a85062183ef53cb548f9eb7584a79ecba313780405f09c71cd376155c76` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | PASS（定向 3/24；full 57/669；typecheck/build/smoke/database smoke/format PASS） | `PENDING` |
-| D07-T02 | `PENDING_T01_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D07-T01 | `1836a89028f8ce8290737ffee706790254c25dcb` | `a88d7a0e-49f2-480b-a16c-04975abd2128` | `wks_f5b697be70db6123` | `feat/d07-t01-content-input` | 精确 2 路径：`src/knowledge/content-input.ts`、`tests/knowledge/content-input.test.ts` | `6797a68b18ed94fd5972ca804bb70c256d700984` | `12763a85062183ef53cb548f9eb7584a79ecba313780405f09c71cd376155c76` | `APPROVED · G4` | `ff1dea429c986038bf9bfd0c95826aa1fe438879` | `00ba917563b902a8731d432366c169450879abf6` | `6797a68b18ed94fd5972ca804bb70c256d700984` | PASS（merge 后定向 3/24；full 57/669；typecheck/build/smoke/database smoke/format PASS） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
+| D07-T02 | `00ba917563b902a8731d432366c169450879abf6` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T03 | `PENDING_T02_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T04 | `PENDING_T03_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 
@@ -50,14 +50,15 @@
 
 ## 当前阻塞与待决策事项
 
-- T01 已由 Lead 复核并精确冻结，等待 Architect G4；批准前不得创建 candidate。
-- 当前无候选、无 merge、无归档、无 push、无 CI、无最终验收。
+- T01 已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
+- T02 已具备 `READY` 状态和固定 base `00ba917563b902a8731d432366c169450879abf6`，等待 Lead 派发全新 Worker。
+- 当前无 push、无远程 CI、无最终验收。
 
 ## 下一可执行动作
 
-1. Architect 复核 T01 的 base/tree/patch、2 路径和设计一致性并给出 G4 结论。
-2. G4 APPROVED 后由 Lead 用冻结 tree 创建 candidate，核验 parent/tree/paths。
-3. Candidate 通过后 `--no-ff` merge、合并后复验、归档 Worker，再决定 T02。
+1. Lead 为 D07-T02 创建全新 Paseo Worker，固定 base 为 T01 merge `00ba917563b902a8731d432366c169450879abf6`。
+2. T02 只允许 Plan §5 的四个新增文件；不得修改 T01 文件或任何既有文件。
+3. T02 完成后执行 Worker 自测、Lead 独立复核与精确冻结，再交 Architect G4。
 
 ## D07-T01 Lead 复核与冻结记录
 
@@ -71,7 +72,12 @@
 - 静态扫描逐条解释：`knowledge` 为模块路径/合成 sentinel；`raw_data`、`topics`、`history_knowledge` 为故意注入以证明投影剥离；`expect.any(Object)` 为 Vitest matcher 而非 TS `any`。
 - 精确冻结：tree `6797a68b18ed94fd5972ca804bb70c256d700984`；canonical full-index binary patch `/private/tmp/d07-t01-freeze.5T4DFI/t01.patch`，SHA-256 `12763a85062183ef53cb548f9eb7584a79ecba313780405f09c71cd376155c76`；路径数 2；`git diff-tree --check` 无输出。
 - 路径 blob：`content-input.ts=3cd0ba5ac9db8de736023427d50e72e2f70b35bf`；`content-input.test.ts=ca818e0e7cf6d7b31bd5089a3b8c826f1b6e430e`；冻结 tree blob 与 Worker 工作文件逐一一致。
-- Architect G4：`PENDING`。Candidate/Merge/Worker 归档在 G4 批准前保持 `PENDING`。
+- Architect G4：`APPROVED`；独立核验冻结 tree、2 路径、patch SHA、blob、冻结树 typecheck、知识测试与泄漏探针均通过。
+- Candidate：`ff1dea429c986038bf9bfd0c95826aa1fe438879`，唯一 parent `1836a89`，tree `6797a68`，精确两条新增路径；Worker branch tip 对齐且 clean。
+- Merge：`00ba917563b902a8731d432366c169450879abf6`；第一 parent `1836a89`、第二 parent candidate `ff1dea4`，merge tree `6797a68`，两条 blob 与 candidate 一致。
+- Merge 后复验：typecheck PASS；定向 `3/3` files、`24/24` tests PASS；`npm run verify` PASS（full `57/57` files、`669/669` tests；build、全部 smoke、database smoke、157 文件 format 均 PASS）；禁止路径 diff 为空。
+- Worker 归档：`archive_workspace(wks_f5b697be70db6123)` 返回 `archivedAgentIds=[a88d7a0e-49f2-480b-a16c-04975abd2128]`、`removedDirectory=true`；Agent `closed`，`archivedAt=2026-11-18T10:43:38.377Z`，活跃 workspace 列表无该项，Git worktree 条目与目录均已移除。
+- T01 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未 push。
 
 ## Plan G3 审核记录
 
