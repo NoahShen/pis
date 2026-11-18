@@ -202,3 +202,10 @@
 - `D08_FINAL_PASS=ISSUED`。
 - 四卡均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；24 个 tracked 路径，受保护路径 diff=0。
 - 未纳入：PMT-02（S0 真实模型语义回归）、D09 Event Analysis 写入与归属、Topic/Runtime。
+
+## D08 收尾归档
+
+- 开发心跳 `c85e2b88` 已删除。
+- D08 Lead `233934ad-9563-4721-99a3-d58150795186` 与 workspace `wks_1a8e7b260429f97f` 已归档，`removedDirectory=true`。
+- 四个 Worker/workspace 均已在各卡完成后归档。
+- `Team_Main` 保留；无活跃 D08 agent/workspace 残留。
