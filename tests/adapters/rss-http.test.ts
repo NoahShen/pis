@@ -196,9 +196,10 @@ describe("RSS adapter restricted HTTP integration", () => {
     await expect(first.pending).rejects.toMatchObject({ reason: "aborted" });
     await waitFor(
       () =>
+        cancelledReads === 1 &&
         fixture.destroyCompletedDispatchers.has(firstDispatcher!) &&
         fixture.sockets.size === 0,
-      "only the first hanging dispatcher and socket to be destroyed",
+      "only the first hanging reader, dispatcher and socket to be cleaned up",
     );
     expect(cancelledReads).toBe(1);
     expect(fixture.dispatchersCreatedInOrder).toHaveLength(1);
@@ -221,9 +222,10 @@ describe("RSS adapter restricted HTTP integration", () => {
     await expect(second.pending).rejects.toMatchObject({ reason: "aborted" });
     await waitFor(
       () =>
+        cancelledReads === 2 &&
         fixture.destroyCompletedDispatchers.has(secondDispatcher!) &&
         fixture.sockets.size === 0,
-      "only the second hanging dispatcher and socket to be destroyed",
+      "only the second hanging reader, dispatcher and socket to be cleaned up",
     );
     expect(cancelledReads).toBe(2);
     expect(fixture.dispatchers.size).toBe(0);
@@ -239,8 +241,10 @@ describe("RSS adapter restricted HTTP integration", () => {
     expect(laterDispatcher).toBeDefined();
     expect(laterDispatcher).not.toBe(secondDispatcher);
     await waitFor(
-      () => fixture.closeCompletedDispatchers.has(laterDispatcher!),
-      "the later successful dispatcher to close",
+      () =>
+        fixture.closeCompletedDispatchers.has(laterDispatcher!) &&
+        cancelledReads === 2,
+      "the later successful dispatcher to close after prior readers are canceled",
     );
 
     expect(cancelledReads).toBe(2);
@@ -323,9 +327,10 @@ describe("RSS adapter restricted HTTP integration", () => {
     await expect(hanging).rejects.toMatchObject({ reason: "aborted" });
     await waitFor(
       () =>
+        cancelledReads === 1 &&
         fixture.destroyCompletedDispatchers.has(hangingDispatcher!) &&
         fixture.sockets.size === 1,
-      "only the canceled parallel request to be destroyed",
+      "only the canceled parallel reader, dispatcher and socket to be cleaned up",
     );
     expect(cancelledReads).toBe(1);
     expect(fixture.closeCompletedDispatchers.has(liveDispatcher!)).toBe(false);
@@ -340,8 +345,10 @@ describe("RSS adapter restricted HTTP integration", () => {
     finishLiveFeed!();
     await expect(live).resolves.toHaveLength(1);
     await waitFor(
-      () => fixture.closeCompletedDispatchers.has(liveDispatcher!),
-      "the live dispatcher to close normally",
+      () =>
+        fixture.closeCompletedDispatchers.has(liveDispatcher!) &&
+        cancelledReads === 1,
+      "the live dispatcher to close after the hanging reader is canceled",
     );
 
     expect(cancelledReads).toBe(1);
@@ -455,13 +462,13 @@ describe("RSS adapter restricted HTTP integration", () => {
       });
       if (cleanup === "closed") {
         await waitFor(
-          () => fixture.dispatchersClosed === 1,
-          "the failed redirect dispatcher to close",
+          () => cancelledReads === 1 && fixture.dispatchersClosed === 1,
+          "the failed redirect reader and dispatcher to be cleaned up",
         );
       } else {
         await waitFor(
-          () => fixture.dispatchersDestroyed === 1,
-          "the failed article response dispatcher to destroy",
+          () => cancelledReads === 1 && fixture.dispatchersDestroyed === 1,
+          "the failed article response reader and dispatcher to be cleaned up",
         );
       }
 
