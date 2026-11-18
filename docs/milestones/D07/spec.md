@@ -1,8 +1,8 @@
 # D07 Spec：Knowledge Analysis 知识价值判断与保存
 
-- 状态：`DRAFT · G2_PENDING_ARCHITECT_REVIEW`
+- 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
 - 版本：v0.1
-- Intent：`docs/milestones/D07/intent.md`（G1 已批准）。
+- Intent：`docs/milestones/D07/intent.md`（G1 待负责人批准）。
 - 实现基线：D06 最终 PASS，main `f268f3a`。
 
 ## 1. 公共契约
@@ -30,10 +30,12 @@ function createKnowledgeAnalysis(dependencies: KnowledgeDependencies): Knowledge
 
 ## 2. 依赖装配
 
-`createKnowledgeAnalysis` 显式接收：Database、ContentRepository（读取）、KnowledgeRepository（读取 + 插入）、`TypedLlmCalls`（仅用 `analyzeKnowledge`）、Clock、IdGenerator、logger。
+`createKnowledgeAnalysis` 显式接收：Database、ContentRepository（读取）、KnowledgeRepository（读取 + 插入）、`TypedLlmCalls`（仅用 `analyzeKnowledge`）、IdGenerator、logger。
+
+- **不注入 Clock**：`knowledge` 表无任何时间字段（仅 `id`、`content_id`、`title`、`summary`、`category`、`findings_json`、`value`），因此无需时间源；不得为凑依赖而新增时间列或写入时间戳。
 
 - 不修改冻结 DDL；只使用 `contents` 与 `knowledge`。
-- 生产装配使用 SystemClock、CryptoIdGenerator；测试注入 FakeClock、SequenceIdGenerator、stub typed calls、captured logger。
+- 生产装配使用 CryptoIdGenerator；测试注入 SequenceIdGenerator、stub typed calls、captured logger。
 - 不新增模块级单例；factory 私有状态在多次调用间正确清理。
 
 ## 3. Content 读取与输入组装
@@ -71,7 +73,7 @@ function createKnowledgeAnalysis(dependencies: KnowledgeDependencies): Knowledge
 
 1. 事务内重新读取 `content_id` 对应 Knowledge；已存在则直接复用返回，不插入。
 2. 否则插入一行并读回校验。
-3. 回调必须同步，不得返回 thenable，不得调用 Clock、LLM、网络或异步 logger。
+3. 回调必须同步，不得返回 thenable，不得调用 LLM、网络或异步 logger。
 4. 任一步失败整体回滚；`UNIQUE(content_id)` 冲突视为并发竞争，回滚后按既有记录复用处理。
 5. 不同 Content 即使正文相同也各自独立插入，不做跨文章合并。
 
