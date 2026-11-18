@@ -1,6 +1,7 @@
 # D08 Intent：Event Search / 历史 Event 候选召回
 
-- 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
+- 状态：`APPROVED · G1 PASS`
+- 负责人确认：2026-11-18 批准开发，并要求每候选 Update 数量可配置；已落实 `maxUpdates` 默认 10、`0..100`。
 - 日期：2026-11-18
 - 依赖基线：D07 最终 PASS；main `09640c3`；远程 CI Success。
 - 上游：D01 Event FTS5，D02 P-02 typed call，D06 Content。

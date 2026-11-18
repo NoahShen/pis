@@ -1,8 +1,8 @@
 # D08 Spec：Event Search / 历史 Event 候选召回
 
-- 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
+- 状态：`APPROVED · G2 PASS`
 - 版本：v0.1
-- Intent：`docs/milestones/D08/intent.md`（G1 待负责人批准）。
+- Intent：`docs/milestones/D08/intent.md`（G1 已批准）。
 - 实现基线：D07 最终 PASS，main `09640c3`。
 
 ## 1. 公共契约

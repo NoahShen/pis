@@ -1,7 +1,7 @@
 # D08 Plan：Event Search 历史候选召回
 
 > 版本：v0.2
-> 状态：`G3_PENDING_ARCHITECT_REVIEW`
+> 状态：`APPROVED · Architect G3 PASS`
 > 日期：2026-11-18
 > 计划参考基线：main `4104f15ad706b3165358b3f0108ae9bff282809c` / tree `69089c9993577bdb8c8a25dded4b4c95da3b607f`
 > Intent：`docs/milestones/D08/intent.md`（`DRAFT · G1_PENDING_OWNER_APPROVAL`）
@@ -621,4 +621,6 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D08 推进心跳�
 - 当前结论：`D08_PLAN=G3_PENDING_ARCHITECT_REVIEW`。G3 复核通过前任务状态保持 `NOT_STARTED`，不创建 Worker、心跳、candidate、merge、push 或最终验收。
 
 - v0.1 `APPROVED`：Architect 核对 commit `69a2f0d16ac74405d1e7596ca48767aa772fc61b`、tree `6484e947eaf845edfb887d1128563dd3419486ca`；四卡精确写集、三路召回、FTS 字面量、五级排序、默认 Update 窗口、只读与隐私证明均符合当时 Spec。
-- v0.2 `G3_PENDING_ARCHITECT_REVIEW`：同步负责人确认的 `maxUpdates` 可选依赖（默认 10，`0..100`，0 零 Update SQL，非零 `LIMIT ?` 参数绑定）；更新 T03 上下文、T04 factory/实例隔离与 0/1/10/100 集成证据。四卡写集、禁止范围及冻结即交回硬门禁保持不变；v0.1 的 G3 批准不自动覆盖本修订。
+- v0.2 `APPROVED`：同步负责人确认的 `maxUpdates` 可选依赖（默认 10，`0..100`，0 零 Update SQL，非零 `LIMIT ?` 参数绑定）；更新 T03 上下文、T04 factory/实例隔离与 0/1/10/100 集成证据。四卡写集、禁止范围及冻结即交回硬门禁保持不变；v0.1 的 G3 批准不自动覆盖本修订。
+
+- G3 批准：commit `a5274c8cc735bb9b458c52c608db5b3b612f43c6`，tree `8be730d563859735ff0139d8759a828a41c17830`。负责人已确认开发；按持续授权启动 T01。
