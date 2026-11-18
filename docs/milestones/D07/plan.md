@@ -599,4 +599,5 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D07 推进心跳�
 - T01～T04 均列出精确允许写集、依赖/base、Spec/Case 映射、禁止范围、验证命令与冻结/candidate/merge/archive 证据字段。
 - D07 只调用 P-04 `analyzeKnowledge` 一次且事务外；valuable=false 零写入；valuable=true 单行；点查复用；UNIQUE 冲突回滚后复用；两篇同正文独立 Knowledge；Finding 内嵌 JSON。
 - D07 不包含 Event Analysis/Search、Topic Matching、Published Item、RSS、Runtime 或派发；KNO-07/09/10 明确为 S0/S1 非 P0。
-- 当前结论：`PENDING · Architect G3`。本文件不是批准记录，不授权创建 Worker 或启动正式开发。
+- v0.2 `APPROVED`：Architect 确认 Clock 依赖已彻底移除（`knowledge` 表无时间字段），四卡写集、六字段投影、四码错误契约、Repository 参数绑定、事务内 recheck 与唯一冲突复用、KNO Case 映射、证据字段均自洽；批准 commit `5bfe30c88824caff12dda972084b164f2ba7bc93`，tree `aa40531a6a322078f8f4f53746e65a2186c4cf3e`。
+- G3 已通过；按持续执行授权进入 T01，开发心跳由 Architect 创建；Lead 不自批 G3。
