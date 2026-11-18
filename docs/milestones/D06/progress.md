@@ -8,7 +8,7 @@
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`145d2753`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
 - 当前 Worker：`NONE · T01/T02/T03/T04 Worker 均已归档`
-- 当前结论：`D06_PLAN_G3=APPROVED`、`D06_TASKS=PASS`；D06 集成 Gate、远程 CI 与最终验收待 Architect 执行
+- 当前结论：`D06_PLAN_G3=APPROVED`、`D06_TASKS=PASS`、`D06_LOCAL_GATE=PASS`；远程 CI 与最终验收待 Architect 执行
 
 ## 任务状态
 
@@ -149,5 +149,13 @@ T01 `MERGE_TREE=7136e91e0ac75becd25972b78f84daf068a00d31`；T02 `MERGE_TREE=ea20
 ## D06 任务完成与后续门禁
 
 - `D06_TASKS=PASS`：T01/T02/T03/T04 均已完成 G4、精确 candidate、`--no-ff` merge、合并后 full verify 与 Worker/workspace 归档。
-- `D06_LOCAL_GATE=PENDING`：由 Architect 在 T04 merge `01b9dd6` ff 合入 main 后执行里程碑集成 Gate。
-- `D06_REMOTE_CI=PENDING`、`D06_FINAL_PASS=NOT_ISSUED`：Lead 不 push、不自行签发最终 PASS；由 Architect 执行 push/远程 CI 与最终验收。
+- `D06_LOCAL_GATE=PASS`：Architect 已将 T04 merge `01b9dd6` ff 合入 main（`1d84e7c`），并从干净快照 `/private/tmp/pis-d06-gate.35717`（tar SHA-256 `21e768460ff2e6a1f995d652d5f960186c34e14b669953e12b4ac9e2b57cbfd3`，tree `fcb33e8b`）执行集成 Gate：
+  - `verify:toolchain` PASS（Node 26.13.1 / npm 11.20.0）；`typecheck` PASS。
+  - 定向 `12/12` files、`120/120` tests PASS；全量 `npm test` `56/56` files、`663/663` tests PASS。
+  - `build` PASS；`smoke` 6 项 PASS（占用端口有界失败、关闭超时、listen 前信号、Source/Topic 持久化重启）；`database:smoke` 验证 schema 字节与初始化 PASS。
+  - `format:check` 155 files PASS；`git diff --check` 无输出。
+  - 集成范围 22 路径 vs D05 closeout `7d23c4a`：全在 `src/processing`（10）、`tests/processing`（8）、`tests/fixtures/processing.ts`（1）与 `docs/milestones/D06`（4，其中 plan/spec/intent/progress）；受保护路径（DDL、Adapter、Collection、LLM、app/server/lifecycle、Prompt、CI、package/lock）diff = 0。
+  - 五份功能 Prompt 哈希与基线逐一比对完全一致（event-analysis `9b05c4b1…`、event-search `e75b656c…`、knowledge-analysis `037eceaf…`、processing-route `98a34e83…`、topic-matching `040a083e…`）。
+  - 静态扫描：`src/processing`、`tests/processing`、`tests/fixtures/processing.ts` 内 `any`/`@ts-ignore`/`@ts-expect-error` 无匹配；对真实 `config/prompts` 引用数 0；无真实模型域名或公网调用。
+  - PRO-01～12 的 D06 责任已由 T01/T02/T03/T04 逐项映射；`PRO-08` 的 Runtime 派发部分与 `E2E-11` 的 Runtime 重试/派发部分明确归属 D15，未冒充 D06 PASS。
+- `D06_REMOTE_CI=PENDING`、`D06_FINAL_PASS=NOT_ISSUED`：Lead 不 push、不自行签发最终 PASS；由 Architect 按持续授权 push 精确 SHA 并核验远程 CI Success 后方可签发。
