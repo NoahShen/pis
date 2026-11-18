@@ -8,7 +8,7 @@
 - 执行基线：`257f3c98b0e2840686b3e3d102c71a77b16d4be0`
 - 开发心跳：`c85e2b88`（`*/10 * * * *`，Asia/Shanghai，Architect 创建）
 - 当前 Worker：`NONE · T04 Worker 已归档`
-- 当前结论：`G1=PASS`、`G2=PASS`、`G3=PASS`、`D08_DEVELOPMENT=AUTHORIZED`、`D08_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D08_T02=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D08_T03=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D08_T04=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D08_LOCAL_GATE=PENDING`、`D08_FINAL_PASS=NOT_ISSUED`
+- 当前结论：`G1=PASS`、`G2=PASS`、`G3=PASS`、`D08_DEVELOPMENT=AUTHORIZED`、`D08_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D08_T02=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D08_T03=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D08_T04=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D08_LOCAL_GATE=EVIDENCE_READY`、`D08_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
@@ -174,3 +174,13 @@
 - Merge 后复验：定向 `11/11` files、`134/134` tests PASS；Database+Processing+Knowledge `22/22` files、`186/186` tests PASS；`npm run verify` PASS（full `70/70` files、`844/844` tests；build、双向 smoke、database smoke、191 文件 format 均 PASS）；受限路径 diff 为空。
 - Worker 归档：`archive_workspace(wks_e0a18d56ab78f0a6)` 返回 `archivedAgentIds=[fd9d461a-8f79-4d9c-bced-086f29011189]`、`removedDirectory=true`；活跃 workspace 列表无该项，Git worktree 条目与目录均已移除。
 - 结论：`D08-T04=PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未 push。
+
+## D08 本地集成 Gate
+
+- Gate 输入 commit：`2c7bede2f46eb1e53c1282eb8ac46181f45a0746`，tree `29431b12137e0bcea2bd10bc08cc2311ebde8746`。
+- 干净快照：`git archive` tar `/private/tmp/d08-local-gate.r3sND2/d08-gate.tar`，SHA-256 `7d43e4b65738ad342f05f547116b4a264563362b9ac1e70d2ea5ed1b13429477`；解包目录 `/private/tmp/d08-local-gate.r3sND2/source`，不含 `.git` 或 `node_modules`。
+- 依赖与类型：快照内 `npm ci --offline` PASS（124 packages，0 vulnerabilities）；`npm run typecheck` PASS。
+- 快照 full Gate：`npm run verify` PASS；full `70/70` files、`844/844` tests；build、SIGINT/SIGTERM smoke、database smoke、191 文件 format check 全部 PASS。
+- 变更范围：相对 D07 closeout `09640c3` 共 24 个 tracked 路径（4 D08 docs、11 src/event-search、9 tests）；受保护路径 diff 数量为 0。
+- Case Gate：EVT-06/10/11/21/22/23/24、DEDUPE、CANDIDATE_LIMIT、UPDATE_LIMIT、FTS_LITERAL、MISSING/INVALID/ABORT、ERROR、PMT-09、PMT-15、PRIVACY、PUBLIC_SHAPE 的 D08 P0 责任均有服务/集成或既有验证证据；PMT-02 保持 S0，不算 P0 PASS。
+- 结论：`D08_LOCAL_GATE=EVIDENCE_READY`；等待 Architect 独立 Gate、push/远程 CI 与最终验收；Lead 不 push。
