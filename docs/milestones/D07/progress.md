@@ -8,13 +8,13 @@
 - 执行基线：main `1836a89028f8ce8290737ffee706790254c25dcb` / tree `e7d8e7b22e4d506336a0568eaabd4bf81acc03e9`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 当前 Worker：`a88d7a0e-49f2-480b-a16c-04975abd2128` / `wks_f5b697be70db6123` / `feat/d07-t01-content-input`
-- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=IN_PROGRESS`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
+- 当前结论：`D07_PLAN=APPROVED_G3`、`G1=PASS`、`G2=PASS`、`D07_T01=REVIEW_G4_PENDING`、`D07_LOCAL_GATE=NOT_RUN`、`D07_REMOTE_CI=NOT_RUN`、`D07_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
 | 任务 ID | 状态 | 前置/固定 base | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
-| D07-T01 Content 输入 | `IN_PROGRESS` | `1836a89028f8ce8290737ffee706790254c25dcb` | `NOT_RUN` | `IN_PROGRESS` | `PENDING` | Worker 已派发；等待 REVIEW/BLOCKED |
+| D07-T01 Content 输入 | `REVIEW` | `1836a89028f8ce8290737ffee706790254c25dcb` | PASS（定向 3 files/24 tests；full 57 files/669 tests） | APPROVED | PENDING · G4 | 精确冻结完成，等待 Architect G4 |
 | D07-T02 严格边界/错误 | `NOT_STARTED` | `PENDING_T01_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T01 |
 | D07-T03 Repository/事务 | `NOT_STARTED` | `PENDING_T02_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T02 |
 | D07-T04 公共 factory/集成 | `NOT_STARTED` | `PENDING_T03_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 串行依赖 T03 |
@@ -25,7 +25,7 @@
 
 | 任务 ID | BASE_SHA | WORKER_AGENT | WORKER_WORKSPACE | WORKER_BRANCH | CHANGED_PATHS | FROZEN_TREE | PATCH_SHA256 | ARCHITECT_TREE_APPROVAL | CANDIDATE_SHA | MERGE_SHA | MERGE_TREE | VERIFICATION | ARCHIVE_RESULT |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| D07-T01 | `1836a89028f8ce8290737ffee706790254c25dcb` | `a88d7a0e-49f2-480b-a16c-04975abd2128` | `wks_f5b697be70db6123` | `feat/d07-t01-content-input` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D07-T01 | `1836a89028f8ce8290737ffee706790254c25dcb` | `a88d7a0e-49f2-480b-a16c-04975abd2128` | `wks_f5b697be70db6123` | `feat/d07-t01-content-input` | 精确 2 路径：`src/knowledge/content-input.ts`、`tests/knowledge/content-input.test.ts` | `6797a68b18ed94fd5972ca804bb70c256d700984` | `12763a85062183ef53cb548f9eb7584a79ecba313780405f09c71cd376155c76` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | PASS（定向 3/24；full 57/669；typecheck/build/smoke/database smoke/format PASS） | `PENDING` |
 | D07-T02 | `PENDING_T01_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T03 | `PENDING_T02_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D07-T04 | `PENDING_T03_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
@@ -50,14 +50,28 @@
 
 ## 当前阻塞与待决策事项
 
-- T01 Worker 正在 `feat/d07-t01-content-input` 执行，只允许新增 `src/knowledge/content-input.ts` 与 `tests/knowledge/content-input.test.ts`。
+- T01 已由 Lead 复核并精确冻结，等待 Architect G4；批准前不得创建 candidate。
 - 当前无候选、无 merge、无归档、无 push、无 CI、无最终验收。
 
 ## 下一可执行动作
 
-1. 等待 T01 Worker 返回 `REVIEW` 或 `BLOCKED`。
-2. Lead 独立复核 diff、测试、隐私与禁止路径，生成精确冻结 tree/patch。
-3. 将 T01 冻结证据交 Architect G4；批准后才创建 candidate/merge，并决定 T02。
+1. Architect 复核 T01 的 base/tree/patch、2 路径和设计一致性并给出 G4 结论。
+2. G4 APPROVED 后由 Lead 用冻结 tree 创建 candidate，核验 parent/tree/paths。
+3. Candidate 通过后 `--no-ff` merge、合并后复验、归档 Worker，再决定 T02。
+
+## D07-T01 Lead 复核与冻结记录
+
+- Worker 交回：`REVIEW`；branch tip/HEAD 仍为 `1836a89028f8ce8290737ffee706790254c25dcb`，无 commit/merge/push。
+- 精确写集：`src/knowledge/content-input.ts`（35 行新增）、`tests/knowledge/content-input.test.ts`（325 行新增）；无既有文件修改。
+- 行为复核：`loadKnowledgeTaskData` 只接受 `Pick<ContentRepository, "getById">`，每个 Content ID 点读一次；缺失返回 `null`；显式投影六字段，无对象 spread，无 id/url/created_at/language/raw_data/Topics/history Knowledge。
+- 测试复核：`KNO-06/TASK_DATA`、`CONTENT_READ`、`PROMPT_SOURCE`、`VALUE_SHAPES`、重复调用与不同 Content 均直接断言；Prompt 测试只用临时目录两份合成文件与 D02 StubLLM。
+- 独立验证：`verify:toolchain` PASS；typecheck PASS；定向 `3/3` files、`24/24` tests PASS；`npm run verify` PASS（full `57/57` files、`669/669` tests；build、全部 smoke、database smoke、157 文件 format 均 PASS）；`git diff --check` 无输出。
+- 环境边界：首次 `npm ci`/Vitest 在沙箱分别因 `node_modules` unlink 与 `.vite-temp` mkdir `EPERM` 失败；受控提升权限后按原命令重跑 PASS，未改测试预期或绕过规格。
+- 范围/隐私：`git status --untracked-files=all` 仅两个允许路径；禁止路径 diff 为空；生产文件无真实 LLM/Prompt/DB/HTTP/Topic 依赖；测试未读取真实 Prompt/model。
+- 静态扫描逐条解释：`knowledge` 为模块路径/合成 sentinel；`raw_data`、`topics`、`history_knowledge` 为故意注入以证明投影剥离；`expect.any(Object)` 为 Vitest matcher 而非 TS `any`。
+- 精确冻结：tree `6797a68b18ed94fd5972ca804bb70c256d700984`；canonical full-index binary patch `/private/tmp/d07-t01-freeze.5T4DFI/t01.patch`，SHA-256 `12763a85062183ef53cb548f9eb7584a79ecba313780405f09c71cd376155c76`；路径数 2；`git diff-tree --check` 无输出。
+- 路径 blob：`content-input.ts=3cd0ba5ac9db8de736023427d50e72e2f70b35bf`；`content-input.test.ts=ca818e0e7cf6d7b31bd5089a3b8c826f1b6e430e`；冻结 tree blob 与 Worker 工作文件逐一一致。
+- Architect G4：`PENDING`。Candidate/Merge/Worker 归档在 G4 批准前保持 `PENDING`。
 
 ## Plan G3 审核记录
 
