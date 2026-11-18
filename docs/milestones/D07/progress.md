@@ -191,3 +191,17 @@
 - 受保护路径 diff = **0**：DDL、Adapter、Collection、LLM、Prompt、App/Server/Lifecycle、CI、package/lock 均未改动。
 - 五个功能 Prompt 哈希与 D06 记录逐一一致（event-analysis `9b05c4b1…`、event-search `e75b656c…`、knowledge-analysis `037eceaf…`、processing-route `98a34e83…`、topic-matching `040a083e…`）；合成 context `d588452a…` 未变。真实 `config/prompt/user-context.md` 仍为 git 忽略、未跟踪、未 stage。
 - 结论：`D07_LOCAL_GATE=APPROVED`（Architect 独立复核通过，非仅采纳 Lead 证据）。
+
+## D07 推送与远程 CI（Architect 执行）
+
+- 推送：`ef57d376a43893195fa12f173c6c0d9a7bc5768d` → `origin/main`。
+- 远程 CI：run #22 / `44298337479`，commit `ef57d37`，状态 `WORKFLOW_RUN_STATUS_COMPLETED` / `WORKFLOW_RUN_CONCLUSION_SUCCESS`。
+- 该 SHA 同时是本地 Gate 输入 commit，满足「本地 Gate 与精确 SHA 远程 CI 均通过」的双重条件。
+
+## D07 最终验收
+
+- `D07_FINAL_PASS=ISSUED`
+- 依据：`D07_LOCAL_GATE=APPROVED`（Architect 独立干净快照，62/62 文件、738/738 用例、build/smoke/database smoke/format 全绿）+ 精确 SHA `ef57d37` 远程 CI Success（run 44298337479）。
+- 四卡全部 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`。
+- 变更范围：相对 D06 closeout `5ff151b` 共 20 个 tracked 路径，受保护路径 diff = 0。
+- 未纳入：KNO-07/09/10（S0/S1 真实模型语义回归，需真实 Provider 配置）；TopicMatching 派发（D15）；Event/Published Item/Runtime（后续里程碑）。
