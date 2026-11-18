@@ -1,6 +1,7 @@
 # D07 Intent：Knowledge Analysis 知识价值判断与保存
 
-- 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
+- 状态：`APPROVED · G1 PASS`
+- 负责人确认：2026-11-18 回复“确认OK，开始开发吧”，批准 §2 业务规则与 §3 职责边界。
 - 日期：2026-11-18
 - 依赖基线：D06 最终 PASS；main `5ff151b`；远程 CI Success。
 - 上游：D01 数据库/同步事务，D02 Prompt/LLM typed calls，D06 Processing 产出 Content。

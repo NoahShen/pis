@@ -2,6 +2,7 @@
 
 - Plan：`docs/milestones/D07/plan.md` v0.2
 - Plan 状态：`APPROVED · Architect G3 PASS`（v0.2）
+- 开发心跳：`22b52665`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
 - Intent：`DRAFT · G1_PENDING_OWNER_APPROVAL`
 - Spec：`DRAFT · G1_PENDING_OWNER_APPROVAL`；已应用 Architect G3 的 Clock 依赖修订
 - 计划参考基线：main `9f70eac273fabc498cf7c8dce9607ad74f3340bf` / tree `f087a32e3541fed197175c11f9463f0e6f7ac4c0`

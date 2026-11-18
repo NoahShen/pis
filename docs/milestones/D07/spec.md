@@ -1,8 +1,8 @@
 # D07 Spec：Knowledge Analysis 知识价值判断与保存
 
-- 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
+- 状态：`APPROVED · G2 PASS`
 - 版本：v0.1
-- Intent：`docs/milestones/D07/intent.md`（G1 待负责人批准）。
+- Intent：`docs/milestones/D07/intent.md`（G1 已批准）。
 - 实现基线：D06 最终 PASS，main `f268f3a`。
 
 ## 1. 公共契约
