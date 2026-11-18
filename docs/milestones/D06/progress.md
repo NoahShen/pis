@@ -8,7 +8,7 @@
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 开发心跳：`145d2753`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
 - 当前 Worker：`NONE · T01/T02/T03/T04 Worker 均已归档`
-- 当前结论：`D06_PLAN_G3=APPROVED`、`D06_TASKS=PASS`、`D06_LOCAL_GATE=PASS`；远程 CI 与最终验收待 Architect 执行
+- 当前结论：`D06_PLAN_G3=APPROVED`、`D06_TASKS=PASS`、`D06_LOCAL_GATE=PASS`、`D06_REMOTE_CI=PASS`、`D06_FINAL_PASS=ISSUED`
 
 ## 任务状态
 
@@ -158,4 +158,6 @@ T01 `MERGE_TREE=7136e91e0ac75becd25972b78f84daf068a00d31`；T02 `MERGE_TREE=ea20
   - 五份功能 Prompt 哈希与基线逐一比对完全一致（event-analysis `9b05c4b1…`、event-search `e75b656c…`、knowledge-analysis `037eceaf…`、processing-route `98a34e83…`、topic-matching `040a083e…`）。
   - 静态扫描：`src/processing`、`tests/processing`、`tests/fixtures/processing.ts` 内 `any`/`@ts-ignore`/`@ts-expect-error` 无匹配；对真实 `config/prompts` 引用数 0；无真实模型域名或公网调用。
   - PRO-01～12 的 D06 责任已由 T01/T02/T03/T04 逐项映射；`PRO-08` 的 Runtime 派发部分与 `E2E-11` 的 Runtime 重试/派发部分明确归属 D15，未冒充 D06 PASS。
-- `D06_REMOTE_CI=PENDING`、`D06_FINAL_PASS=NOT_ISSUED`：Lead 不 push、不自行签发最终 PASS；由 Architect 按持续授权 push 精确 SHA 并核验远程 CI Success 后方可签发。
+- `D06_REMOTE_CI=PASS`：Architect 已 push main `5ceed2872678c61d90f731697b11cf5200d05e68`，GitHub Actions run `44256563134` 对该**精确 SHA** 结果为 `completed successfully`（本地 Gate 与远程 CI 双门禁均已满足）。
+- `D06_FINAL_PASS=ISSUED`：Architect 独立复核本地 Gate 证据与精确 SHA 远程 CI Success 后签发；未在 CI 结果到达前预签。
+- 明确未验收项（不冒充）：真实模型语义质量属 `PMT-01`（S0，人工判读）；Runtime 派发、重试与队列属 D15；`E2E-11` 仅 Processing 部分。
