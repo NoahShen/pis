@@ -181,3 +181,13 @@
 - Finding 为 `findings_json` 内嵌数组；无独立实体、ID、表、队列或 RSS。
 - `UNIQUE(content_id)` 支持同一 Content 复用；不同 Content 相同正文不合并。
 - 只有 Knowledge Analysis 读取 User Context；测试不读取真实 Prompt/config/user-context。
+
+## D07 本地集成 Gate（Architect 独立复核）
+
+- Gate 输入 commit：`614593a8ab742f46a6b980e91e8c6dd870a346a2`；tree `f4ce8c241d4b236226fea3eaf25ebf7a75c9d810`。
+- Architect 独立干净快照：`git archive HEAD` 导出至 `/private/tmp/d07-arch-gate`，确认无 `.git`、无 `node_modules`；tar SHA-256 `f61b22466da648861dc8c7cfaec919958013c13f87a190ea9c2652805acade41`（与 Lead 的 `41163c7a…` 为不同打包方式，均基于同一 commit tree，非冲突）。
+- Architect 在快照内独立执行：`npm ci --offline` 退出 0；`npm run typecheck` 退出 0；`npm run verify` 全绿 —— `62/62` 文件、`738/738` 用例、build PASS、全部 smoke PASS（SIGINT/SIGTERM/端口占用/关闭预算/信号竞态/Source 与 Topic 重启持久化）、database smoke PASS、`171` 文件格式检查 PASS。
+- 变更路径：相对 D06 closeout `5ff151b` 共 **20** 个 tracked 路径，全部为 `A`：4 个 `docs/milestones/D07/*`、9 个 `src/knowledge/*`、6 个 `tests/knowledge/*`、1 个 `tests/fixtures/knowledge.ts`。
+- 受保护路径 diff = **0**：DDL、Adapter、Collection、LLM、Prompt、App/Server/Lifecycle、CI、package/lock 均未改动。
+- 五个功能 Prompt 哈希与 D06 记录逐一一致（event-analysis `9b05c4b1…`、event-search `e75b656c…`、knowledge-analysis `037eceaf…`、processing-route `98a34e83…`、topic-matching `040a083e…`）；合成 context `d588452a…` 未变。真实 `config/prompt/user-context.md` 仍为 git 忽略、未跟踪、未 stage。
+- 结论：`D07_LOCAL_GATE=APPROVED`（Architect 独立复核通过，非仅采纳 Lead 证据）。
