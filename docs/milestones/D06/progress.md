@@ -6,7 +6,7 @@
 - Spec：`APPROVED · G2 PASS`
 - G3 追加审查基线：`835c9de2e98d12815d7ca3751de1835886c11cca`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 开发心跳：由 Architect 在开发启动时创建并记录准确 ID
+- 开发心跳：`145d2753`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
 - 当前 Worker：`NONE · Lead 未创建 Worker`
 - 当前结论：`D06_PLAN_G3=APPROVED`、`D06_DEVELOPMENT=STARTING`；T01 READY，其余等待前卡
 
