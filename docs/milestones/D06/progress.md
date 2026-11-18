@@ -161,3 +161,12 @@ T01 `MERGE_TREE=7136e91e0ac75becd25972b78f84daf068a00d31`；T02 `MERGE_TREE=ea20
 - `D06_REMOTE_CI=PASS`：Architect 已 push main `5ceed2872678c61d90f731697b11cf5200d05e68`，GitHub Actions run `44256563134` 对该**精确 SHA** 结果为 `completed successfully`（本地 Gate 与远程 CI 双门禁均已满足）。
 - `D06_FINAL_PASS=ISSUED`：Architect 独立复核本地 Gate 证据与精确 SHA 远程 CI Success 后签发；未在 CI 结果到达前预签。
 - 明确未验收项（不冒充）：真实模型语义质量属 `PMT-01`（S0，人工判读）；Runtime 派发、重试与队列属 D15；`E2E-11` 仅 Processing 部分。
+
+## D06 收尾归档
+
+- 开发心跳 `145d2753`（`*/10 * * * *`，Asia/Shanghai）已由 Architect 用 `delete_heartbeat({id:...})` 删除，返回 `success=true`。
+- 四个 Worker Agent 已 `archive_agent`：T01 `870214c3-7db5-48d2-8b8a-902ce765d935`、T02 `61991d1c-b607-499d-9ff1-26d89ad0f4ca`、T03 `e63d8113-3b3f-4a43-b307-ad980d7f3c37`、T04 `e25f2fde-c62e-45b6-ad02-9c9193d768a5`，全部返回成功；其 workspace 已在本卡合并后由 Lead 归档（`removedDirectory=true`），本次复查活跃列表无残留。
+- D06 Lead：`archive_workspace(wks_fd51f0da83f3c5a7)` → `archivedAgentIds=[3e973773-cc13-4eb7-8352-9dcd0cec8536]`、`removedDirectory=true`。
+- 复查：活跃 workspace 列表中已无任何 `D06` 项；仅保留 `Team_Main` 主工作区（永不归档）。
+- 主工作区 `/Users/noahshen/workspace/pis` 与 Architect 会话未归档。
+- 本里程碑最终 main：`fc019667674b4620359e26bb07d1eea4bbf48568`（CI #19 run `44256810836` Success）。
