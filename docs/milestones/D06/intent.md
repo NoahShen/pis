@@ -1,6 +1,7 @@
 # D06 Intent：Processing 内容标准化与路由
 
-- 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
+- 状态：`APPROVED · G1 PASS`
+- 负责人确认：2026-11-18 回复“好继续后续任务，直到Plan编写完成”，批准 §2 业务规则与 §3 职责边界。
 - 日期：2026-11-18
 - 依赖基线：D05 最终 PASS；main `7d23c4a`（实现验收 SHA `23908b1`）；远程 CI Success。
 - 上游：D01 数据库/同步事务，D02 Prompt/LLM typed calls，D05 Collection 与 `raw_data v1`。
@@ -122,6 +123,6 @@ D06 到此结束；不派发任何任务，由 D15 Runtime 依据 `routes` 决�
 - Processing 期间 `fetchContent` spy 调用次数为 0。
 - 三文档门禁、逐任务 Worker→Lead→Architect、精确 candidate/merge、干净本地 Gate、远程 CI、心跳及 Worker/workspace 归档按项目持续约定执行。
 
-## 7. 待负责人确认
+## 7. 审批记录
 
-请确认 D06 边界，尤其是：Processing 自身不访问任何原文 HTTP，但会在 Content 提交后调用一次 P-01 路由 LLM；`NONE` 内容不创建 Content 且不调用路由；路由结果不落库，只作为任务返回值交给 Runtime。确认后进入 Spec G2。
+负责人已确认：Processing 自身不访问原文 HTTP；Content COMMIT 后调用一次 P-01 路由 LLM；`NONE` 不建 Content 且不路由；路由结果不落库，交给 Runtime。G1 通过，进入 Spec G2。
