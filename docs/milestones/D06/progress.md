@@ -1,20 +1,20 @@
 # D06 Progress：Processing 内容标准化与路由
 
-- Plan：`docs/milestones/D06/plan.md` v0.2
-- Plan 状态：`APPROVED · Architect G3 PASS`（v0.2）
+- Plan：`docs/milestones/D06/plan.md` v0.3
+- Plan 状态：`REVIEW · PENDING ARCHITECT G3`（v0.3 追加复核）
 - Intent：`APPROVED · G1 PASS`
 - Spec：`APPROVED · G2 PASS`
-- 实现基线：`fac03c6e78f7e8154c5f3f32fb65b1bcd545f867`
+- G3 追加审查基线：`835c9de2e98d12815d7ca3751de1835886c11cca`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 开发心跳：由 Architect 在开发启动时创建并记录准确 ID
+- 开发心跳：`NOT_CREATED · 等待追加 G3 批准`
 - 当前 Worker：`NONE · Lead 未创建 Worker`
-- 当前结论：`D06_PLAN_G3=APPROVED`、`D06_DEVELOPMENT=STARTING`；T01 READY，其余等待前卡
+- 当前结论：`D06_PLAN_G3=PENDING`；无任务 READY/PASS，未开始开发
 
 ## 任务状态
 
 | 任务 ID | 状态 | 前置/固定 base | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
-| D06-T01 | READY | `fac03c6e78f7e8154c5f3f32fb65b1bcd545f867` | NOT_RUN | PENDING | PENDING · G4 | 等待 Worker 创建与执行 |
+| D06-T01 | NOT_STARTED | 追加 G3 批准后的精确基线 | NOT_RUN | PENDING | PENDING · G4 | 等待追加 G3 与执行授权 |
 | D06-T02 | NOT_STARTED | D06-T01 merge SHA | NOT_RUN | PENDING | PENDING · G4 | 等待 T01 PASS 与归档 |
 | D06-T03 | NOT_STARTED | D06-T02 merge SHA | NOT_RUN | PENDING | PENDING · G4 | 等待 T02 PASS 与归档 |
 | D06-T04 | NOT_STARTED | D06-T03 merge SHA | NOT_RUN | PENDING | PENDING · G4 | 等待 T03 PASS 与归档 |
@@ -51,7 +51,7 @@
 
 ## 当前阻塞与待决策事项
 
-- 唯一当前门禁：Architect 审核本 Plan v0.2 并签发 G3 `APPROVED`/`CHANGES_REQUIRED`。
+- 唯一当前门禁：Architect 审核 Plan v0.3 的 COMMIT/LLM 直接时序证明及 T04 调用次数、入参、sentinel、失败重试证据，并签发 G3 `APPROVED`/`CHANGES_REQUIRED`。
 - G3 通过前不得创建开发心跳、不得创建 Worker、不得开始编码或创建 candidate。
 - 若 Architect 要求修改 Plan，Lead 只修订 `plan.md`/`progress.md` 并重新提交精确 commit/tree，不自行批准。
 
@@ -65,8 +65,10 @@
 
 - 提交者：D06 Lead
 - 日期：2026-11-18
-- 基线：`24608343f65f3e600fccc60c0798e68731abdf3c`
+- 基线：`835c9de2e98d12815d7ca3751de1835886c11cca`
 - 结论：`PENDING · Architect G3`
 - v0.1（`dba67c9e5a20adf2c8d72445a9eacb85aaa904c6`）：`CHANGES_REQUIRED`。唯一阻塞为 Plan §2.2 错误要求对 D04 已清洗纯文本 body/summary 再次调用 `cleanHtmlValue()`，会删除合法尖括号文字并违反 `PRO-11`。
 - v0.2 修订：title/body/summary 只允许 `normalizeCleanText()` / `cleanTextValue()` 纯文本规范化；禁止 `cleanHtmlValue()`、`cleanReadabilityContent()`、`parseHtmlDocument()` 或任何 DOM 解析。T01 增加 `<algorithm>`、`List<T>`、`<Foo/>` 逐字保留、误用 HTML 清洗的负向对照和静态禁用检查。
-- 当前阻塞项：等待 Architect 复核 v0.2 上述唯一修订；G3 仍未通过。
+- v0.2 历史审批：曾在 `835c9de` 记录 `APPROVED · Architect G3 PASS`，批准输入为 `017a6f7` / tree `0b63e06`；该状态已被追加 G3 要求重新打开。
+- v0.3 追加修订：T03/T04 增加 COMMIT 先于 LLM 的时序矩阵；T04 强制在真实 SQLite 的 StubLLM.complete 回调内断言 `db.inTransaction === false`、Content/关联已可见且 count=1，并补充 requests 1/0、精确七字段 userContent、raw_data/Token sentinel、合成 Prompt 来源及 `llm_failed` 后复用同一 Content（requests=2、count=1）。
+- 当前阻塞项：等待 Architect 追加复核 v0.3；通过前无开发授权。

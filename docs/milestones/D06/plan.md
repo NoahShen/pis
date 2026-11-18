@@ -1,11 +1,11 @@
 # D06 Plan：Processing 内容标准化与路由
 
-> 版本：v0.2
-> 版本轨迹：v0.1 首版；v0.2 修复 G3 唯一阻塞——raw_data body/summary/title 固定为 D04 已清洗纯文本，仅允许纯文本规范化，禁止二次 HTML 剥离。
-> 状态：`APPROVED · Architect G3 PASS`
+> 版本：v0.3
+> 版本轨迹：v0.1 首版；v0.2 修复纯文本清洗契约并在 `835c9de` 记录过一次 G3 PASS；v0.3 根据追加 G3 要求补入 COMMIT 先于 LLM 的真实 SQLite 时序、调用次数/入参、sentinel 与失败重试直接证据，当前重新处于 G3 REVIEW。
+> 状态：`REVIEW · PENDING ARCHITECT G3`
 > Intent：`docs/milestones/D06/intent.md`（APPROVED · G1 PASS）
 > Spec：`docs/milestones/D06/spec.md`（APPROVED · G2 PASS）
-> 实现基线：`24608343f65f3e600fccc60c0798e68731abdf3c`
+> G3 追加审查基线：`835c9de2e98d12815d7ca3751de1835886c11cca`
 > 本文只把已批准 Intent/Spec 映射为文件级实施计划；不构成 G3 批准、Worker 创建或开发执行授权。
 
 固定运行时前置：
@@ -196,6 +196,14 @@ T03 `routeCommittedContent(content, typedLlmCalls, logger, signal)` 只在 T02/T
 - 路由异常不回滚已提交 Content；D06 不自动重试、不重建 Content。
 - 路由结果不写数据库；空数组时 Content 仍保留。
 
+“Content 已 COMMIT 才路由”必须是直接可执行断言，而不只是代码结构说明。T04 真实 SQLite 集成必须在 `StubLLM.complete()` 回调内验证：
+
+1. `db.inTransaction === false`。
+2. `contents` 中目标 Content 已可见，且行数为 1。
+3. `source_items.content_id` 已指向该 Content。
+
+若路由被放在事务内或事务 COMMIT 前，上述任一断言必须失败。T03 的 stub boundary 测试只可验证调用边界顺序，不得替代 T04 的真实 SQLite 证据。
+
 ### 2.5 错误、日志与隐私
 
 `ProcessingError.code` 固定为：
@@ -359,14 +367,14 @@ git diff --name-only <BASE_SHA> -- src/collection src/database/schema.sql src/ad
 - 新增：`tests/processing/content-router.test.ts`。
 - 依赖/包变更：`NONE`。
 - 不得修改 D02 `src/llm/**`、D05、T01/T02 文件、Prompt 或 Database schema；不得在路由层加入事务。
-- Spec/Case 映射：`spec.md` §6、§7、§8；`PRO-07`、`PRO-08`、`PRO-10`、`PRO-12`。
+- Spec/Case 映射：`spec.md` §6、§7、§8；`PRO-01`（调用边界）、`PRO-07`、`PRO-08`、`PRO-10`、`PRO-12`。
 - 禁止范围：不得导入 Database/Repository/Adapter/raw_data，不得调用 Clock/HTTP/其他 LLM operation，不得重试、写库、派发任务或修改 D02 enum/schema。
 
 ### 6.2 实现要求
 
 1. `ProcessingError` 只含 §2.5 四码和安全 message；提供 abort 识别和保守稳定映射，不泄露 cause。
 2. `ProcessingLogger` 只接收白名单元数据；不得接受任意对象、正文、摘要、raw_data、Token 或底层错误。
-3. `routeCommittedContent` 仅接收规范 Content、typed calls、logger、signal；不得接收 DB、raw_data 或 Adapter，从结构上阻止事务内路由。
+3. `routeCommittedContent` 仅接收规范 Content、typed calls、logger、signal；不得接收 DB、raw_data 或 Adapter。调用方必须先完成 committed handoff 才能进入本函数。
 4. 调用前检查 signal；调用时原样传入 `{ signal }`。检查/调用前后不得读写数据库。
 5. 只调用 `routeProcessing` 一次；不自动重试、不调用其他 typed call、不发起 fetch/HTTP。
 6. `taskData` 精确为 §2.4 七字段快照；不得夹带 `content_id`、raw_data 或 Prompt 上下文。
@@ -381,6 +389,7 @@ git diff --name-only <BASE_SHA> -- src/collection src/database/schema.sql src/ad
 | `PRO-08` | 固定 EVENT / KNOWLEDGE / BOTH / 空 → 返回 1/1/2/0 个 routes，空数组合法 |
 | `PRO-10` | 合法重复 enum 按首次顺序去重；D02 非法 enum/额外字段错误向上归类为 `llm_failed` |
 | `PRO-12` | PARTIAL 快照保留 completeness、body、summary；body 为实际摘要时不补造正文 |
+| `PRO-01 / COMMIT_ORDER` | stub typed call 只能在 committed handoff 后调用；回调中的 committed marker 必须已为 true。T03 不伪造真实 DB 证据，`db.inTransaction`/行可见性由 T04 真实 SQLite 集成强制证明 |
 
 另测：pre-abort 不调用 typed call；路由期间 AbortError/已 abort signal 映射 `aborted` 且 signal 引用原样透传；taskData 不泄漏 sentinel raw_data/Prompt/Token；logger 无正文/摘要；stub typed calls 只实现 `routeProcessing`。
 
@@ -423,13 +432,17 @@ git diff --name-only <BASE_SHA> -- src/llm src/adapters src/collection src/datab
 1. `contracts.ts` 只暴露 Spec 的 `ProcessOptions`、`ProcessResult`、`ProcessingService`、`ProcessingDependencies`、必要 repository dependency 类型、稳定错误与 logger 类型；不暴露内部 SQL、事务 seam、raw parser、mutator 或测试后门。
 2. `index.ts` 只导出 `createProcessing`、`ProcessingError` 及必要公共 type；不得导出 Worker/Runtime/queue 或 App 装配入口。
 3. `createProcessing` 按 §2.3/§2.4 组合 T01/T02/T03：invalid input 在 DB 前；missing/raw null/NONE 零副作用；已有 Content 直接复用；新 Content COMMIT 后才路由。
-4. 正常返回复制 `{content_id, routes}`；不返回 raw_data、Content 全对象、Logger/DB 或下游任务。路由空数组时 `content_id` 保留。
-5. 事务/Repository 异常映射 `processing_failed`；P-01 异常映射 `llm_failed`；取消映射 `aborted`；不得把底层 SQL、JSON、Zod、Prompt 或模型错误放进 message/cause。
-6. `tests/fixtures/processing.ts` 提供合成 Source Item/raw_data 写入、D05 `createRawDataSourceItemV1()/serializeRawDataSourceItemV1()` 样本、stub typed calls、stub LLM typed-call pair、captured logger、DB/HTTP spy 与行数断言；所有 URL 使用 `.example.test`，不读取私有文件。
-7. 集成测试使用真实临时 SQLite、公共 `createProcessing`、真实 D05 raw_data serializer 和 D02 `createTypedLlmCalls` + `StubLLM` + 合成 Prompt 目录；禁止真实模型、真实 API Key 和公网。
-8. 零原文 HTTP 证据必须同时覆盖：fixture `fetchContent` spy 调用数为 0，`globalThis.fetch` spy 调用数为 0；Collection/D05 回归也不得因 Processing 产生新请求。
-9. 重复路由失败后手动再次 `process` 是 D06 验证方式；不得实现 Runtime 自动重试或队列派发。`E2E-11` 只验证 Processing 部分。
-10. 测试后关闭 SQLite；无 server、socket、timer、unhandled rejection、SQLite/WAL/SHM 或真实网络依赖残留。
+4. 真实 SQLite 集成必须使用可在 `complete()` 进入时执行断言的 StubLLM hook，并在该回调内断言 `db.inTransaction === false`、`contents` 目标行已存在且总行数为 1、`source_items.content_id` 已指向该行；该断言不得用 mock DB 代替。
+5. 成功路由路径必须断言 `stub.requests.length === 1`；NONE、无 raw_data、invalid input、pre-abort、已有 `content_id` 但关联 Content 不存在等零 LLM 路径必须断言 `stub.requests.length === 0`。
+6. 解析 `stub.requests[0].userContent` 必须精确等于 `{ task_data: { title, body, summary, completeness, url, author, published_at } }`；外层与 task_data 键集均不得多字段，不得含 `content_id`、`raw_data` 或原始 HTML。
+7. 用三个独立 sentinel：raw_data sentinel 放入 strict schema 合法的 `entry.external_id`（不得新增字段），正文 sentinel 放入真实 body，Token sentinel 只存在于合成测试配置；断言 `userContent`/`systemContent` 均不含 raw_data sentinel 与 Token sentinel，同时正文 sentinel 仅在规范 `task_data.body` 中出现。`systemContent` 必须包含合成 Prompt 目录的 fixture sentinel，证明未读取真实 `config/prompts`。
+8. 正常返回复制 `{content_id, routes}`；不返回 raw_data、Content 全对象、Logger/DB 或下游任务。路由空数组时 `content_id` 保留。
+9. 事务/Repository 异常映射 `processing_failed`；P-01 异常映射 `llm_failed`；取消映射 `aborted`；不得把底层 SQL、JSON、Zod、Prompt 或模型错误放进 message/cause。
+10. `tests/fixtures/processing.ts` 提供合成 Source Item/raw_data 写入、D05 `createRawDataSourceItemV1()/serializeRawDataSourceItemV1()` 样本、stub typed calls、带 complete hook 的 StubLLM、captured logger、DB/HTTP spy 与行数断言；所有 URL 使用 `.example.test`，不读取私有文件。
+11. 集成测试使用真实临时 SQLite、公共 `createProcessing`、真实 D05 raw_data serializer 和 D02 `createTypedLlmCalls` + StubLLM + 合成 Prompt 目录；禁止真实模型、真实 API Key 和公网。
+12. 零原文 HTTP 证据必须同时覆盖：fixture `fetchContent` spy 调用数为 0，`globalThis.fetch` spy 调用数为 0；Collection/D05 回归也不得因 Processing 产生新请求。
+13. StubLLM 首次抛错后必须返回 `llm_failed`，Content 与 `source_items.content_id` 均保留；第二次 `process` 复用同一 Content，`stub.requests.length === 2`，`contents` 行数仍为 1。不得实现 Runtime 自动重试或队列派发；`E2E-11` 只验证 Processing 部分。
+14. 测试后关闭 SQLite；无 server、socket、timer、unhandled rejection、SQLite/WAL/SHM 或真实网络依赖残留。
 
 ### 7.3 测试矩阵
 
@@ -447,6 +460,10 @@ git diff --name-only <BASE_SHA> -- src/llm src/adapters src/collection src/datab
 | `PRO-10` | StubLLM 返回重复 enum → D02 去重；未知 enum/额外字段 → `llm_failed`，Content 状态符合提交边界 |
 | `PRO-11` | 纯文本尖括号/Unicode/空白经 collect→process 后可存，`<algorithm>`、`List<T>`、`<Foo/>` 不丢失 |
 | `PRO-12` | 仅摘要 PARTIAL 进入 P-01，taskData completeness/body 正确，无抓取 HTTP |
+| `PRO-01 / COMMIT_ORDER` | 在 StubLLM.complete 回调内直接断言 `db.inTransaction === false`、`contents` 目标行已存在且 count=1、`source_items.content_id` 已指向该行；任何事务内/COMMIT 前路由必须失败 |
+| `CALL_COUNT / TASK_INPUT` | 成功路径 `stub.requests.length === 1`；上述零 LLM 路径为 0；`userContent` 精确为 `{task_data:{...七字段}}`，键集精确且无 `content_id`/`raw_data`/原始 HTML |
+| `PRIVACY / PROMPT_SOURCE` | raw_data sentinel 与 Token sentinel 不出现在 `userContent`/`systemContent`；正文 sentinel 仅出现在规范 body；`systemContent` 含合成 Prompt fixture sentinel |
+| `PRO-07 / RETRY` | 首次 StubLLM 抛错 → `llm_failed`，Content 已提交且关联保留；第二次 process 复用同一 Content，请求数为 2，contents 行数仍为 1 |
 
 另测：invalid ID 在 Repository/LLM 前抛 `invalid_input`；pre-abort 零 DB/LLM；Content COMMIT 后取消/路由失败仍保留 Content；已有 `content_id` 指向不存在 Content 时 `processing_failed`；factory 可重复调用且无模块级状态；返回字段严格为 snake_case `content_id` + routes；logger 不含正文/摘要/raw_data/Token；DDL/Prompt/CI/Collection/App 无 diff。
 
@@ -506,6 +523,10 @@ Gate 必须保留：
 
 - `PRO-01`～`12` 的 D06 责任逐项映射；`PRO-08` 的 Runtime 派发部分、`E2E-11` 的 Runtime 重试与派发部分明确引用 D15，不冒充 D06 PASS。
 - 全文/片段/无内容分支、失败回滚、事务内 recheck、已有 Content 复用、同文独立 Content、COMMIT 后路由、路由失败重试、四种路由与空路由保留。
+- **COMMIT 先于 LLM 的直接证据**：真实 SQLite + StubLLM.complete 回调内 `db.inTransaction === false`、目标 Content 已可见且 count=1、`source_items.content_id` 已指向该 Content；若在事务内/COMMIT 前路由必须失败。
+- **LLM 次数与入参直接证据**：成功路径 requests=1；NONE/无 raw/invalid/pre-abort/关联 Content 不存在等零 LLM 路径 requests=0；`userContent` 精确为 `{"task_data":{七字段}}`，无 `content_id`/raw_data/原始 HTML。
+- **隐私与 Prompt 来源直接证据**：raw_data/Token sentinel 不进入 user/system；正文 sentinel 只在规范 body；systemContent 来自合成 Prompt fixture，不读取真实 `config/prompts`。
+- **路由失败/重试直接证据**：首轮 `llm_failed` 后 Content 与关联仍在；二次 process 复用同一 Content，requests=2，contents count=1。
 - StubLLM 重复 enum 经 D02 去重、未知 enum/额外字段被 D02 拒绝、路由不落库、零原文 HTTP spy、无真实模型/API Key/公网。
 - 真实临时 SQLite 与真实 D05 raw_data v1 serializer；测试资源全部关闭，无 SQLite/WAL/SHM、server/socket/timer/unhandled rejection 残留。
 - DDL、Prompt、CI、Adapter、D05 Collection 生产文件、App/Server/Lifecycle、package/lock 无未批准 diff。
@@ -520,7 +541,7 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D06 推进心跳�
 - raw_data 形态冲突：D05 v1 的 title/body/summary 已是 D04 纯文本；只复用 D05 strict parser 与 `normalizeCleanText()`/`cleanTextValue()`，禁止 DOM/HTML 二次清洗，不新增 envelope/字段或格式探测。若 strict schema 无法支持批准行为，标 `BLOCKED` 并回 Architect，不在 D06 私改版本。
 - 标题 NOT NULL：raw_data `entry.title` 缺失或清洗后为空时正常 NONE；不得用 URL/文件名/LLM 补造。
 - 并发写入：SQLite 无 Source Item 处理唯一约束，事务内 recheck 是正常竞态保护；不得改 DDL 或假设单线程。
-- 提交边界：路由代码从结构上不能持有 DB 事务；COMMIT 后路由失败/取消不回滚；不得扩展 Runtime 自动重试。
+- 提交边界：不能只用“路由代码不持有 DB”间接保证；T04 必须在真实 SQLite 的 StubLLM.complete 回调内直接断言 `db.inTransaction === false`、Content/关联已可见且 count=1。COMMIT 后路由失败/取消不回滚；不得扩展 Runtime 自动重试。
 - 枚举边界：合法去重留在 D06，未知值由 D02 严格拒绝；不得修改 D02 测试预期或吞掉非法输出。
 - 隐私：日志与 LLM taskData 均不得包含 raw_data/摘要全文日志/Token；测试只使用合成 sentinel。
 - 任何失败按 `BLOCKED`/`FAIL` 记录。同一问题连续两轮修复仍失败时暂停派发，区分实现、测试、任务拆分或 Spec 根因；涉及上游变更重走受影响 Gate。
@@ -531,5 +552,6 @@ G3 批准且正式开发触发后，由 Architect 创建唯一 D06 推进心跳�
 - T01～T04 均列出精确允许写集、依赖、Spec/Case 映射、禁止范围、验证命令及冻结/candidate/merge/archive 证据字段。
 - Processing 无原文 HTTP；只有 Content COMMIT 后才调用 `routeProcessing`；NONE 不建 Content/不路由；路由不落库；不改 DDL/Prompt/CI/Collection；测试不接真实模型或私有配置。
 - v0.2 按 G3 唯一阻塞完成修订：raw_data title/body/summary 固定为 D04 已清洗纯文本，仅使用 `normalizeCleanText()`/`cleanTextValue()`；禁止 DOM/HTML 二次清洗，并增加尖括号逐字保留、负向对照与静态禁用检查。
-- v0.2 `APPROVED`：Architect 确认清洗契约闭合——raw_data 三字段按纯文本规范化，`cleanHtmlValue()`/`cleanReadabilityContent()`/DOM 解析全部禁用，尖括号 sentinel 逐字保留并有负向对照；四卡写集、事务、路由时机、零 HTTP 与冻结证据自洽。批准 commit `017a6f7386e12a994338ffe552829605a753295a`，tree `0b63e06d6eb0504f52119f5e7c5a468e11a8223a`。
-- G3 已通过；按持续执行授权进入 T01，开发心跳由 Architect 创建。
+- v0.2 历史审批：Architect 曾在 `835c9de` 确认清洗契约闭合并记录 G3 PASS（批准输入 commit `017a6f7386e12a994338ffe552829605a753295a`，tree `0b63e06d6eb0504f52119f5e7c5a468e11a8223a`）。
+- v0.3 追加复核：G3 指出仅有“结构上不持有事务”不足以证明 COMMIT 边界；本版增加真实 SQLite `db.inTransaction=false`、Content/关联可见、调用次数、精确 task_data、隐私 sentinel、合成 Prompt 来源及失败后复用证据。
+- 当前状态恢复为 `REVIEW · PENDING ARCHITECT G3`，追加要求通过前不得创建心跳、Worker 或开始开发；Lead 不自批 G3。
