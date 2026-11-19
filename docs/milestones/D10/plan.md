@@ -1,9 +1,10 @@
 # D10 Plan：Topic Matching / 关注范围关联
 
 > 版本：v0.1
-> 状态：`G3_PENDING_ARCHITECT_REVIEW`
+> 状态：`APPROVED · G3`
 > 日期：2026-11-19
 > 计划与首个执行基线：main `c0328e035cc24127d7c3b6ee92e02d68092e8648` / tree `f2fa99b64c38854e60af4c6792fe06e4f58f5c09`
+> 执行基线：`dd1ff01373827ad0db783b81e27a605307bbf945` / tree `ba6299221eb3e7ecdb9df19f131b2a41d2a4661b`
 > Intent：`docs/milestones/D10/intent.md`（`APPROVED · G1`）
 > Spec：`docs/milestones/D10/spec.md`（`APPROVED · G2`）
 
