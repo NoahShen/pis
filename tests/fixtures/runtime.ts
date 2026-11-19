@@ -13,6 +13,38 @@ import type {
   TopicMatchingResult,
 } from "../../src/runtime/contracts.js";
 
+export interface Deferred<T> {
+  readonly promise: Promise<T>;
+  readonly resolve: (value: T | PromiseLike<T>) => void;
+  readonly reject: (reason?: unknown) => void;
+}
+
+export function createDeferred<T>(): Deferred<T> {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, resolve, reject };
+}
+
+export async function waitForCondition(
+  predicate: () => boolean,
+  maxTurns = 50,
+): Promise<void> {
+  for (let turn = 0; turn < maxTurns; turn += 1) {
+    if (predicate()) {
+      return;
+    }
+
+    await Promise.resolve();
+  }
+
+  throw new Error("condition was not met within the allowed microtask turns");
+}
+
 export const expectedRuntimeTaskTypes = [
   "COLLECT",
   "PROCESS",
