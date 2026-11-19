@@ -53,7 +53,7 @@ export class EventDecisionPersistence {
       case "NEW_UPDATE":
         return this.#insertUpdate(contentId, decision);
       case "NO_INCREMENT":
-        throw new Error("NO_INCREMENT persistence is not available in D09-T02");
+        return this.#recordNoIncrement(contentId, decision);
     }
   }
 
@@ -84,9 +84,17 @@ export class EventDecisionPersistence {
       throw new Error("New Event evidence was not inserted");
     }
 
+    const affectedEventIds = [event.id];
+    this.#saveAliases(
+      event.id,
+      contentId,
+      decision.confirmed_aliases,
+      affectedEventIds,
+    );
+
     return {
       newTarget: { target_type: "EVENT", target_id: event.id },
-      affectedEventIds: [event.id],
+      affectedEventIds,
     };
   }
 
@@ -97,6 +105,27 @@ export class EventDecisionPersistence {
     const event = this.#eventRepository.getEventById(decision.event_id);
     if (event === null) {
       throw new Error("Event for Event Update no longer exists");
+    }
+
+    const reusableUpdate = this.#eventRepository.findReusableUpdate(
+      event.id,
+      contentId,
+    );
+    if (reusableUpdate !== null) {
+      this.#eventRepository.insertEvidence(
+        "EVENT_UPDATE",
+        reusableUpdate.id,
+        contentId,
+      );
+      const affectedEventIds: string[] = [];
+      this.#saveAliases(
+        event.id,
+        contentId,
+        decision.confirmed_aliases,
+        affectedEventIds,
+      );
+
+      return { newTarget: null, affectedEventIds };
     }
 
     const id = this.#idGenerator.next();
@@ -120,9 +149,75 @@ export class EventDecisionPersistence {
       throw new Error("New Event Update evidence was not inserted");
     }
 
+    const affectedEventIds = [event.id];
+    this.#saveAliases(
+      event.id,
+      contentId,
+      decision.confirmed_aliases,
+      affectedEventIds,
+    );
+
     return {
       newTarget: { target_type: "EVENT_UPDATE", target_id: update.id },
-      affectedEventIds: [event.id],
+      affectedEventIds,
     };
+  }
+
+  #recordNoIncrement(
+    contentId: string,
+    decision: Extract<
+      EventAnalysisDecision,
+      { readonly action: "NO_INCREMENT" }
+    >,
+  ): EventDecisionOutcome {
+    const event = this.#eventRepository.getEventById(decision.event_id);
+    if (event === null) {
+      throw new Error("Event for NO_INCREMENT no longer exists");
+    }
+
+    if (decision.event_update_id !== null) {
+      const update = this.#eventRepository.getUpdateById(
+        decision.event_update_id,
+      );
+      if (update === null || update.event_id !== event.id) {
+        throw new Error("NO_INCREMENT Event Update does not belong to Event");
+      }
+
+      this.#eventRepository.insertEvidence(
+        "EVENT_UPDATE",
+        update.id,
+        contentId,
+      );
+    } else {
+      this.#eventRepository.insertEvidence("EVENT", event.id, contentId);
+    }
+
+    const affectedEventIds: string[] = [];
+    this.#saveAliases(
+      event.id,
+      contentId,
+      decision.confirmed_aliases,
+      affectedEventIds,
+    );
+
+    return { newTarget: null, affectedEventIds };
+  }
+
+  #saveAliases(
+    eventId: string,
+    contentId: string,
+    aliases: readonly string[],
+    affectedEventIds: string[],
+  ): void {
+    for (const alias of aliases) {
+      const result = this.#eventRepository.insertAlias(
+        eventId,
+        alias,
+        contentId,
+      );
+      if (result.inserted) {
+        affectedEventIds.push(eventId);
+      }
+    }
   }
 }

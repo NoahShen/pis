@@ -1,14 +1,17 @@
 import type Database from "better-sqlite3";
 
 import type {
+  EventContentEvidence,
   EventRecord,
   EventUpdateRecord,
 } from "../../src/event-analysis/event-repository.js";
+import type { EventTargetType } from "../../src/event-analysis/contracts.js";
 
 export const eventAnalysisFixtureIds = {
   content: "content-d09-t02",
   otherContent: "content-d09-t02-other",
   event: "event-d09-t02-existing",
+  otherEvent: "event-d09-t03-other-existing",
   priorUpdate: "event-update-d09-t02-prior",
 } as const;
 
@@ -31,9 +34,20 @@ export const eventAnalysisFixtureRows = {
     occurred_at: null,
     discovered_at: "2026-11-11T09:00:00.000+08:00",
   },
+  otherEvent: {
+    id: eventAnalysisFixtureIds.otherEvent,
+    title: "Other Existing Event Title",
+    entity_name: "Other Existing Entity",
+    subject: "Other Existing Subject",
+    scope: "Other Existing Scope",
+    description: "Other Existing Event Description",
+    occurred_at: null,
+    discovered_at: "2026-11-12T09:00:00.000+08:00",
+  },
 } as const satisfies {
   event: EventRecord;
   priorUpdate: EventUpdateRecord;
+  otherEvent: EventRecord;
 };
 
 export type EventAnalysisSnapshotTable =
@@ -110,6 +124,47 @@ export function insertStoredEventUpdate(
     record.occurred_at,
     record.discovered_at,
   );
+}
+
+export function insertStoredEvidence(
+  db: Database.Database,
+  evidence: EventContentEvidence,
+): void {
+  db.prepare(
+    `
+      INSERT INTO event_content_links (target_type, target_id, content_id)
+      VALUES (?, ?, ?)
+    `,
+  ).run(evidence.target_type, evidence.target_id, evidence.content_id);
+}
+
+export function insertStoredUpdateEvidence(
+  db: Database.Database,
+  updateId: string,
+  contentId: string,
+): void {
+  insertEvidence(db, "EVENT_UPDATE", updateId, contentId);
+}
+
+export function insertStoredEventEvidence(
+  db: Database.Database,
+  eventId: string,
+  contentId: string,
+): void {
+  insertEvidence(db, "EVENT", eventId, contentId);
+}
+
+function insertEvidence(
+  db: Database.Database,
+  targetType: EventTargetType,
+  targetId: string,
+  contentId: string,
+): void {
+  insertStoredEvidence(db, {
+    target_type: targetType,
+    target_id: targetId,
+    content_id: contentId,
+  });
 }
 
 export function countEventAnalysisRows(

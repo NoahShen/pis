@@ -33,9 +33,24 @@ export interface EventEvidenceInsertResult {
   readonly inserted: boolean;
 }
 
+export interface EventAliasEvidence {
+  readonly event_id: string;
+  readonly alias: string;
+  readonly content_id: string;
+}
+
+export interface EventAliasInsertResult {
+  readonly alias: EventAliasEvidence;
+  readonly inserted: boolean;
+}
+
 export interface EventRepository {
   getEventById(eventId: string): EventRecord | null;
   getUpdateById(updateId: string): EventUpdateRecord | null;
+  findReusableUpdate(
+    eventId: string,
+    contentId: string,
+  ): EventUpdateRecord | null;
   insertEvent(record: EventRecord): EventRecord;
   insertUpdate(record: EventUpdateRecord): EventUpdateRecord;
   getEvidence(
@@ -48,6 +63,13 @@ export interface EventRepository {
     targetId: string,
     contentId: string,
   ): EventEvidenceInsertResult;
+  getAlias(eventId: string, alias: string): EventAliasEvidence | null;
+  insertAlias(
+    eventId: string,
+    alias: string,
+    contentId: string,
+  ): EventAliasInsertResult;
+  getEventSearchText(eventId: string): string | null;
 }
 
 const EVENT_COLUMNS = `
@@ -69,10 +91,32 @@ const SELECT_UPDATE_BY_ID = `
   FROM event_updates
   WHERE id = ?
 `;
+const SELECT_REUSABLE_UPDATE = `
+  SELECT
+    u.id, u.event_id, u.title, u.description, u.occurred_at, u.discovered_at
+  FROM event_updates AS u
+  JOIN event_content_links AS evidence
+    ON evidence.target_type = 'EVENT_UPDATE'
+   AND evidence.target_id = u.id
+  WHERE u.event_id = ? AND evidence.content_id = ?
+  ORDER BY u.discovered_at ASC, u.id ASC
+  LIMIT 1
+`;
 const SELECT_EVIDENCE = `
   SELECT ${EVIDENCE_COLUMNS}
   FROM event_content_links
   WHERE target_type = ? AND target_id = ? AND content_id = ?
+`;
+const SELECT_ALIAS = `
+  SELECT event_id, alias, content_id
+  FROM event_entity_aliases
+  WHERE event_id = ? AND alias = ?
+`;
+const SELECT_EVENT_SEARCH_TEXT = `
+  SELECT search_text
+  FROM event_search
+  WHERE event_id = ?
+  LIMIT 1
 `;
 const INSERT_EVENT = `
   INSERT INTO events (
@@ -87,6 +131,11 @@ const INSERT_UPDATE = `
 `;
 const INSERT_EVIDENCE = `
   INSERT INTO event_content_links (target_type, target_id, content_id)
+  VALUES (?, ?, ?)
+  ON CONFLICT DO NOTHING
+`;
+const INSERT_ALIAS = `
+  INSERT INTO event_entity_aliases (event_id, alias, content_id)
   VALUES (?, ?, ?)
   ON CONFLICT DO NOTHING
 `;
@@ -115,6 +164,16 @@ interface EvidenceRow {
   readonly target_type: EventTargetType;
   readonly target_id: string;
   readonly content_id: string;
+}
+
+interface AliasRow {
+  readonly event_id: string;
+  readonly alias: string;
+  readonly content_id: string;
+}
+
+interface SearchTextRow {
+  readonly search_text: string;
 }
 
 function sameEvent(record: EventRecord, row: EventRow): boolean {
@@ -152,6 +211,14 @@ function sameEvidence(
   );
 }
 
+function sameAlias(alias: EventAliasEvidence, row: AliasRow): boolean {
+  return (
+    row.event_id === alias.event_id &&
+    row.alias === alias.alias &&
+    row.content_id === alias.content_id
+  );
+}
+
 export class SqliteEventRepository implements EventRepository {
   readonly #database: Database.Database;
 
@@ -171,6 +238,17 @@ export class SqliteEventRepository implements EventRepository {
     const row = this.#database
       .prepare<[string], EventUpdateRow>(SELECT_UPDATE_BY_ID)
       .get(updateId);
+
+    return row ?? null;
+  }
+
+  findReusableUpdate(
+    eventId: string,
+    contentId: string,
+  ): EventUpdateRecord | null {
+    const row = this.#database
+      .prepare<[string, string], EventUpdateRow>(SELECT_REUSABLE_UPDATE)
+      .get(eventId, contentId);
 
     return row ?? null;
   }
@@ -272,6 +350,56 @@ export class SqliteEventRepository implements EventRepository {
     }
 
     return { evidence, inserted: result.changes === 1 };
+  }
+
+  getAlias(eventId: string, alias: string): EventAliasEvidence | null {
+    const row = this.#database
+      .prepare<[string, string], AliasRow>(SELECT_ALIAS)
+      .get(eventId, alias);
+
+    return row ?? null;
+  }
+
+  insertAlias(
+    eventId: string,
+    alias: string,
+    contentId: string,
+  ): EventAliasInsertResult {
+    this.#assertInTransaction();
+    const expected: EventAliasEvidence = {
+      event_id: eventId,
+      alias,
+      content_id: contentId,
+    };
+    const result = this.#database
+      .prepare(INSERT_ALIAS)
+      .run(eventId, alias, contentId);
+
+    if (result.changes !== 0 && result.changes !== 1) {
+      throw new Error(
+        `Expected at most one Event alias insert, received ${result.changes}`,
+      );
+    }
+
+    const stored = this.getAlias(eventId, alias);
+    if (
+      stored === null ||
+      stored.event_id !== expected.event_id ||
+      stored.alias !== expected.alias ||
+      (result.changes === 1 && !sameAlias(expected, stored))
+    ) {
+      throw new Error("Event alias could not be verified");
+    }
+
+    return { alias: stored, inserted: result.changes === 1 };
+  }
+
+  getEventSearchText(eventId: string): string | null {
+    const row = this.#database
+      .prepare<[string], SearchTextRow>(SELECT_EVENT_SEARCH_TEXT)
+      .get(eventId);
+
+    return row?.search_text ?? null;
   }
 
   #assertInTransaction(): void {
