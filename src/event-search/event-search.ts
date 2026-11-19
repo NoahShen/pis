@@ -192,7 +192,7 @@ export function createEventSearch(
           candidateCount: 0,
           stage: "check",
         });
-        return { candidates: [] };
+        return { candidates: [], reason: "missing_content" };
       }
 
       let response: EventSearchResponse;
@@ -225,7 +225,7 @@ export function createEventSearch(
       });
 
       if (clues.length === 0) {
-        return { candidates: [] };
+        return { candidates: [], reason: "empty_clues" };
       }
 
       let searchResult: EventCandidateSearchResult;
@@ -299,7 +299,10 @@ export function createEventSearch(
         stage: "context",
       });
 
-      return { candidates };
+      return {
+        candidates,
+        reason: candidates.length === 0 ? "no_candidates" : "candidates",
+      };
     },
   };
 }
