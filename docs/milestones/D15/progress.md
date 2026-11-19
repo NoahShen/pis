@@ -87,3 +87,30 @@
 - 待 Architect 审核。
 - 批准前：`D15_PLAN=G3_PENDING_ARCHITECT_REVIEW`，五卡 `NOT_STARTED`。
 - 批准后：以包含本记录/批准结论的精确文档提交为执行基线；T01 使用全新 Worker、独立 worktree，严格按 Plan §4 写集。
+
+## Architect G3 审核（2026-11-19）
+
+Plan `5cc3fc86cdb8558746ef38aaf07f7f12e3911619`（tree `470a1a55f92ea2771f2dd2b7dedf8296e23e0ae0`，parent 固定基线 `e25bc2e`，精确 2 个新增文档路径）已逐卡核对：**`D15_PLAN=G3_APPROVED`**。
+
+核对要点：六类任务只传 ID、`mapResultToDownstreamTasks()` 纯函数且 PUBLISH 不信任服务返回替换目标、错误三分类含 `unsupported_source`→non_retryable 与 `classifySqliteError()=busy_locked`→retryable、六条独立有界队列 + 各 1 Worker、派发重试与阶段重试严格分离、`RUN-16` 真实 SQLite 事务外探针、Cron 先全量校验后注册（零部分注册）、关闭超时 abort 且零 `process.exit()`、`RUN-13/14` 按 P1 记录不阻断。受保护路径零改动。
+
+### Lead 三点裁决
+
+1. **`stopAccepting()`：采纳。** Spec §6 关闭序列为准，Intent §3 只是草案接口；属契约澄清，非范围扩张。
+2. **PM2：不纳入 D15。** 已批准 Intent/Spec 均未纳入，PM2 属部署配置而非本里程碑代码。D15 只保证 `shutdown()` 不调用 `process.exit()`，把进程生命周期交给宿主。PM2 部署与 `ecosystem.config.js` 归 D16 部署交付总结；如后续要求纳入，须另走门禁，不在 D15 静默扩范围。
+3. **D11 Publish：采纳 stub 注入。** 只按 Spec §5 `StageServices.publish` 形状返回 `{ published_item_id }`；模板渲染、RSS、云端、API 均属越界。`PUBLISH_STUB` 测试须显式断言不产生 Published Item 表写入。
+
+### 补充边界
+
+- `RUN-16` 必须证明 Runtime 源码零 `withTransaction`/`new Database`/SQL，且阶段等待期间 `db.inTransaction=false` 时并发短事务可成功；不接受仅靠源码 grep 的替代证据。
+- 关闭 `grace` 期必须有显式上限并进入日志；不得出现无界等待。
+- `dispatch_cancelled` 与 `dispatch_failed` 必须区分，前者不重试。
+
+执行基线固定为本文档提交 SHA。T01 base 为该 SHA；T02～T05 依次固定前卡 merge SHA。每卡冻结证据与交回必须在同一次回复。
+
+## 执行授权（用户，2026-11-19）
+
+用户指令：“下一步开发 Runtime……老样子，写文档后，直接开发，Runtime 验收成功后再找我确认。”据此记录 G1/G2/G3 已由负责人批准并进入正式开发；Runtime 最终验收后再向负责人汇报确认。
+
+- 唯一推进心跳：`11a58bbe` 同规格新建，ID 见下方登记。
+
