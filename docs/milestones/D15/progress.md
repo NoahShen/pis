@@ -264,3 +264,38 @@ Plan `5cc3fc86cdb8558746ef38aaf07f7f12e3911619`（tree `470a1a55f92ea2771f2dd2b7
 - Worker 归档：`archive_workspace(wks_464440cbbc9177ce)` 返回 `archivedAgentIds=[2a183989-0338-4cbe-88ca-91a0da6bc7e2]`、`removedDirectory=true`；Agent `closed/archived`，活跃 agent/worktree 无残留。
 - T01 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T02 尚未启动；未 push、未签发 D15 最终 PASS。
 
+
+## Architect 独立 Gate（2026-11-20）· `D15_LOCAL_GATE=APPROVED`
+
+从最终 main `48bf7a18ce7d7fb28c97219bca273c5fd59599cd` 用 `git archive` 导出全新快照 `/private/tmp/d15-arch-gate`（无 `.git`、无 `node_modules`），**不采纳 Lead 的验证数字**：
+
+- tar SHA-256 = `e347f918087746e7e43a88262a7f4ce00617edffc44cd7ac97c8e30f08db16ed`，与 Lead final tar **逐字节一致**（归档可复现）。
+- `npm ci --offline` PASS（124 packages / 0 vulnerabilities）；`npm run typecheck` PASS。
+- 独立全量 `npm run verify`：**96 files / 1126 tests PASS**；build PASS；smoke 5 项 + Source/Topic persistence PASS；database smoke PASS；format check **255 files PASS**。
+- `git diff --check` PASS；相对 D10 closeout `376e15ec` **31 个新增路径**，受保护路径 diff = **0**；`src/database`/schema diff = 0；业务模块反向 Runtime/Queue/Worker 引用 = **0**；生产 runtime/scheduler 对 `process.exit|redis|outbox|new Database|withTransaction|fetch|published_items` = **0**。
+- 五个功能 Prompt 哈希与 D10 基线逐字节一致（event-analysis `9b05c4b1…86c3`、event-search `e75b656c…d746`、knowledge-analysis `037eceaf…0512`、processing-route `98a34e83…96c4`、topic-matching `040a083e…e12b`）。
+
+### 编译产物端到端探针（真实 dist + 真实 SQLite + 真实 D03 Repository）
+
+| 观测 | 值 |
+|---|---|
+| `listEnabled()` | `["src-1"]`（`S-OFF` 未注册） |
+| 注册项 | `{name:"src-1", timezone:"Asia/Shanghai"}` |
+| 六阶段调用 | `collect 1 / process 1 / event 1 / knowledge 1 / topic 3 / publish 3` |
+| Publish 目标 | 3 个新目标各 1 次（`E-1`、`U-1`、`K-1`），与设计一致 |
+| `published_items` 行数 | **0**（publish 仅 stub 返回 ID，未冒充 D11） |
+| 六阶段 `inTransaction` 采样 | `[false]`（无写事务跨越阶段调用） |
+| user table 集合 | 与 D10 完全一致；`TASK_TABLES=[]`（无 task/outbox 表） |
+| 关闭后 submit | `runtime_closed` |
+| `scheduler.stop()` | stop 调用 1 次 |
+
+### 失败分类与日志探针（编译产物）
+
+`collect` 恒抛 `collection_failed`（Error message 含 `SECRET-BODY https://x`）：
+
+- `ATTEMPTS=2`（上限含首次）、`DOWNSTREAM=0`（失败任务不派发）。
+- 日志恰为 attempt 1/2 两条，reason 均为稳定 `collection_failed`。
+- 实际键集合 `["taskType","taskId","stage","attempt","maxAttempts","reason","durationMs"]`，严格白名单。
+- `LEAK=false`：不含正文、URL、Token；logger 同步抛错未改变结果。
+
+结论：P0 Case `RUN-01`～`RUN-12`、`RUN-15`、`RUN-16`、`CFG-03`、`CFG-07` 证据齐全；`RUN-13`/`RUN-14` 以 P1 记录崩溃漏派窗口与日志边界，不阻断。按既定授权 push 精确 main 并等待精确 SHA 远程 CI。
