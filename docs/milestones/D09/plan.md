@@ -1,7 +1,7 @@
 # D09 Plan：Event Analysis 新主线、进展与重复证据
 
 > 版本：v0.1
-> 状态：`DRAFT · G3_PENDING_ARCHITECT_REVIEW`
+> 状态：`APPROVED · G3 · READY_FOR_T01`
 > 日期：2026-11-19
 > 计划参考基线：main `2484b2876522027b5da4c95ca1b5c03e757d8139` / tree `e995e484a53d4ccbe0f15a90e8f5fbab07679b2c`
 > Intent：`docs/milestones/D09/intent.md`（`DRAFT · G1_PENDING_OWNER_APPROVAL`）

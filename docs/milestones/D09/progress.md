@@ -85,3 +85,11 @@
 - 统一技术设计 §17.5：P-02 clues 仅用于候选检索，不注入 P-03；P-03 输入为当前 Content + 候选 DTO，与 D09 Spec 一致。
 - D08 可选 `reason` 扩展经 Lead 审核为最小兼容方案；D09 对缺失/矛盾 reason 保守失败，不重复 P-02。
 - Intent/Spec/Plan 的 G1/G2/G3 批准点待负责人统一确认；未启动 Worker、心跳或编码。
+
+## G1/G2/G3 批准与执行基线
+
+- 负责人明确批准 Intent、Spec、五卡 Plan；批准时间：2026-11-19。
+- G1/G2/G3 状态已写入文档；仅允许按已批准范围开发。
+- 开发心跳：`06ccf8ea`，`*/10 * * * *`，Asia/Shanghai。
+- D09 首个执行基线为本批准提交 SHA；T01 使用全新 Worker、独立 worktree，严格按 Plan §4 写集。
+- 本提交后启动 T01，不并行启动其他卡。

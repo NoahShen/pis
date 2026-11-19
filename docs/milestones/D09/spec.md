@@ -1,8 +1,8 @@
 # D09 Spec：Event Analysis / 新主线、进展与重复证据
 
-- 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
+- 状态：`APPROVED · G2`
 - 版本：v0.1
-- Intent：`docs/milestones/D09/intent.md`（G1 待负责人批准）。
+- Intent：`docs/milestones/D09/intent.md`（G1 已批准）。
 - 实现基线：D08 最终 PASS，D08 closeout `2ab5de8`；当前设计基线 `2484b287`。
 
 ## 1. 公共契约
