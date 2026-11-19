@@ -201,3 +201,12 @@
 - 相对 D09 closeout `a6934b1`：**22** 个 tracked 路径；受保护路径 diff = **0**。
 - 六个 Prompt 哈希与 D09 基线一致；真实 `config/prompt/user-context.md` 未跟踪。
 - 结论：`D10_LOCAL_GATE=APPROVED`。
+
+## D10 远程 CI 与最终验收
+
+- 推送 SHA：`c579166b71a45a51fa9f70b0b51ff4c478dce2a6`。
+- 精确 SHA 远程 CI：run #35 / `44487531494`，`WORKFLOW_RUN_CONCLUSION_SUCCESS`。
+- 双重条件满足：Architect 独立干净快照 Gate + 精确 pushed SHA CI Success。
+- `D10_FINAL_PASS=ISSUED`。
+- 四卡均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；22 个 tracked 路径，受保护路径 diff=0。
+- 未纳入：`PMT-06` 真实模型语义 S0；PublishTask 派发、Published Item、RSS、Runtime、队列与历史重匹配。
