@@ -6,11 +6,11 @@
 - Spec：`APPROVED · G2`
 - 计划参考基线：main `2484b2876522027b5da4c95ca1b5c03e757d8139` / tree `e995e484a53d4ccbe0f15a90e8f5fbab07679b2c`
 - 执行基线：`1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff` / tree `18bd1c36453db769f69f09acc8b04dac1f050e20`
-- 当前代码 merge：`e3ab096f5fb5c659966bbe06eed428380005ef90` / tree `f2d664d8f4705812991fdc1ce1cf9c1c48346f8d`
+- 当前代码 merge：`c99f522dd2669d370f3a97d5623812216fb33b69` / tree `0bdd993e2b304c8a8b7c9aa62c414622c22a0416`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 当前 Worker：`NONE · D09-T02 Worker 已归档`
+- 当前 Worker：`NONE · D09-T03 Worker 已归档`
 - 开发心跳：`06ccf8ea`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
-- 当前结论：`D09_PLAN=APPROVED_G3`、`D09_DEVELOPMENT=AUTHORIZED_THROUGH_T02`、`D09_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D09_T02=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D09_FINAL_PASS=NOT_ISSUED`
+- 当前结论：`D09_PLAN=APPROVED_G3`、`D09_DEVELOPMENT=AUTHORIZED_THROUGH_T03`、`D09_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D09_T02=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D09_T03=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D09_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
@@ -18,8 +18,8 @@
 |---|---|---|---|---|---|---|
 | D09-T01 D08 reason/P-03 前置 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff` | PASS（merge 后定向 7 files/105 tests；full 72 files/870 tests；typecheck/build/smoke/database smoke/format 197 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D09-T02 Repository/基础持久化 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `bf012bff675ae86f2874709cb7af89d7ab2bd8c9` | PASS（merge 后定向 5 files/37 tests；full 74 files/882 tests；typecheck/build/smoke/database smoke/format 202 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
-| D09-T03 Reuse/NO_INCREMENT/alias/FTS | `NOT_STARTED` | `e3ab096f5fb5c659966bbe06eed428380005ef90` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 Architect 核对 main 后另行授权 |
-| D09-T04 多结果单事务/回滚 | `NOT_STARTED` | `PENDING_T03_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 T03 PASS/合并/归档 |
+| D09-T03 Reuse/NO_INCREMENT/alias/FTS | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `f20c8ef480ebbf54f20dc8c29d7016f51643385c` | PASS（merge 后定向 5 files/48 tests；full 74 files/893 tests；typecheck/build/smoke/database smoke/format 203 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
+| D09-T04 多结果单事务/回滚 | `NOT_STARTED` | `c99f522dd2669d370f3a97d5623812216fb33b69` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 Architect 核对 main 后另行授权 |
 | D09-T05 Factory/集成/P0 | `NOT_STARTED` | `PENDING_T04_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 T04 PASS/合并/归档 |
 
 状态语义：`NOT_STARTED → READY → IN_PROGRESS → REVIEW → PASS`；失败转 `FAIL/IN_PROGRESS`，设计/外部依赖缺失转 `BLOCKED`。Worker 不得自行写 PASS。
@@ -30,8 +30,8 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | D09-T01 | `1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff` | `745f900c-548e-43af-9211-3c5ae9fd2573` | `wks_59b60a0c186a3da0` | `feat/d09-t01-p03-boundary` | 精确 10 路径：4 修改 + 6 新增，见 Plan §4.1 | `9044ac9a76095c3179d73dc3e0624154a2dff4ea` | `17cc714958c42797c74566bfb2e0dbe0a7bba8a36ff1fd2b1eb25452c93f4e86` | `APPROVED · G4` | `36c3474d3066a8ae2dc0cb16c16449c259d59569` | `991158bbc8cccd1b7f62d71c55891548b6bc6b4a` | `9044ac9a76095c3179d73dc3e0624154a2dff4ea` | PASS（merge 后定向 7/105；full 72/870；typecheck/build/smoke/database smoke/format 197） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
 | D09-T02 | `bf012bff675ae86f2874709cb7af89d7ab2bd8c9` | `50d86da0-a1fe-4413-934d-0a72fd0a6040` | `wks_65253c628b4e6d94` | `feat/d09-t02-event-persistence` | 精确 5 新增路径：Repository、DecisionPersistence、fixture、两组测试 | `f2d664d8f4705812991fdc1ce1cf9c1c48346f8d` | `06bfd75518c758da0c633983d57fe60897f115923a7d1a7a72f1782753b370c6` | `APPROVED · G4` | `e3886c6f774861f58c82015f888920afed6c01c7` | `e3ab096f5fb5c659966bbe06eed428380005ef90` | `f2d664d8f4705812991fdc1ce1cf9c1c48346f8d` | PASS（merge 后定向 5/37；full 74/882；typecheck/build/smoke/database smoke/format 202） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
-| D09-T03 | `e3ab096f5fb5c659966bbe06eed428380005ef90` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
-| D09-T04 | `PENDING_T03_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D09-T03 | `f20c8ef480ebbf54f20dc8c29d7016f51643385c` | `f9b2ac3c-0c6c-433e-a4f9-226d0cfaf429` | `wks_8bafd1d11f3f1e62` | `feat/d09-t03-no-increment-alias-fts` | 精确 6 路径：Repository、Persistence、refresh helper、fixture、两组测试 | `0bdd993e2b304c8a8b7c9aa62c414622c22a0416` | `6b871ec92cfa0b5fe38dc96e8bc414ae0f8f492688545137a8413bd24dd2c841` | `APPROVED · G4` | `567511085617146dce0ee70d19e60ef10a3606a3` | `c99f522dd2669d370f3a97d5623812216fb33b69` | `0bdd993e2b304c8a8b7c9aa62c414622c22a0416` | PASS（merge 后定向 5/48；full 74/893；typecheck/build/smoke/database smoke/format 203） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
+| D09-T04 | `c99f522dd2669d370f3a97d5623812216fb33b69` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D09-T05 | `PENDING_T04_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 
 任一 evidence 缺失时不得用 `N/A` 冒充已完成门禁；未发生写 `PENDING`/`NOT_RUN`。冻结/candidate/merge 只记录精确 SHA，不以 branch 名或工作目录代替。
@@ -64,14 +64,15 @@
 - D09 G1/G2/G3 已批准；技术实现设计 §17.5 已统一为 P-02 clues 仅用于候选检索，不注入 P-03。
 - D08 `EventSearchResult.reason` 可选只读扩展已获 G4；T01 已完成精确冻结、candidate、`--no-ff` merge、合并后复验与归档。
 - T02 Repository/NEW_EVENT/首次 NEW_UPDATE 已完成精确冻结、candidate、`--no-ff` merge、合并后复验与归档。
-- T01/T02 无阻塞。T03 尚未授权；等待 Architect 核对 main `e3ab096f…` 后另行启动。
+- T03 Update reuse/NO_INCREMENT/alias/同事务 FTS 已完成精确冻结、candidate、`--no-ff` merge、合并后复验与归档。
+- T01/T02/T03 无阻塞。T04 尚未授权；等待 Architect 核对 main `c99f522d…` 后另行启动。
 - 未发现 D09 Spec 与当前 D02 strict Schema 或 D01 DDL/FTS 事务能力的冲突。
 
 ## 下一可执行动作
 
-1. Architect 核对 main `e3ab096f5fb5c659966bbe06eed428380005ef90` 与进度记录。
-2. 收到 T03 明确授权后，再以全新 Paseo Worker、独立 worktree 和固定 base `e3ab096f…` 启动 T03。
-3. T03 及其他后续卡不得在当前收口核对前创建。
+1. Architect 核对 main `c99f522dd2669d370f3a97d5623812216fb33b69` 与进度记录。
+2. 收到 T04 明确授权后，再以全新 Paseo Worker、独立 worktree 和固定 base `c99f522d…` 启动 T04。
+3. T04 不得在当前收口核对前创建。
 
 ## 本次 Lead 文档交付
 
@@ -127,3 +128,20 @@
 - Merge 后复验：typecheck PASS；定向 5/5 files、37/37 tests PASS；full `npm run verify` PASS（74/74 files、882/882 tests；build、全部 smoke、database smoke、202 files format PASS）。
 - Worker 归档：`archive_workspace(wks_65253c628b4e6d94)` 返回 `archivedAgentIds=[50d86da0-a1fe-4413-934d-0a72fd0a6040]`、`removedDirectory=true`；Agent `closed/archived`，活跃 workspace 列表与 Git worktree 均无该项。
 - T02 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未启动 T03、未 push、未签发 D09 最终 PASS。
+
+## D09-T03 Lead 复核与冻结记录
+
+- Worker 交回：`REVIEW`；HEAD 保持 `f20c8ef480ebbf54f20dc8c29d7016f51643385c`，无 commit/merge/push。
+- 精确写集：6 路径（5 修改 + 1 新增），仅 Plan §6.1 白名单；无 staged diff，受保护路径 diff 为空。
+- Reuse：SQL 精确限定 Event + 当前 Content 的 EVENT_UPDATE 证据，按 `discovered_at ASC,id ASC LIMIT 1`；复用零 ID/Clock、旧 Update 不变、零目标。
+- NO_INCREMENT：指定 Update 重读并核对父 Event；null 仅写 EVENT 证据；证据-only 不触发 FTS。
+- Alias：三 Action 均保存；当前 Content 证据、原样大小写/空白、跨 result/历史去重且不覆盖旧证据；同名 alias 不同 Event 独立。
+- Affected/FTS：只含新 Event、实际新 Update、实际新 alias；refresh helper 要求 active transaction，按 UTF-8 BINARY 排序去重，每 Event 调一次 D01 `refreshEventSearch()`；空集合零 FTS SQL。
+- 独立验证：typecheck PASS；定向 5/5 files、48/48 tests PASS；Event Analysis 聚焦 2/2 files、23/23 tests PASS；full `npm run verify` PASS（74/74 files、893/893 tests；build、全部 smoke、database smoke、203 files format PASS）；`git diff --check` 无输出；禁止生产扫描与 `.only/.skip` 为空；禁止路径 diff 为 0。
+- 精确冻结：tree `0bdd993e2b304c8a8b7c9aa62c414622c22a0416`；canonical full-index binary patch `/private/tmp/d09-t03-freeze.TJKIwx/d09-t03.patch`，SHA-256 `6b871ec92cfa0b5fe38dc96e8bc414ae0f8f492688545137a8413bd24dd2c841`，47964 bytes、6 路径；从干净 base 应用 patch 重建 tree 与冻结 tree 一致。
+- Architect G4：`APPROVED`；独立复核冻结 tree、patch SHA/6 路径、tsc、6 files/65 tests 与 reuse/NO_INCREMENT/alias/FTS/rollback 证据通过。
+- Candidate：`567511085617146dce0ee70d19e60ef10a3606a3`，唯一 parent `f20c8ef480ebbf54f20dc8c29d7016f51643385c`，tree `0bdd993e2b304c8a8b7c9aa62c414622c22a0416`，精确 6 路径；Worker branch tip 对齐且 clean。
+- Merge：`c99f522dd2669d370f3a97d5623812216fb33b69`；第一 parent `f20c8ef`、第二 parent candidate `5675110`，merge tree `0bdd993e2b304c8a8b7c9aa62c414622c22a0416`，与候选逐字一致。
+- Merge 后复验：typecheck PASS；定向 5/5 files、48/48 tests PASS；full `npm run verify` PASS（74/74 files、893/893 tests；build、全部 smoke、database smoke、203 files format PASS）。
+- Worker 归档：`archive_workspace(wks_8bafd1d11f3f1e62)` 返回 `archivedAgentIds=[f9b2ac3c-0c6c-433e-a4f9-226d0cfaf429]`、`removedDirectory=true`；Agent `closed/archived`，活跃 workspace 列表与 Git worktree 均无该项。
+- T03 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未启动 T04、未 push、未签发 D09 最终 PASS。
