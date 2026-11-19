@@ -5,7 +5,9 @@ import { initializeDatabase } from "../../src/database/schema.js";
 import type {
   EventTopicTarget,
   EventUpdateTopicTarget,
+  TopicTargetType,
 } from "../../src/topic-matching/contracts.js";
+import type { TopicAssociation } from "../../src/topic-matching/topic-association-repository.js";
 import type { Topic } from "../../src/configuration/contracts.js";
 import type {
   EventRecord,
@@ -224,6 +226,69 @@ export function insertStoredTopic(
       VALUES (?, ?, ?, ?)
     `,
   ).run(record.id, record.name, record.description, record.enabled);
+}
+
+export function insertStoredTopicAssociation(
+  db: Database.Database,
+  association: TopicAssociation,
+): void {
+  db.prepare(
+    `
+      INSERT INTO topic_associations (
+        topic_id, target_type, target_id, matched_at
+      ) VALUES (?, ?, ?, ?)
+    `,
+  ).run(
+    association.topic_id,
+    association.target_type,
+    association.target_id,
+    association.matched_at,
+  );
+}
+
+export function listStoredTopicAssociations(
+  db: Database.Database,
+): TopicAssociation[] {
+  return db
+    .prepare(
+      `
+        SELECT topic_id, target_type, target_id, matched_at
+        FROM topic_associations
+        ORDER BY rowid
+      `,
+    )
+    .all() as TopicAssociation[];
+}
+
+export interface StoredPublishedItemRow {
+  readonly id: string;
+  readonly target_type: TopicTargetType;
+  readonly target_id: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly body: string;
+  readonly published_at: string;
+}
+
+export function insertStoredPublishedItem(
+  db: Database.Database,
+  record: StoredPublishedItemRow,
+): void {
+  db.prepare(
+    `
+      INSERT INTO published_items (
+        id, target_type, target_id, title, summary, body, published_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `,
+  ).run(
+    record.id,
+    record.target_type,
+    record.target_id,
+    record.title,
+    record.summary,
+    record.body,
+    record.published_at,
+  );
 }
 
 export interface RawTopicMatchingKnowledgeRow {
