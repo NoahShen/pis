@@ -3,7 +3,7 @@
 - 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
 - 版本：v0.1
 - Intent：`docs/milestones/D09/intent.md`（G1 待负责人批准）。
-- 实现基线：D08 最终 PASS，main `2ab5de8`。
+- 实现基线：D08 最终 PASS，D08 closeout `2ab5de8`；当前设计基线 `2484b287`。
 
 ## 1. 公共契约
 

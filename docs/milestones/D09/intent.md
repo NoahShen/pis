@@ -2,7 +2,7 @@
 
 - 状态：`DRAFT · G1_PENDING_OWNER_APPROVAL`
 - 日期：2026-11-19
-- 依赖基线：D08 最终 PASS；main `2ab5de8`；远程 CI Success。
+- 依赖基线：D08 最终 PASS；D08 closeout `2ab5de8`；当前设计基线 `2484b287`；远程 CI Success。
 - 上游：D01 Event/Update/证据/别名/FTS，D02 P-02/P-03 typed calls，D06 Content，D08 EventSearchService。
 
 ## 1. 目标

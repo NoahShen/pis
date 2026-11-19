@@ -79,3 +79,9 @@
 - `D08 reason` 审核：最小、兼容、必要；无更小替代方案，不自行改 Spec。
 - `PMT-14/15`、`PMT-09`、`E2E-14` 分析部分列入 P0；`EVT-19/20`、`PMT-03/04` 明确为 S0 非 P0。
 - 未创建 Worker、心跳、candidate、merge 或 push；未修改生产代码、测试、DDL、Prompt、config、CI 或 package/lock；未自批 G3。
+
+## Architect 设计复核修订
+
+- 统一技术设计 §17.5：P-02 clues 仅用于候选检索，不注入 P-03；P-03 输入为当前 Content + 候选 DTO，与 D09 Spec 一致。
+- D08 可选 `reason` 扩展经 Lead 审核为最小兼容方案；D09 对缺失/矛盾 reason 保守失败，不重复 P-02。
+- Intent/Spec/Plan 的 G1/G2/G3 批准点待负责人统一确认；未启动 Worker、心跳或编码。

@@ -1085,7 +1085,7 @@ V1 **只有五类功能性 LLM 调用**，没有额外的审核 Agent、Prompt �
 
 ### 17.5 P-03 Event Analysis：Event 归属、增量、别名
 
-- 输入：当前 Content、P-02 clues、全历史检索得到的候选 Event 基础字段 + 每个候选 Event 最近 10 条 Update；不注入用户背景/Topic。
+- 输入：当前 Content、全历史检索得到的候选 Event 基础字段 + 每个候选 Event 最近 10 条 Update；P-02 clues 仅用于候选检索，不注入 P-03；不注入用户背景/Topic。
 - `NEW_EVENT`：当前事实无法合理归属候选，输出 `title / entity.name / subject / scope / description / occurred_at? / confirmed_aliases`，**不输出新 Event ID**；程序创建 Event，初始事实不额外创建首条 Update。
 - `NEW_UPDATE`：已有 Event 出现实质新增事实（包括有新证据的事实矛盾、修正），必须引用候选 `event_id`，输出本次进展的 Title/Description 等；程序创建新 Update。
 - `NO_INCREMENT`：**只能用于能够明确归属某个已有候选 Event、且没有实质新信息的报道，必须引用合法 `event_id`**；`event_update_id` 能确认具体候选旧 Update 时才填写，否则 `null`；仅补充证据/别名，不进入 Topic Matching。
