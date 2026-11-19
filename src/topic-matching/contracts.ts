@@ -1,4 +1,15 @@
+import type Database from "better-sqlite3";
+
+import type { TopicRepository } from "../configuration/topic-repository.js";
+import type { TypedLlmCalls } from "../llm/llm-calls.js";
+import type { Clock } from "../time/clock.js";
 import type { KnowledgeCategory } from "../knowledge/knowledge-repository.js";
+
+import type { PublishedItemRepository } from "./published-item-repository.js";
+import type { TopicAssociationRepository } from "./topic-association-repository.js";
+import type { TopicMatchingErrorCode } from "./topic-matching-errors.js";
+import type { TopicMatchingLogger } from "./topic-matching-logger.js";
+import type { TopicMatchingTargetRepository } from "./topic-matching-target-repository.js";
 
 export type TopicTargetType = "EVENT" | "EVENT_UPDATE" | "KNOWLEDGE";
 
@@ -19,6 +30,31 @@ export interface TopicMatchingService {
     options?: TopicMatchingOptions,
   ): Promise<TopicMatchingResult>;
 }
+
+export type TopicMatchingCalls = Pick<TypedLlmCalls, "matchTopics">;
+
+export type TopicMatchingTopicRepository = Pick<TopicRepository, "listEnabled">;
+
+export type TopicMatchingPublishedItemRepository = Pick<
+  PublishedItemRepository,
+  "existsForTarget"
+>;
+
+export interface TopicMatchingDependencies {
+  readonly database: Database.Database;
+  readonly targetRepository: TopicMatchingTargetRepository;
+  readonly topicRepository: TopicMatchingTopicRepository;
+  readonly associationRepository: TopicAssociationRepository;
+  readonly publishedItemRepository: TopicMatchingPublishedItemRepository;
+  readonly typedLlmCalls: TopicMatchingCalls;
+  readonly clock: Clock;
+  readonly logger: TopicMatchingLogger;
+}
+
+export type TopicMatchingFailureCode = Exclude<
+  TopicMatchingErrorCode,
+  "invalid_input" | "aborted"
+>;
 
 export interface EventTopicTarget {
   readonly target_type: "EVENT";
