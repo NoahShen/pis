@@ -76,3 +76,11 @@
 - 只写：`docs/milestones/D10/plan.md`、`docs/milestones/D10/progress.md`。
 - 四卡严格串行；每卡列精确写集、固定 base、Spec/Case 映射、禁止路径、验证命令及冻结/candidate/merge/archive evidence key。
 - 未创建 Worker、心跳、candidate、merge 或 push；未修改生产代码、测试、DDL、Prompt、config、CI 或 package/lock；未自批 G3。
+
+## G3 批准与执行基线
+
+- Architect 核对 Lead Plan 提交 `1aee9c472e3d21f384cbae3531b6e62f61bdf02e`，tree `7c926279161875836aa109f7da38fba968273948`，精确 2 个文档路径。
+- 核对结论：四卡写集精确、冻结字段完整、Case 映射覆盖 TOP-01～05/08～12/14～16、PMT-07、PMT-09、ATOMIC、PRIVACY；P-05 全在事务外、`matched_at` 单次 Clock、`EVENT_UPDATE` 不带历史 Update 与父关联、D02 为唯一 Schema/引用校验。
+- `D10_PLAN=G3_APPROVED`。
+- 执行基线为包含本记录的提交；T01 使用全新 Worker、独立 worktree，严格按 Plan §4 写集。
+- 开发心跳：`G3 后创建`，`*/10 * * * *`，Asia/Shanghai。
