@@ -1,5 +1,9 @@
+import type Database from "better-sqlite3";
 import { expect } from "vitest";
 
+import { initializeDatabase } from "../../src/database/schema.js";
+import { openDatabase } from "../../src/database/open-database.js";
+import { withTransaction } from "../../src/database/transaction.js";
 import type { EventAnalysisTarget } from "../../src/event-analysis/contracts.js";
 import type {
   CollectResult,
@@ -9,9 +13,11 @@ import type {
   PublishResult,
   RuntimeTask,
   RuntimeTaskType,
+  StageServices,
   TargetType,
   TopicMatchingResult,
 } from "../../src/runtime/contracts.js";
+import { closeDatabase, withDatabasePath } from "./database.js";
 
 export interface Deferred<T> {
   readonly promise: Promise<T>;
@@ -28,6 +34,86 @@ export function createDeferred<T>(): Deferred<T> {
   });
 
   return { promise, resolve, reject };
+}
+
+export interface RuntimeErrorLike extends Error {
+  readonly code: string;
+}
+
+export function createRuntimeError(
+  code: string,
+  name = "RuntimeFixtureError",
+): RuntimeErrorLike {
+  const error = new Error("private runtime failure detail");
+  error.name = name;
+  return Object.assign(error, { code });
+}
+
+export function createEmptyStageServices(): StageServices {
+  return {
+    async collect() {
+      return createCollectResult();
+    },
+    async process() {
+      return createProcessResult(null);
+    },
+    async analyzeEvent() {
+      return createEventAnalysisResult();
+    },
+    async analyzeKnowledge() {
+      return createKnowledgeResult();
+    },
+    async matchTopics() {
+      return createTopicMatchingResult(false);
+    },
+    async publish() {
+      return createPublishResult();
+    },
+  };
+}
+
+export interface RuntimeSqliteProbe {
+  readonly database: Database.Database;
+  insertSource(id: string): void;
+  readSourceIds(): string[];
+}
+
+export async function withRuntimeSqliteProbe<T>(
+  callback: (probe: RuntimeSqliteProbe) => T | Promise<T>,
+): Promise<T> {
+  return withDatabasePath(async (databasePath) => {
+    const database = openDatabase(databasePath);
+    initializeDatabase(database);
+
+    try {
+      return await callback({
+        database,
+        insertSource(id: string): void {
+          withTransaction(database, () => {
+            database
+              .prepare(
+                "INSERT INTO sources (id, name, type, url, cron, enabled) VALUES (?, ?, ?, ?, ?, 1)",
+              )
+              .run(
+                id,
+                `Source ${id}`,
+                "rss",
+                `https://example.test/${id}`,
+                "0 * * * *",
+              );
+          });
+        },
+        readSourceIds(): string[] {
+          const rows = database
+            .prepare("SELECT id FROM sources ORDER BY id")
+            .all() as Array<{ readonly id: string }>;
+          return rows.map((row) => row.id);
+        },
+      });
+    } finally {
+      closeDatabase(database);
+    }
+  });
 }
 
 export async function waitForCondition(
