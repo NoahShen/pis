@@ -299,3 +299,27 @@ Plan `5cc3fc86cdb8558746ef38aaf07f7f12e3911619`（tree `470a1a55f92ea2771f2dd2b7
 - `LEAK=false`：不含正文、URL、Token；logger 同步抛错未改变结果。
 
 结论：P0 Case `RUN-01`～`RUN-12`、`RUN-15`、`RUN-16`、`CFG-03`、`CFG-07` 证据齐全；`RUN-13`/`RUN-14` 以 P1 记录崩溃漏派窗口与日志边界，不阻断。按既定授权 push 精确 main 并等待精确 SHA 远程 CI。
+
+## 最终验收（2026-11-20）· `D15_FINAL_PASS=ISSUED`
+
+| 项 | 值 |
+|---|---|
+| 最终 main / origin | `b535d5ce3c589e3c3f76e162b7b698161ef35956` |
+| 独立 Gate | `APPROVED`（Architect 全新快照 `npm ci --offline`，非采纳 Lead 数字） |
+| 远程 CI | run `44590644670`（#39），job `135795404451`，head_sha 精确 `b535d5ce`，**completed / success**，全部步骤 success |
+| 五卡 | T01～T05 均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` |
+
+### 收尾
+
+- Lead `e573aa36-611e-4c24-8141-c3b46eaa3c90` 与 `wks_f7a9b7c65f14585f` 已由收尾心跳归档（`removedDirectory=true`），五个 Worker/Workspace 此前已归档；Agent 状态复核 `closed`。`Team_Main` 保留。
+- 调度 `c046058f` 实际 `target.type=new-agent`：`delete_heartbeat` 找不到该对象（文档所称 heartbeat 与 Paseo 实际调度类型不符），已 `pause_schedule` 防重触发后改用 **`delete_schedule(id=c046058f)` 删除成功**；`list_schedules` = `schedules_count=0`。后续里程碑的心跳清理统一使用 schedule 类型。
+- 自独立 Gate `48bf7a18` 起 main 仅变更 `docs/milestones/D15/progress.md`，工作区 clean；无生产代码在 Gate 之后被改动。
+- `D15-t01..t05` worktree 与 `feat/d15-*` 分支均无残留。
+
+### 范围声明
+
+D15 交付六阶段编排：任务判别联合与纯结果映射、独立有界队列 + 各 1 Worker、技术性错误最多 2 次（含首次）、派发失败只重试未入队下游、Cron 只调度 enabled Source、优雅关闭与超时 grace 上限、真实 SQLite 事务边界证据。
+
+**不包含**：Published Item 模板与渲染（D11）、本地/云端 RSS（D12/D13）、查询 API（D14）、PM2 部署、持久化队列/Outbox/任务恢复/Exactly-once、真实模型语义回归（D16）。`PUBLISH_STUB` 已硬断言 `published_items COUNT(*)=0`，未冒充 D11。`RUN-13`/`RUN-14` 以 P1 记录已接受的崩溃漏派窗口与日志边界。
+
+历史保留：T02 `MERGE_TREE_MISMATCH` 的 B 裁决、T04 敌对回滚的 `CHANGES_REQUIRED` 与第 1 轮修复均如实记录，未改写成一次通过。
