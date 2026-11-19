@@ -1,9 +1,10 @@
 # D15 Plan：六阶段 Runtime 与调度
 
 > 版本：v0.1
-> 状态：`G3_PENDING · ARCHITECT_REVIEW`
+> 状态：`APPROVED · G3`
 > 日期：2026-11-19
 > 计划基线：main `e25bc2ebc55825e54420b20c3a3cadac42301b62` / tree `83db6072eb5ec565d810827edfec438feb7f0039`
+> 执行基线：`1f957a3eb58fb921ac105604f4034565e68d3265` / tree `74bb25609e37dbcfe48281374196db173ce5d6cb`
 > Intent：`docs/milestones/D15/intent.md`（`APPROVED · G1`）
 > Spec：`docs/milestones/D15/spec.md`（`APPROVED · G2`）
 
