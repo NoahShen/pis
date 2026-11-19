@@ -111,6 +111,10 @@ export class FakeCronBackend implements CronBackend {
   taskFor(name: string): FakeScheduledTask | undefined {
     return this.tasks.find((task) => task.options.name === name);
   }
+
+  fire(name: string): void {
+    this.taskFor(name)?.callback();
+  }
 }
 
 export class FakeSourceRepository implements Pick<

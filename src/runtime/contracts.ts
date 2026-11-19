@@ -91,7 +91,14 @@ export interface RuntimeDependencies {
   readonly dispatchAttempts?: number;
   /** Graceful shutdown budget in milliseconds. Defaults to 5000. */
   readonly shutdownTimeoutMs?: number;
+  /** Maximum worker-exit wait after timeout abort. Defaults to 1000. */
+  readonly shutdownGraceMs?: number;
   readonly logger?: RuntimeLogger;
+}
+
+export interface RuntimeShutdownOptions {
+  /** Overrides RuntimeDependencies.shutdownTimeoutMs for this shutdown. */
+  readonly timeoutMs?: number;
 }
 
 export interface Runtime {
@@ -99,5 +106,5 @@ export interface Runtime {
   start(): Promise<void>;
   stopAccepting(): void;
   drain(): Promise<void>;
-  shutdown(options?: { readonly timeoutMs?: number }): Promise<void>;
+  shutdown(options?: RuntimeShutdownOptions): Promise<void>;
 }
