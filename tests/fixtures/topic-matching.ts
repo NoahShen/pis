@@ -1,20 +1,33 @@
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+
 import type Database from "better-sqlite3";
 
+import { SqliteTopicRepository } from "../../src/configuration/topic-repository.js";
 import { openDatabase } from "../../src/database/open-database.js";
 import { initializeDatabase } from "../../src/database/schema.js";
+import type { Topic } from "../../src/configuration/contracts.js";
 import type {
   EventTopicTarget,
   EventUpdateTopicTarget,
+  TopicMatchingCalls,
+  TopicMatchingDependencies,
   TopicTargetType,
 } from "../../src/topic-matching/contracts.js";
+import { SqlitePublishedItemRepository } from "../../src/topic-matching/published-item-repository.js";
 import type { TopicAssociation } from "../../src/topic-matching/topic-association-repository.js";
-import type { Topic } from "../../src/configuration/contracts.js";
+import { SqliteTopicAssociationRepository } from "../../src/topic-matching/topic-association-repository.js";
+import type { TopicMatchingLogger } from "../../src/topic-matching/topic-matching-logger.js";
+import { SqliteTopicMatchingTargetRepository } from "../../src/topic-matching/topic-matching-target-repository.js";
+import type { Clock } from "../../src/time/clock.js";
 import type {
   EventRecord,
   EventUpdateRecord,
 } from "../../src/event-analysis/event-repository.js";
 import type { KnowledgeDraft } from "../../src/knowledge/knowledge-repository.js";
 import { closeDatabase, withDatabasePath } from "./database.js";
+import { FakeClock } from "./fake-clock.js";
+import { SequenceIdGenerator } from "./sequence-id-generator.js";
 
 export const topicMatchingFixtureIds = {
   content: "topic-matching-content",
@@ -70,6 +83,33 @@ export const topicMatchingTopicIds = {
   disabled: "topic-matching-topic-disabled",
 } as const;
 
+export const topicMatchingPromptSentinels = {
+  instructions: "SYNTHETIC_TOPIC_MATCHING_PROMPT_SENTINEL",
+  userContext: "SYNTHETIC_TOPIC_MATCHING_USER_CONTEXT_SENTINEL",
+  modelOutput: "SYNTHETIC_TOPIC_MATCHING_MODEL_OUTPUT_SENTINEL",
+  token: "SYNTHETIC_TOPIC_MATCHING_TOKEN_SENTINEL",
+} as const;
+
+export async function writeTopicMatchingPromptFixture(
+  directory: string,
+  options: { readonly includeUserContext?: boolean } = {},
+): Promise<void> {
+  await mkdir(directory, { recursive: true });
+  await writeFile(
+    path.join(directory, "topic-matching.md"),
+    `# Synthetic Topic Matching\n${topicMatchingPromptSentinels.instructions}\n`,
+    "utf8",
+  );
+
+  if (options.includeUserContext === true) {
+    await writeFile(
+      path.join(directory, "user-context.md"),
+      `# Synthetic User Context\n${topicMatchingPromptSentinels.userContext}\n`,
+      "utf8",
+    );
+  }
+}
+
 export function createTopicMatchingEnabledTopics(): Topic[] {
   return [
     {
@@ -94,6 +134,20 @@ export function createTopicMatchingDisabledTopic(): Topic {
     description: "Synthetic Disabled Topic Description",
     enabled: false,
   };
+}
+
+export function insertStoredTopics(
+  db: Database.Database,
+  topics: readonly Topic[],
+): void {
+  for (const topic of topics) {
+    insertStoredTopic(db, {
+      id: topic.id,
+      name: topic.name,
+      description: topic.description,
+      enabled: topic.enabled ? 1 : 0,
+    });
+  }
 }
 
 export function createTopicMatchingEventTarget(): EventTopicTarget {
@@ -359,17 +413,210 @@ export function snapshotTopicMatchingRows(
   };
 }
 
+export interface TopicMatchingSqliteHarness {
+  readonly dependencies: TopicMatchingDependencies;
+  readonly targetRepository: SqliteTopicMatchingTargetRepository;
+  readonly topicRepository: SqliteTopicRepository;
+  readonly associationRepository: SqliteTopicAssociationRepository;
+  readonly publishedItemRepository: SqlitePublishedItemRepository;
+}
+
+export function createTopicMatchingSqliteHarness(options: {
+  readonly database: Database.Database;
+  readonly typedLlmCalls: TopicMatchingCalls;
+  readonly clock: Clock;
+  readonly logger: TopicMatchingLogger;
+  readonly topicIds?: readonly string[];
+}): TopicMatchingSqliteHarness {
+  const targetRepository = new SqliteTopicMatchingTargetRepository(
+    options.database,
+  );
+  const topicRepository = new SqliteTopicRepository(
+    options.database,
+    new SequenceIdGenerator(options.topicIds ?? []),
+  );
+  const associationRepository = new SqliteTopicAssociationRepository(
+    options.database,
+  );
+  const publishedItemRepository = new SqlitePublishedItemRepository(
+    options.database,
+  );
+
+  return {
+    dependencies: {
+      database: options.database,
+      targetRepository,
+      topicRepository,
+      associationRepository,
+      publishedItemRepository,
+      typedLlmCalls: options.typedLlmCalls,
+      clock: options.clock,
+      logger: options.logger,
+    },
+    targetRepository,
+    topicRepository,
+    associationRepository,
+    publishedItemRepository,
+  };
+}
+
+export class CountingFakeClock extends FakeClock {
+  calls = 0;
+
+  override now(): Date {
+    this.calls += 1;
+    return super.now();
+  }
+}
+
+export interface TopicMatchingDatabaseProbeOptions {
+  readonly failInsertAt?: number;
+  readonly failReadAt?: number;
+  readonly onInsert?: (insertIndex: number) => void;
+}
+
+export interface TopicMatchingDatabaseProbe {
+  readonly database: Database.Database;
+  readonly associationInsertTransactionStates: readonly boolean[];
+  readonly associationReadbackTransactionStates: readonly boolean[];
+  readonly immediateTransactionCount: number;
+}
+
+function normalizeSql(source: string): string {
+  return source.replace(/\s+/g, " ").trim();
+}
+
+export function probeTopicMatchingDatabase(
+  db: Database.Database,
+  options: TopicMatchingDatabaseProbeOptions = {},
+): TopicMatchingDatabaseProbe {
+  const associationInsertTransactionStates: boolean[] = [];
+  const associationReadbackTransactionStates: boolean[] = [];
+  let insertCount = 0;
+  let readCount = 0;
+  let transactionCount = 0;
+
+  const observed = new Proxy(db, {
+    get(target, property, receiver) {
+      if (property === "transaction") {
+        return (operation: () => unknown) => {
+          const transaction = target.transaction(operation);
+          return {
+            immediate: () => {
+              transactionCount += 1;
+              return transaction.immediate();
+            },
+            deferred: () => transaction.deferred(),
+            exclusive: () => transaction.exclusive(),
+          };
+        };
+      }
+
+      if (property === "prepare") {
+        return (source: string): Database.Statement => {
+          const statement = target.prepare(source);
+          const sql = normalizeSql(source);
+
+          if (sql.startsWith("INSERT INTO topic_associations")) {
+            return new Proxy(statement, {
+              get(statementTarget, statementProperty, statementReceiver) {
+                if (statementProperty === "run") {
+                  return (...parameters: unknown[]) => {
+                    insertCount += 1;
+                    associationInsertTransactionStates.push(
+                      target.inTransaction,
+                    );
+                    options.onInsert?.(insertCount);
+                    if (insertCount === options.failInsertAt) {
+                      throw new Error(
+                        "Injected Topic Association insert failure",
+                      );
+                    }
+
+                    return statementTarget.run(...parameters);
+                  };
+                }
+
+                const value = Reflect.get(
+                  statementTarget,
+                  statementProperty,
+                  statementReceiver,
+                );
+                return typeof value === "function"
+                  ? value.bind(statementTarget)
+                  : value;
+              },
+            });
+          }
+
+          if (
+            sql.startsWith(
+              "SELECT topic_id, target_type, target_id, matched_at FROM topic_associations",
+            ) &&
+            sql.includes("WHERE topic_id = ?")
+          ) {
+            return new Proxy(statement, {
+              get(statementTarget, statementProperty, statementReceiver) {
+                if (statementProperty === "get") {
+                  return (...parameters: unknown[]) => {
+                    readCount += 1;
+                    associationReadbackTransactionStates.push(
+                      target.inTransaction,
+                    );
+                    if (readCount === options.failReadAt) {
+                      throw new Error(
+                        "Injected Topic Association readback failure",
+                      );
+                    }
+
+                    return statementTarget.get(...parameters);
+                  };
+                }
+
+                const value = Reflect.get(
+                  statementTarget,
+                  statementProperty,
+                  statementReceiver,
+                );
+                return typeof value === "function"
+                  ? value.bind(statementTarget)
+                  : value;
+              },
+            });
+          }
+
+          return statement;
+        };
+      }
+
+      const value = Reflect.get(target, property, receiver);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+
+  return {
+    database: observed,
+    associationInsertTransactionStates,
+    associationReadbackTransactionStates,
+    get immediateTransactionCount() {
+      return transactionCount;
+    },
+  };
+}
+
 export async function withTopicMatchingDatabase<T>(
   callback: (db: Database.Database) => T | Promise<T>,
+  afterClose?: (databasePath: string) => void | Promise<void>,
 ): Promise<T> {
-  return withDatabasePath((databasePath) => {
+  return withDatabasePath(async (databasePath) => {
     const db = openDatabase(databasePath);
     initializeDatabase(db);
 
     try {
-      return callback(db);
+      return await callback(db);
     } finally {
       closeDatabase(db);
+      await afterClose?.(databasePath);
     }
   });
 }
