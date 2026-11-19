@@ -8,6 +8,7 @@ export type {
   RuntimeDependencies,
   RuntimeLogEntry,
   RuntimeLogger,
+  RuntimeShutdownOptions,
   RuntimeTask,
   RuntimeTaskType,
   StageServices,

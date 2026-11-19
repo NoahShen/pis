@@ -8,6 +8,7 @@ import type {
   Runtime,
   RuntimeDependencies,
   RuntimeLogEntry,
+  RuntimeShutdownOptions,
   RuntimeTask,
   RuntimeTaskType,
   StageServices,
@@ -31,6 +32,8 @@ export const RUNTIME_DEFAULTS = Object.freeze({
   shutdownTimeoutMs: 5_000,
 });
 
+const DEFAULT_SHUTDOWN_GRACE_MS = 1_000;
+
 type StageResult =
   | CollectResult
   | ProcessResult
@@ -44,6 +47,7 @@ interface RuntimeConfiguration {
   readonly maxAttempts: number;
   readonly dispatchAttempts: number;
   readonly shutdownTimeoutMs: number;
+  readonly shutdownGraceMs: number;
 }
 
 interface QueuedRuntimeTask {
@@ -114,7 +118,31 @@ function validateConfiguration(
       dependencies.shutdownTimeoutMs ?? RUNTIME_DEFAULTS.shutdownTimeoutMs,
       "shutdownTimeoutMs",
     ),
+    shutdownGraceMs: nonNegativeInteger(
+      dependencies.shutdownGraceMs ?? DEFAULT_SHUTDOWN_GRACE_MS,
+      "shutdownGraceMs",
+    ),
   };
+}
+
+async function settlesWithin(
+  promise: Promise<void>,
+  durationMs: number,
+): Promise<boolean> {
+  let timer: NodeJS.Timeout | undefined;
+
+  try {
+    return await Promise.race([
+      promise.then(() => true),
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), durationMs);
+      }),
+    ]);
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -252,6 +280,16 @@ function failureLogEntry(
   };
 }
 
+function shutdownTimeout(
+  configuration: RuntimeConfiguration,
+  options: RuntimeShutdownOptions | undefined,
+): number {
+  return nonNegativeInteger(
+    options?.timeoutMs ?? configuration.shutdownTimeoutMs,
+    "timeoutMs",
+  );
+}
+
 export function createRuntime(dependencies: RuntimeDependencies): Runtime {
   const configuration = validateConfiguration(dependencies);
   const abortController = new AbortController();
@@ -259,12 +297,14 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
   let accepting = true;
   let pendingTasks = 0;
   let pendingEnqueues = 0;
+  let shutdownFinished = false;
   let shutdownPromise: Promise<void> | undefined;
 
   const channels = {} as Record<RuntimeTaskType, RuntimeChannel>;
   for (const taskType of runtimeTaskTypes) {
     const queue = new BoundedTaskQueue<QueuedRuntimeTask>({
       capacity: configuration.queueCapacity,
+      signal: abortController.signal,
     });
     channels[taskType] = {
       queue,
@@ -287,7 +327,7 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
   }
 
   function settleDrain(): void {
-    if (pendingTasks !== 0 || pendingEnqueues !== 0) {
+    if (!shutdownFinished && (pendingTasks !== 0 || pendingEnqueues !== 0)) {
       return;
     }
 
@@ -314,6 +354,14 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
       let result: StageResult | undefined;
       const signal = abortController.signal;
 
+      if (signal.aborted) {
+        logRuntime(
+          dependencies.logger,
+          failureLogEntry(task, 1, configuration.maxAttempts, "cancelled", 0),
+        );
+        return;
+      }
+
       for (
         let attempt = 1;
         attempt <= configuration.maxAttempts;
@@ -322,11 +370,27 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
         const startedAt = Date.now();
         try {
           result = await executeStage(dependencies.services, task, signal);
+          if (signal.aborted) {
+            result = undefined;
+            logRuntime(
+              dependencies.logger,
+              failureLogEntry(
+                task,
+                attempt,
+                configuration.maxAttempts,
+                "cancelled",
+                Math.max(0, Date.now() - startedAt),
+              ),
+            );
+          }
           break;
         } catch (error) {
           const classification = classifyTaskError(error);
+          const cancelled =
+            signal.aborted || classification.category === "cancelled";
           const durationMs = Math.max(0, Date.now() - startedAt);
           const terminal =
+            cancelled ||
             classification.category !== "retryable" ||
             attempt >= configuration.maxAttempts;
 
@@ -336,7 +400,7 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
               task,
               attempt,
               configuration.maxAttempts,
-              classification.reason,
+              signal.aborted ? "cancelled" : classification.reason,
               durationMs,
             ),
           );
@@ -348,6 +412,14 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
       }
 
       if (result === undefined) {
+        return;
+      }
+
+      if (signal.aborted) {
+        logRuntime(
+          dependencies.logger,
+          failureLogEntry(task, 1, configuration.maxAttempts, "cancelled", 0),
+        );
         return;
       }
 
@@ -407,7 +479,7 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
   }
 
   function drainRuntime(): Promise<void> {
-    if (pendingTasks === 0 && pendingEnqueues === 0) {
+    if (shutdownFinished || (pendingTasks === 0 && pendingEnqueues === 0)) {
       return Promise.resolve();
     }
 
@@ -448,22 +520,55 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
 
     drain: drainRuntime,
 
-    shutdown(): Promise<void> {
+    shutdown(options?: RuntimeShutdownOptions): Promise<void> {
       if (shutdownPromise === undefined) {
         accepting = false;
+        const timeoutMs = shutdownTimeout(configuration, options);
         shutdownPromise = (async () => {
           try {
             startRuntime();
-            await drainRuntime();
-          } finally {
+            const drained = await settlesWithin(drainRuntime(), timeoutMs);
+
+            if (!drained) {
+              abortController.abort();
+              logRuntime(dependencies.logger, {
+                stage: "shutdown",
+                reason: "shutdown_timeout",
+                durationMs: timeoutMs,
+              });
+            }
+
             for (const taskType of runtimeTaskTypes) {
               channels[taskType].queue.close();
             }
-            await Promise.all(
+
+            const workersDone = Promise.all(
               runtimeTaskTypes.map((taskType) =>
                 channels[taskType].worker.done(),
               ),
-            );
+            ).then(() => undefined);
+
+            if (drained) {
+              await workersDone;
+            } else {
+              const workersExited = await settlesWithin(
+                workersDone.then(
+                  () => undefined,
+                  () => undefined,
+                ),
+                configuration.shutdownGraceMs,
+              );
+              if (!workersExited) {
+                logRuntime(dependencies.logger, {
+                  stage: "shutdown",
+                  reason: "shutdown_grace",
+                  durationMs: configuration.shutdownGraceMs,
+                });
+              }
+            }
+          } finally {
+            shutdownFinished = true;
+            settleDrain();
           }
         })();
       }

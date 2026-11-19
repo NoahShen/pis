@@ -99,7 +99,10 @@ export class BoundedTaskQueue<T> {
 
     this.closed = true;
     this.signal?.removeEventListener("abort", this.handleAbort);
+    this.wakeWaiters();
+  }
 
+  private wakeWaiters(): void {
     for (const waiter of this.enqueueWaiters.splice(0)) {
       waiter.reject(new QueueClosedError());
     }

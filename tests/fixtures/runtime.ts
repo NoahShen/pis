@@ -74,8 +74,13 @@ export function createEmptyStageServices(): StageServices {
 
 export interface RuntimeSqliteProbe {
   readonly database: Database.Database;
-  insertSource(id: string): void;
+  insertSource(
+    id: string,
+    options?: { readonly enabled?: boolean; readonly cron?: string },
+  ): void;
   readSourceIds(): string[];
+  readUserTableNames(): string[];
+  readPublishedItemCount(): number;
 }
 
 export async function withRuntimeSqliteProbe<T>(
@@ -88,18 +93,22 @@ export async function withRuntimeSqliteProbe<T>(
     try {
       return await callback({
         database,
-        insertSource(id: string): void {
+        insertSource(
+          id: string,
+          options: { readonly enabled?: boolean; readonly cron?: string } = {},
+        ): void {
           withTransaction(database, () => {
             database
               .prepare(
-                "INSERT INTO sources (id, name, type, url, cron, enabled) VALUES (?, ?, ?, ?, ?, 1)",
+                "INSERT INTO sources (id, name, type, url, cron, enabled) VALUES (?, ?, ?, ?, ?, ?)",
               )
               .run(
                 id,
                 `Source ${id}`,
                 "rss",
                 `https://example.test/${id}`,
-                "0 * * * *",
+                options.cron ?? "0 * * * *",
+                (options.enabled ?? true) ? 1 : 0,
               );
           });
         },
@@ -108,6 +117,26 @@ export async function withRuntimeSqliteProbe<T>(
             .prepare("SELECT id FROM sources ORDER BY id")
             .all() as Array<{ readonly id: string }>;
           return rows.map((row) => row.id);
+        },
+        readUserTableNames(): string[] {
+          const rows = database
+            .prepare(
+              `
+                SELECT name
+                FROM sqlite_master
+                WHERE type = 'table'
+                  AND name NOT LIKE 'sqlite_%'
+                ORDER BY name
+              `,
+            )
+            .all() as Array<{ readonly name: string }>;
+          return rows.map((row) => row.name);
+        },
+        readPublishedItemCount(): number {
+          const row = database
+            .prepare("SELECT COUNT(*) AS count FROM published_items")
+            .get() as { readonly count: number };
+          return row.count;
         },
       });
     } finally {
