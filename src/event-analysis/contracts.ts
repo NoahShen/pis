@@ -1,3 +1,15 @@
+import type Database from "better-sqlite3";
+
+import type { EventSearchReason } from "../event-search/contracts.js";
+import type { EventSearchService } from "../event-search/contracts.js";
+import type { IdGenerator } from "../id/id-generator.js";
+import type { TypedLlmCalls } from "../llm/llm-calls.js";
+import type { ContentRepository } from "../processing/content-repository.js";
+import type { Clock } from "../time/clock.js";
+
+import type { EventRepository } from "./event-repository.js";
+import type { EventAnalysisErrorCode } from "./event-analysis-errors.js";
+
 export type EventTargetType = "EVENT" | "EVENT_UPDATE";
 
 export interface EventAnalysisTarget {
@@ -49,3 +61,31 @@ export type EventAnalysisCandidate = {
   readonly discovered_at: string;
   readonly updates: EventAnalysisCandidateUpdate[];
 };
+
+export type EventAnalysisLogStage = "check" | "search" | "analyze" | "persist";
+
+export type EventAnalysisLogReason = EventAnalysisErrorCode | EventSearchReason;
+
+export interface EventAnalysisLogMetadata {
+  readonly contentId?: string;
+  readonly candidateCount?: number;
+  readonly resultCount?: number;
+  readonly newTargetCount?: number;
+  readonly stage: EventAnalysisLogStage;
+  readonly reason?: EventAnalysisLogReason;
+}
+
+export interface EventAnalysisLogger {
+  log(metadata: EventAnalysisLogMetadata): void | PromiseLike<void>;
+}
+
+export interface EventAnalysisDependencies {
+  readonly database: Database.Database;
+  readonly contentRepository: Pick<ContentRepository, "getById">;
+  readonly eventSearch: EventSearchService;
+  readonly typedLlmCalls: Pick<TypedLlmCalls, "analyzeEvents">;
+  readonly eventRepository: EventRepository;
+  readonly clock: Clock;
+  readonly idGenerator: IdGenerator;
+  readonly logger: EventAnalysisLogger;
+}
