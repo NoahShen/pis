@@ -3,6 +3,11 @@ import type Database from "better-sqlite3";
 import { openDatabase } from "../../src/database/open-database.js";
 import { initializeDatabase } from "../../src/database/schema.js";
 import type {
+  EventTopicTarget,
+  EventUpdateTopicTarget,
+} from "../../src/topic-matching/contracts.js";
+import type { Topic } from "../../src/configuration/contracts.js";
+import type {
   EventRecord,
   EventUpdateRecord,
 } from "../../src/event-analysis/event-repository.js";
@@ -56,6 +61,70 @@ export const topicMatchingTopicRow = {
   description: "Synthetic Topic Description",
   enabled: 1,
 } as const;
+
+export const topicMatchingTopicIds = {
+  alpha: "topic-matching-topic-alpha",
+  zulu: "topic-matching-topic-zulu",
+  disabled: "topic-matching-topic-disabled",
+} as const;
+
+export function createTopicMatchingEnabledTopics(): Topic[] {
+  return [
+    {
+      id: topicMatchingTopicIds.alpha,
+      name: "Synthetic Alpha Topic",
+      description: "Synthetic Alpha Topic Description",
+      enabled: true,
+    },
+    {
+      id: topicMatchingTopicIds.zulu,
+      name: "Synthetic Zulu Topic",
+      description: "Synthetic Zulu Topic Description",
+      enabled: true,
+    },
+  ];
+}
+
+export function createTopicMatchingDisabledTopic(): Topic {
+  return {
+    id: topicMatchingTopicIds.disabled,
+    name: "Synthetic Disabled Topic",
+    description: "Synthetic Disabled Topic Description",
+    enabled: false,
+  };
+}
+
+export function createTopicMatchingEventTarget(): EventTopicTarget {
+  return {
+    target_type: "EVENT",
+    id: topicMatchingEventRow.id,
+    title: topicMatchingEventRow.title,
+    entity_name: topicMatchingEventRow.entity_name,
+    subject: topicMatchingEventRow.subject,
+    scope: topicMatchingEventRow.scope,
+    description: topicMatchingEventRow.description,
+    occurred_at: topicMatchingEventRow.occurred_at,
+  };
+}
+
+export function createTopicMatchingUpdateTarget(): EventUpdateTopicTarget {
+  return {
+    target_type: "EVENT_UPDATE",
+    id: topicMatchingUpdateRow.id,
+    event_id: topicMatchingUpdateRow.event_id,
+    title: topicMatchingUpdateRow.title,
+    description: topicMatchingUpdateRow.description,
+    occurred_at: topicMatchingUpdateRow.occurred_at,
+    event: {
+      id: topicMatchingEventRow.id,
+      title: topicMatchingEventRow.title,
+      entity_name: topicMatchingEventRow.entity_name,
+      subject: topicMatchingEventRow.subject,
+      scope: topicMatchingEventRow.scope,
+      description: topicMatchingEventRow.description,
+    },
+  };
+}
 
 export function insertTopicMatchingContent(
   db: Database.Database,
