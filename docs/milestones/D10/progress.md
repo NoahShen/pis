@@ -192,3 +192,12 @@
 - Case Gate：`TOP-01`～`TOP-05`、`TOP-08`～`TOP-12`、`TOP-14`～`TOP-16`、`PMT-07`、`PMT-09`、`ATOMIC`、`PRIVACY` 均有服务/真实 SQLite 集成证据；`TOP-06/07` D10 本地复用/跳过通过；`PMT-06` 保持 S0，不用 Stub 冒充。
 - 范围：仅新增 D10 `src/topic-matching`、对应 `tests/topic-matching`/fixture 与 D10 文档路径；无 DDL/Prompt/配置/CI/package/lock 变更；无 PublishTask、Published Item、RSS、Runtime/HTTP/历史重匹配/向量检索。
 - 结论：`D10_LOCAL_GATE=EVIDENCE_READY`；等待 Architect 独立 Gate、push 与精确 SHA CI。Lead 不 push、不签发 D10 最终 PASS。
+
+## D10 本地集成 Gate（Architect 独立复核）
+
+- Gate 输入：`d629091e1100532130897dc93ce62e567b30960b`；tree `a73c264e7643fcb1daff619528f69df6c34cee55`。
+- Architect 独立快照：`git archive HEAD` 至 `/private/tmp/d10-arch-gate`；无 `.git`、无 `node_modules`；tar SHA-256 `499503e9d064cb8832630be13f5658b59b9822227aef2350323e3d7f30fed745`。
+- 快照独立验证：`npm ci --offline` 退出 0；typecheck 退出 0；`npm run verify` 全绿：`84/84` 文件、`1038/1038` 用例、build、全部 smoke、database smoke、`228` 文件 format PASS。
+- 相对 D09 closeout `a6934b1`：**22** 个 tracked 路径；受保护路径 diff = **0**。
+- 六个 Prompt 哈希与 D09 基线一致；真实 `config/prompt/user-context.md` 未跟踪。
+- 结论：`D10_LOCAL_GATE=APPROVED`。
