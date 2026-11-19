@@ -210,3 +210,10 @@
 - `D10_FINAL_PASS=ISSUED`。
 - 四卡均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；22 个 tracked 路径，受保护路径 diff=0。
 - 未纳入：`PMT-06` 真实模型语义 S0；PublishTask 派发、Published Item、RSS、Runtime、队列与历史重匹配。
+
+## D10 收尾归档
+
+- 开发心跳 `11a58bbe` 已删除。
+- D10 Lead `4e2760d6-7b89-42ed-931d-af62752f54c9` 与 workspace `wks_ea67e95b6fb343cc` 已归档，`removedDirectory=true`。
+- 四个 Worker/workspace 均已在各卡完成后归档。
+- `Team_Main` 保留；无活跃 D10 agent/workspace 残留。
