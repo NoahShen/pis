@@ -7,10 +7,11 @@
 - 计划参考基线：main `2484b2876522027b5da4c95ca1b5c03e757d8139` / tree `e995e484a53d4ccbe0f15a90e8f5fbab07679b2c`
 - 执行基线：`1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff` / tree `18bd1c36453db769f69f09acc8b04dac1f050e20`
 - 当前代码 merge：`382bbc62ed68a2827cf3ec5774605274568c5172` / tree `2eefebff864c44a9759c0b87fdea60913044b0c5`
+- Gate 输入 commit：`571338700c72963ff6dd16be8f199a06d30bec3d` / tree `af1231f3c39c425275300d1bf0d5a085f4be2f1d`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 当前 Worker：`NONE · D09-T05 Worker 已归档`
 - 开发心跳：`06ccf8ea`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
-- 当前结论：`D09_PLAN=APPROVED_G3`、`D09_DEVELOPMENT=AUTHORIZED_THROUGH_T05`、五卡均 `PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D09_LOCAL_GATE=NOT_RUN`、`D09_FINAL_PASS=NOT_ISSUED`
+- 当前结论：`D09_PLAN=APPROVED_G3`、五卡均 `PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D09_LOCAL_GATE=EVIDENCE_READY`、`D09_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
@@ -67,14 +68,14 @@
 - T03 Update reuse/NO_INCREMENT/alias/同事务 FTS 已完成精确冻结、candidate、`--no-ff` merge、合并后复验与归档。
 - T04 多结果单事务/读回/失败回滚/new_targets 已完成精确冻结、candidate、`--no-ff` merge、合并后复验与归档。
 - T05 公共 factory、D08+P-03+真实 SQLite 集成、错误/logger 与完整 P0 已完成精确冻结、candidate、`--no-ff` merge、合并后复验与归档。
-- 五卡均无阻塞。D09 本地集成 Gate 待执行；尚未 push，最终 PASS 未签发。
+- 五卡均无阻塞。D09 本地集成 Gate 已完成并记录；等待 Architect 独立复核、push 与精确 SHA CI。最终 PASS 未签发。
 - 未发现 D09 Spec 与当前 D02 strict Schema 或 D01 DDL/FTS 事务能力的冲突。
 
 ## 下一可执行动作
 
-1. 从最终 main tree `2eefebff…` 生成独立 `git archive` 干净快照并记录 tar SHA-256。
-2. 在快照执行 `npm ci --offline`、typecheck、定向 P0、full verify、build、全部 smoke、database smoke、format。
-3. 记录相对 D08 closeout `2ab5de8` 的变更路径数与受保护路径 diff=0；不得 push 或签发最终 PASS。
+1. 将 `D09_LOCAL_GATE=EVIDENCE_READY`、tar SHA、28 路径与受保护 diff=0 交 Architect。
+2. 由 Architect 独立干净快照复核、push 已批准 main SHA、等待精确 SHA CI Success。
+3. Lead 不 push、不签发最终 PASS；收到 Architect 最终验收后再收尾心跳与角色/workspace。
 
 ## 本次 Lead 文档交付
 
@@ -181,3 +182,15 @@
 - Merge 后复验：typecheck PASS；定向 22/22 files、247/247 tests PASS；full `npm run verify` PASS（77/77 files、937/937 tests；build、全部 smoke、database smoke、210 files format PASS）。
 - Worker 归档：`archive_workspace(wks_407e7be97952067f)` 返回 `archivedAgentIds=[2f52e78b-d33b-440d-b089-dbf2e9e7fb8a]`、`removedDirectory=true`；Agent `closed/archived`，活跃 workspace 列表与 Git worktree 均无该项。
 - T05 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；五卡全部 PASS，待本地集成 Gate；未 push、未签发 D09 最终 PASS。
+
+## D09 本地集成 Gate
+
+- Gate 输入：`571338700c72963ff6dd16be8f199a06d30bec3d`，tree `af1231f3c39c425275300d1bf0d5a085f4be2f1d`；工作区/index clean。
+- 干净快照：`git archive` tar `/private/tmp/d09-local-gate.dPMdcf/d09-gate.tar`，SHA-256 `c537eeecb6088b41df7eec0728b75bec434ee8b9e9390b87010ccdba326f5c2f`；解包目录 `/private/tmp/d09-local-gate.dPMdcf/source`，不含 `.git`/`node_modules`。
+- 变更范围：相对 D08 closeout `2ab5de8e56c323260de7cf4af4c29aa3cb2110b3`，共 28 个 tracked 路径；受保护路径 diff 数量 0。
+- 依赖/类型：快照内 `npm ci --offline` PASS（124 packages，125 audited，0 vulnerabilities）；`npm run typecheck` PASS（0 errors）。
+- P0 定向：22/22 files、247/247 tests PASS。
+- 快照 full Gate：`npm run verify` PASS；77/77 files、937/937 tests；build、SIGINT/SIGTERM/端口/关闭预算/信号前监听/Source/Topic smoke、database smoke、210 files format 全部 PASS。
+- 快照完整性复验：测试后 source 与同 commit 新解包 archive 逐文件一致，PASS。
+- Case Gate：EVT-01～EVT-18、EVT-21～EVT-24、PMT-14/15、PMT-09、E2E-14 分析部分、ATOMIC、PRIVACY、PUBLIC_SHAPE 的 D09 P0 责任均有服务/真实 SQLite 集成证据；EVT-19/20、PMT-03/04 保持 S0，不用 Stub 冒充。
+- 结论：`D09_LOCAL_GATE=EVIDENCE_READY`；等待 Architect 独立 Gate、push 与精确 SHA CI；Lead 不 push。
