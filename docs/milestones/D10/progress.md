@@ -9,7 +9,7 @@
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 当前 Worker：`NONE · D10-T04 Worker 已归档`
 - 开发心跳：`11a58bbe`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
-- 当前结论：`D10_PLAN=G3_APPROVED`；四卡均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；进入本地集成 Gate
+- 当前结论：`D10_PLAN=G3_APPROVED`；四卡均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；`D10_LOCAL_GATE=EVIDENCE_READY`
 
 ## 任务状态
 
@@ -179,3 +179,16 @@
 - Merge 后复验：toolchain/typecheck PASS；固定回归 17/17 files、168/168 tests PASS；full `npm run verify` PASS（84/84 files、1038/1038 tests；build、全部 smoke、database smoke、228 files format PASS）。
 - Worker 归档：`archive_workspace(wks_9c409e823e94c84b)` 返回 `archivedAgentIds=[36e77011-5280-4445-9e07-1d8c3684fa9a]`、`removedDirectory=true`；Agent `closed/archived`，活跃 workspace 列表与 Git worktree 均无该项。
 - T04 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；四卡全部 PASS，进入 D10 本地集成 Gate；未 push、未签发 D10 最终 PASS。
+
+## D10 本地集成 Gate
+
+- Gate 输入：`5c5ca1bc0e99b40a2751621b267c9347e615e197` / tree `3ceb99fc18ab71f3c2bb1d452e27e2ec3dee534e`；工作区/index clean。
+- 独立快照：`git archive` tar `/private/tmp/d10-local-gate.c0d4SW/d10-gate.tar`，SHA-256 `e258a81b03368009d414f9704be059d791ce9b92bd7fd1cab14c6de38ceaf9f4`，3358720 bytes；解包目录 `/private/tmp/d10-local-gate.c0d4SW/source`，293 files，不含 `.git`/`node_modules`。
+- 相对 D09 closeout `a6934b1`：22 个 tracked 路径；受保护路径 diff = 0；`git diff-tree --check` PASS。
+- 依赖/类型：快照内 `npm ci --offline` PASS（124 packages，0 vulnerabilities）；`npm run verify:toolchain` PASS；`npm run typecheck` PASS。
+- P0 定向：17/17 files、168/168 tests PASS。
+- 快照 full Gate：`npm run verify` PASS；84/84 files、1038/1038 tests；build、SIGINT/SIGTERM/端口/关闭预算/信号前监听/Source/Topic smoke、database smoke、228 files format 全部 PASS。
+- 快照完整性复验：测试后源码与同 commit 新导出快照逐文件一致；新 tar SHA-256 仍为 `e258a81b03368009d414f9704be059d791ce9b92bd7fd1cab14c6de38ceaf9f4`。
+- Case Gate：`TOP-01`～`TOP-05`、`TOP-08`～`TOP-12`、`TOP-14`～`TOP-16`、`PMT-07`、`PMT-09`、`ATOMIC`、`PRIVACY` 均有服务/真实 SQLite 集成证据；`TOP-06/07` D10 本地复用/跳过通过；`PMT-06` 保持 S0，不用 Stub 冒充。
+- 范围：仅新增 D10 `src/topic-matching`、对应 `tests/topic-matching`/fixture 与 D10 文档路径；无 DDL/Prompt/配置/CI/package/lock 变更；无 PublishTask、Published Item、RSS、Runtime/HTTP/历史重匹配/向量检索。
+- 结论：`D10_LOCAL_GATE=EVIDENCE_READY`；等待 Architect 独立 Gate、push 与精确 SHA CI。Lead 不 push、不签发 D10 最终 PASS。
