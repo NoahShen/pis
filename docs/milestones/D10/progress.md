@@ -7,9 +7,9 @@
 - 计划与首个执行基线：main `c0328e035cc24127d7c3b6ee92e02d68092e8648` / tree `f2fa99b64c38854e60af4c6792fe06e4f58f5c09`
 - 执行基线：`dd1ff01373827ad0db783b81e27a605307bbf945` / tree `ba6299221eb3e7ecdb9df19f131b2a41d2a4661b`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 当前 Worker：`NONE · D10-T03 Worker 已归档`
+- 当前 Worker：`NONE · D10-T04 Worker 已归档`
 - 开发心跳：`11a58bbe`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
-- 当前结论：`D10_PLAN=G3_APPROVED`；T01～T03 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`，T04 `NOT_STARTED`
+- 当前结论：`D10_PLAN=G3_APPROVED`；四卡均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；进入本地集成 Gate
 
 ## 任务状态
 
@@ -18,7 +18,7 @@
 | D10-T01 Targets DTO/只读 Repository | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `dd1ff01373827ad0db783b81e27a605307bbf945` | PASS（merge 后定向 6 files/42 tests；full 78 files/948 tests；format 214 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D10-T02 启用快照/P-05 单次调用 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `8cca81b7e54eacf9e6feb22e722bdcd4ddbab444` | PASS（merge 后定向 5 files/58 tests；full 79 files/971 tests；format 217 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D10-T03 Association/同步短事务 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `d4f4b49a44fccbdff6738b2028612f349680a61a` | PASS（merge 后定向 7 files/42 tests；full 82 files/986 tests；format 223 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
-| D10-T04 Factory/复用跳过/P0 集成 | `NOT_STARTED` | `df7a1bf97d1437fe342b1d074750652deecb0757` | NOT_RUN | PENDING | PENDING | 等待 Architect 核对 main |
+| D10-T04 Factory/复用跳过/P0 集成 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `aa0e318d9ef4de28b6ce2c6f0c9f29777e31e6b9` | PASS（merge 后固定回归 17 files/168 tests；full 84 files/1038 tests；format 228 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 
 状态语义：`NOT_STARTED → READY → IN_PROGRESS → REVIEW → PASS`；失败转 `FAIL/IN_PROGRESS`，设计或外部依赖缺失转 `BLOCKED`。Worker 不得自行写 PASS。
 
@@ -29,7 +29,7 @@
 | D10-T01 | `dd1ff01373827ad0db783b81e27a605307bbf945` | `e104f025-a000-4f2d-8c31-9d0bc7a29b5e` | `wks_e0812e29a9de6c98` | `feat/d10-t01-target-repository` | 精确 4 新增，见 Plan §4.1 | `8bba131b857974bd1c5fbe81100d0b15bacf5ce3` | `7b986a8989d0c4ff11e3a60a3988b63d76cc639c97b62c0395f04180bba6f138` | `APPROVED · G4` | `04b26da1ebd6425988cb40e4c96f755be8f62a80` | `5bc0e6857cace69643a836be4e1a9e73b7fa734c` | `8bba131b857974bd1c5fbe81100d0b15bacf5ce3` | PASS（merge 后定向 6/42；full 78/948；format 214） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
 | D10-T02 | `8cca81b7e54eacf9e6feb22e722bdcd4ddbab444` | `b0601168-a575-41ae-8845-7fda84999424` | `wks_21a4115be732ff96` | `feat/d10-t02-p05-call-boundary` | 精确 4 路径：2 新增 src + fixture 修改 + 1 新增测试 | `2239e8d76931a5d0c9be5bcdbb4c63825bca8f9b` | `cfbf7dcc2edd1debb42877052fda7406f5153522222ee9d3a5a095b8f11fc58c` | `APPROVED · G4` | `889d3797c1b72cf1e6e20d4e33a506298990e6b9` | `22304bda5b4793c92821ad8ebff715319ba29851` | `2239e8d76931a5d0c9be5bcdbb4c63825bca8f9b` | PASS（merge 后定向 5/58；full 79/971；format 217） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
 | D10-T03 | `d4f4b49a44fccbdff6738b2028612f349680a61a` | `a9a832bf-ce78-4ee4-8dca-15be13f68110` | `wks_91e7a95139dab3a6` | `feat/d10-t03-association-persistence` | 精确 7 路径：3 新增 src + fixture 修改 + 3 新增测试 | `ab4b7566c2f0d8d39f48f47494aa3c5b509ed8b9` | `5654e0f819c1f7aa9b8f75de3f4d3af5ebc1912e3fd6bc05c5217caf6db20807` | `APPROVED · G4` | `92c7e658275189e886e84226918f7aa2ef615e66` | `df7a1bf97d1437fe342b1d074750652deecb0757` | `ab4b7566c2f0d8d39f48f47494aa3c5b509ed8b9` | PASS（merge 后定向 7/42；full 82/986；format 223） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
-| D10-T04 | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | PENDING | NOT_RUN | PENDING |
+| D10-T04 | `aa0e318d9ef4de28b6ce2c6f0c9f29777e31e6b9` | `36e77011-5280-4445-9e07-1d8c3684fa9a` | `wks_9c409e823e94c84b` | `feat/d10-t04-service-integration` | 精确 7 路径：contracts 修改 + 3 新增 src + fixture 修改 + 2 新增测试 | `6fe0c1500b1dab6f26a01187ec36689dbff01284` | `dbc8c64ba4e50b03c71312810d34c3ebe6e8c0ff2958a87e88461dbc81a4584f` | `APPROVED · G4` | `a2a1b5b9c446be750907b5880bfa936e603f498c` | `853be803fc2883f14c92f91768a810d98b9e7251` | `6fe0c1500b1dab6f26a01187ec36689dbff01284` | PASS（merge 后固定回归 17/168；full 84/1038；format 228） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
 
 任一 evidence 缺失时不得用 `N/A` 冒充已完成门禁；未发生写 `PENDING`/`NOT_RUN`。冻结/candidate/merge 只记录精确 SHA，不以 branch 名或工作目录代替证据。
 
@@ -153,3 +153,29 @@
 - Merge 后复验：toolchain/typecheck PASS；定向 7/7 files、42/42 tests PASS；full `npm run verify` PASS（82/82 files、986/986 tests；build、全部 smoke、database smoke、223 files format PASS）。
 - Worker 归档：`archive_workspace(wks_91e7a95139dab3a6)` 返回 `archivedAgentIds=[a9a832bf-ce78-4ee4-8dca-15be13f68110]`、`removedDirectory=true`；Agent `closed/archived`，活跃 workspace 列表与 Git worktree 均无该项。
 - T03 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未启动 T04、未 push、未签发 D10 最终 PASS。
+
+## D10-T04 Lead 复核与冻结记录
+
+- Worker 交回：`REVIEW`；Agent `36e77011-5280-4445-9e07-1d8c3684fa9a`，workspace `wks_9c409e823e94c84b`，branch `feat/d10-t04-service-integration`。
+- Worker HEAD 保持 `aa0e318d9ef4de28b6ce2c6f0c9f29777e31e6b9` / tree `788a949119b1a754ed605039b0c8836a9a90f993`；无 commit/stage/amend/merge/push，受保护路径 diff 为空。
+- 精确写集：7 路径（contracts 修改、3 新增 src、fixture 修改、2 新增测试），仅 Plan §7.1 白名单。
+- 编排顺序：输入校验 → pre-abort → target → Published Item → Association → D03 `listEnabled()` → 空快照 → T02 payload → P-05 → P-05 后 abort → 空匹配 → pre-persist abort → T03 单事务 → COMMIT 后 abort。
+- 复用/跳过：Published Item false 零 LLM；已有 Association true 零 LLM/零写；无启用 Topic false 零 LLM；空匹配 P-05 1 次、零写；目标不存在 target_not_found。
+- D02 保持唯一 strict Schema/引用校验/首次顺序去重；T04 只防御检查 `matched_topic_ids` 为数组，并按 D03 快照顺序传入 T03。
+- 错误：五码精确且无 cause；取消优先；DB/Repository/事务/readback→topic_matching_failed，P-05→llm_failed。
+- logger 六字段白名单，stage 仅 check/match/persist，reason 仅五码；同步抛错/异步拒绝均 best-effort；错误与日志不含目标正文、Topic 名称/描述、Prompt、模型原文或 Token。
+- 公共边界：index 运行时仅 createTopicMatching/TopicMatchingError；其余 DTO/Options/Service/Dependencies/Logger/ErrorCode 均为 type export。
+- 集成：真实 SQLite + 真实 T01/T03 Repository + 真实 D03 listEnabled + 真实 D02 typed calls/StubLLM + synthetic Prompt；三类目标、多 Topic、零匹配、复用、TOP-10 延迟禁用、TOP-16 历史关联、ATOMIC 回滚、PRIVACY、RESOURCE_CLEANUP 均有证据。
+- 独立验证：toolchain/typecheck PASS；固定回归 17/17 files、168/168 tests PASS；full `npm run verify` PASS（84/84 files、1038/1038 tests；build、全部 smoke、database smoke、228 files format PASS）。
+- 精确冻结：tree `6fe0c1500b1dab6f26a01187ec36689dbff01284`；patch `/private/tmp/d10-t04-freeze.S5UrRG/d10-t04.patch`，SHA-256 `dbc8c64ba4e50b03c71312810d34c3ebe6e8c0ff2958a87e88461dbc81a4584f`，90437 bytes、7 路径；patch 重建 tree 与冻结 tree 一致。
+- 冻结 blob：`contracts.ts`=`b535703cd343d484282fb8e993df607217f097f4`；`index.ts`=`cbd482e14f461a11eed577baee89a14347b9ae92`；logger=`19399c26ca714bd29808c2f7e9c17016f33e3c18`；service=`e722dbc780c38e02408520f0256f71a8f2f13752`；fixture=`c1896bd70595902ea1a60f8ebc46ab6643eba023`；integration 测试=`06b4d4017f93d05ee1e31a2cda23ff1dc652215b`；service 测试=`e4a783890715a14e9c09a0669b2c1f6f99e6ec8f`。
+- T04 结论：`REVIEW · FROZEN_PENDING_G4`。未创建 candidate、未 merge、未 archive、未 push；等待 Architect G4。
+
+## D10-T04 G4、Candidate、Merge 与归档
+
+- Architect G4：`APPROVED`；独立复核 frozen tree、patch SHA、7 路径、tsc、tests/topic-matching 7 files/101 tests、六类短路探针、公共导出与受保护路径 diff=0。
+- Candidate：`a2a1b5b9c446be750907b5880bfa936e603f498c`，唯一 parent `aa0e318d9ef4de28b6ce2c6f0c9f29777e31e6b9`，tree `6fe0c1500b1dab6f26a01187ec36689dbff01284`，精确 7 路径；Worker branch tip 对齐且 clean。
+- Merge：`853be803fc2883f14c92f91768a810d98b9e7251`；第一 parent `aa0e318d`、第二 parent candidate `a2a1b5b9`，merge tree `6fe0c1500b1dab6f26a01187ec36689dbff01284`，与 candidate 逐字一致。
+- Merge 后复验：toolchain/typecheck PASS；固定回归 17/17 files、168/168 tests PASS；full `npm run verify` PASS（84/84 files、1038/1038 tests；build、全部 smoke、database smoke、228 files format PASS）。
+- Worker 归档：`archive_workspace(wks_9c409e823e94c84b)` 返回 `archivedAgentIds=[36e77011-5280-4445-9e07-1d8c3684fa9a]`、`removedDirectory=true`；Agent `closed/archived`，活跃 workspace 列表与 Git worktree 均无该项。
+- T04 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；四卡全部 PASS，进入 D10 本地集成 Gate；未 push、未签发 D10 最终 PASS。
