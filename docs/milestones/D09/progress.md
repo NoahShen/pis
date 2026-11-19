@@ -212,3 +212,10 @@
 - `D09_FINAL_PASS=ISSUED`。
 - 五卡均 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；28 个 tracked 路径，受保护路径 diff=0。
 - 未纳入：`EVT-19/20`、`PMT-03/04` 真实模型语义 S0；Topic Matching 派发、Published Item、Runtime、HTTP route。
+
+## D09 收尾归档
+
+- 开发心跳 `06ccf8ea` 已删除。
+- D09 Lead `2185cc15-373e-47f8-a566-f25d8aa630cc` 与 workspace `wks_a7ce3f400341ed6d` 已归档，`removedDirectory=true`。
+- 五个 Worker/workspace 均已在各卡完成后归档。
+- `Team_Main` 保留；无活跃 D09 agent/workspace 残留。
