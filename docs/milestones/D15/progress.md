@@ -7,9 +7,9 @@
 - 计划基线：main `e25bc2ebc55825e54420b20c3a3cadac42301b62` / tree `83db6072eb5ec565d810827edfec438feb7f0039`
 - 执行基线：`1f957a3eb58fb921ac105604f4034565e68d3265` / tree `74bb25609e37dbcfe48281374196db173ce5d6cb`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 当前 Worker：`NONE · D15-T03 Worker 已归档`
+- 当前 Worker：`NONE · D15-T04 Worker 已归档`
 - 开发心跳：`c046058f`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
-- 当前结论：`D15_PLAN=G3_APPROVED`；T01/T02/T03 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`，T04～T05 `NOT_STARTED`
+- 当前结论：`D15_PLAN=G3_APPROVED`；T01/T02/T03/T04 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`，T05 `NOT_STARTED`
 
 ## 任务状态
 
@@ -18,8 +18,8 @@
 | D15-T01 六类 Task/Result、纯映射、错误分类 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `1f957a3eb58fb921ac105604f4034565e68d3265` | PASS（merge 后定向 2 files/14 tests；full 86 files/1052 tests；format 235 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D15-T02 有界队列/背压/关闭唤醒/单 Worker | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `6b00903053c7df9988eb66780bbd6b5dd014e6bf` | PASS（merge 后定向 4 files/27 tests；full 88 files/1065 tests；format 239 files） | APPROVED | APPROVED · G4（B 方案） | 无；Worker/workspace 已归档；MERGE_TREE_MISMATCH 已按 B 裁决记录 |
 | D15-T03 有限重试/只重试下游/事务外边界 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `2a054542c6d4fa15197243a6914106bb3f8993b2` | PASS（merge 后定向 10 files/59 tests；full 91 files/1088 tests；format 246 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
-| D15-T04 Cron enabled Source/手工触发/表达式时区 | `NOT_STARTED` | T03 收尾 docs commit（本记录提交，main HEAD） | NOT_RUN | - | - | Architect 已批准继续；Lead 即将创建全新 Worker |
-| D15-T05 优雅关闭/超时取消/六阶段集成/P0 | `NOT_STARTED` | `PENDING_T04_DOCS_COMMIT` | NOT_RUN | - | - | 待 T04 PASS |
+| D15-T04 Cron enabled Source/手工触发/表达式时区 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `cb367daa92d1d103fb52ea70b3fe7a63433c8f78` | PASS（merge 后定向 5 files/31 tests；full 93 files/1106 tests；format 252 files） | APPROVED | APPROVED · G4（第二次冻结） | 无；Worker/workspace 已归档；CHANGES_REQUIRED 历史保留 |
+| D15-T05 优雅关闭/超时取消/六阶段集成/P0 | `NOT_STARTED` | T04 收尾 docs commit（本记录提交，main HEAD） | NOT_RUN | - | - | Architect 已批准继续；Lead 即将创建全新 Worker |
 
 状态语义：`NOT_STARTED → READY → IN_PROGRESS → REVIEW → PASS`；失败转 `FAIL/IN_PROGRESS`，设计或外部依赖缺失转 `BLOCKED`。Worker 不得自行写 PASS。
 
@@ -30,7 +30,7 @@
 | D15-T01 | `1f957a3eb58fb921ac105604f4034565e68d3265` | `2a183989-0338-4cbe-88ca-91a0da6bc7e2` | `wks_464440cbbc9177ce` | `feat/d15-t01-runtime-contracts` | 精确 7 新增，见 Plan §4.1 | `81d30b00039ec88c59870c397dbf9580b1c3d91c` | `/private/tmp/d15-t01-freeze.ypKTbv/d15-t01.patch` | `0c8c6fcc0d39bab22c90ed44ff38247e2a016be3555dad5bc101901b12947167` | `APPROVED · G4` | `ebc4b4fb30699b151b38384edcd1c81cbbceb92f` | `6b00903053c7df9988eb66780bbd6b5dd014e6bf` | `81d30b00039ec88c59870c397dbf9580b1c3d91c` | PASS（merge 后定向 2/14；full 86/1052；format 235） | `archive_workspace` success；archivedAgentIds=[`2a183989-0338-4cbe-88ca-91a0da6bc7e2`]；`removedDirectory=true`；无残留 |
 | D15-T02 | `6b00903053c7df9988eb66780bbd6b5dd014e6bf` | `885c13d9-7b31-4167-b583-cf1f8c88f878` | `wks_9d569546b3b351a4` | `feat/d15-t02-bounded-queue` | 精确 6 路径（4 新增 + 2 修改），见 Plan §5.1 | `0e0630c11cb96b4c79336249ddf800ff66fde170` | `/private/tmp/d15-t02-freeze.yR6mSA/d15-t02.patch` | `2cd73de3465dcda2d993062983249e7ec36484fdf98c6d28bfc09bcad048a45b` | `APPROVED · G4`（B 方案：代码子树逐字节一致 + merge 树独立复验） | `b6b5982d655d85c8f69a95eee94b0919889260c8` | `78990037c2cbd49a238b6552f8bfac07c8903866` | `6cde191a2188d360ccadfb2c742e508312ba759d` | PASS（merge 后定向 4/27；full 88/1065；format 239） | `archive_workspace` success；archivedAgentIds=[`885c13d9-7b31-4167-b583-cf1f8c88f878`]；`removedDirectory=true`；无残留 |
 | D15-T03 | `2a054542c6d4fa15197243a6914106bb3f8993b2` | `f5280767-9c1f-44e9-9649-0d9246997830` | `wks_9f3f5a1090d490da` | `feat/d15-t03-retry-dispatch` | 精确 9 路径（4 新增 src + 3 新增测试 + 2 修改），见 Plan §6.1 | `186bf6a45c4aecd105305ca621a206e61daaf05f` | `/private/tmp/d15-t03-freeze.9TMMC6/d15-t03.patch` | `24740f3eb149dd74cda2629f7688e6866fa75674d1b1c0c7b8eb0bd04605026f` | `APPROVED · G4` | `94c4efb8c6a89e8ea5799f01db2a632bcccdd91c` | `8c4b9586bb88fff5e3c8d8e4fdaa0a3b9170d36c` | `186bf6a45c4aecd105305ca621a206e61daaf05f` | PASS（merge 后定向 10/59；full 91/1088；format 246） | `archive_workspace` success；archivedAgentIds=[`f5280767-9c1f-44e9-9649-0d9246997830`]；`removedDirectory=true`；无残留 |
-| D15-T04 | `PENDING_T03_DOCS_COMMIT` | `PENDING` | `PENDING` | `PENDING` | `PENDING`；见 Plan §7.1 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D15-T04 | `cb367daa92d1d103fb52ea70b3fe7a63433c8f78` | `581cece7-d3a3-42ca-985e-ce9d39278ef4` | `wks_32bf706523eaa413` | `feat/d15-t04-cron-scheduler` | 精确 6 新增，见 Plan §7.1 | `654ddf012063ef92bf3d3445a41d3c7f36979b67` | `/private/tmp/d15-t04-refreeze.DR4fS1/d15-t04.patch` | `396366b49d8afd88ce83e2bb75408004fdae5c507ebcba8446b21b2a68c959ff` | `APPROVED · G4`（第二次冻结；首轮 CHANGES_REQUIRED 已修复） | `b823837818bced54969e7afe3644eb30aee5bc2d` | `73e8da767c2d8474587838ee16ee8895762db9f5` | `654ddf012063ef92bf3d3445a41d3c7f36979b67` | PASS（merge 后定向 5/31；full 93/1106；format 252） | `archive_workspace` success；archivedAgentIds=[`581cece7-d3a3-42ca-985e-ce9d39278ef4`]；`removedDirectory=true`；无残留 |
 | D15-T05 | `PENDING_T04_DOCS_COMMIT` | `PENDING` | `PENDING` | `PENDING` | `PENDING`；见 Plan §8.1 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 
 任一 evidence 缺失时不得用 `N/A` 冒充已完成门禁；未发生写 `PENDING`/`NOT_RUN`。冻结/candidate/merge 只记录精确 SHA，不以 branch 名或工作目录代替证据。Lead 冻结完成后必须在同一次回复中给出 tree、patch SHA-256、路径数、blob 与验证数字，不接受事后补报。
@@ -62,11 +62,13 @@
 
 ## 当前阻塞与待决策事项
 
-- T01/T02/T03 均已完成 G4、candidate、merge、merge 后复验与 Worker 归档；当前唯一门禁为 Architect 核对 T03 merge/main。
+- T01/T02/T03/T04 均已完成 G4、candidate、merge、merge 后复验与 Worker 归档；当前唯一门禁为 Architect 核对 T04 merge/main。
 - **自 T03 起（并适用于 T04/T05）base 规则修正**：每卡 base = 前一卡收尾后的 docs record commit（main HEAD），不是前一卡 merge commit；merge 前必须 `git merge-tree --write-tree` 预演，若与 frozen tree 不等立即停止报告。此规则取代 Plan 中“前卡 merge SHA”的旧表述。
 - T02 发生 `MERGE_TREE_MISMATCH`：candidate parent=T01 merge，main 已含 T01 docs；Architect 裁决 B 授权 merge tree `6cde191a2188d360ccadfb2c742e508312ba759d`，以代码子树逐字节一致 + merge 树独立复验替代整树相等。根因在 Architect 的指令组合，不是 Lead/Worker 实现问题；详见后续章节。
 - T03 RUN-16 已用真实 SQLite 证明：阶段等待 `inTransaction=false`，并发短事务 `INSERT INTO sources` 成功并回读；生产 `src/runtime` 零事务/DB/SQL/fetch；`withTransaction`/`INSERT` 仅存在于 RUN-16 fixture。
 - T03 G4 裁决：不要求字面 `reason=retry/exhausted`（分类 reason + attempt/maxAttempts 足够）；T03 不强制 Runtime 级故障注入派发测试（唯一 dispatch seam 已覆盖，Runtime 结构上派发在阶段重试循环之外）；基础版 `shutdown()` 无 timeout abort 符合 Plan §6.3 第 4 条，T05 扩展。
+- **T04 CHANGES_REQUIRED 历史（保留，不改写成一次通过）**：首轮冻结 `d10d373c…` / patch `5a370159…` 被 Architect 退回。敌对 backend 下 `rollback()` 的 `stop()/destroy()` 无 try/catch，导致：原始 `Error("stop boom")` 掩盖 `CronSchedulerError`；`registered.clear()` 未执行；再次 `start()` 重复注册同一 Source 定时器；公开 `stop()` 抛错。第 1 轮修复后新冻结 `654ddf01…` / patch `396366b4…` 通过 G4。
+- T04 修复结构：`stopSchedule()` 对 stop/destroy 各自 best-effort try/catch；`rollback()` 快照 values → 先 clear → 逐个清理；`start()` schedule 失败恒抛 `CronSchedulerError`；`stop()` 恒不抛且幂等。敌对回滚测试 `CFG-07_HOSTILE_ROLLBACK` 断言旧 task stop/destroy 均被尝试、registry 清空、重试 scheduleCalls 增量= enabled 数量且无重复 Source 定时器；`STOP_HOSTILE` 断言 stop/二次 stop 不抛。
 - D11 Product Generation 尚未交付：`publish` 只按 Spec §5 `StageServices.publish` 形状 stub 注入；不实现模板/RSS/云端/API/Published Item。
 - Spec §6 关闭序列含 `stopAccepting()`，Intent §3 草案接口未列；Plan 以 Spec §6 为准增加该方法，G3 时请 Architect 确认。
 - V1 实施计划表 D15-T05 提及 PM2 进程守护；本轮已批准 Intent/Spec 与任务指令未列 PM2。Plan 不实现 PM2，仅保证 `shutdown()` 不 `process.exit()`；如纳入需 G3 明确。
@@ -75,9 +77,9 @@
 
 ## 下一可执行动作
 
-1. Architect 核对 T03 merge SHA `8c4b9586bb88fff5e3c8d8e4fdaa0a3b9170d36c`、merge tree `186bf6a45c4aecd105305ca621a206e61daaf05f`、复验数字与归档证据。
-2. 以 T03 收尾 docs commit（本记录提交，main HEAD）作为 T04 固定 base，创建全新 Paseo Worker 与独立 worktree；只按 Plan §7.1 写集实现。
-3. T04 Worker 只交 `REVIEW`/`BLOCKED`；Lead 独立复跑并同次回复冻结证据，等 G4 后才 candidate/merge。T04 必须使用 node-cron、只调度 enabled Source、非法表达式/时区启动即拒且零部分注册、默认 Asia/Shanghai。
+1. Architect 核对 T04 merge SHA `73e8da767c2d8474587838ee16ee8895762db9f5`、merge tree `654ddf012063ef92bf3d3445a41d3c7f36979b67`、复验数字与归档证据。
+2. 以 T04 收尾 docs commit（本记录提交，main HEAD）作为 T05 固定 base，创建全新 Paseo Worker 与独立 worktree；只按 Plan §8.1 写集实现。
+3. T05 Worker 只交 `REVIEW`/`BLOCKED`；Lead 独立复跑并同次回复冻结证据，等 G4 后才 candidate/merge。T05 必须覆盖 RUN-10 四类在途任务、RUN-11 超时 abort + grace 显式上限并进日志、禁止 process.exit、scheduler+Runtime 真实 SQLite 六阶段集成、PUBLISH_STUB 不写 Published Item 表、NO_PERSISTENCE schema 不变、RUN-13/14 P1 记录。
 
 ## 本次 Lead 文档交付
 
@@ -117,6 +119,28 @@ Plan `5cc3fc86cdb8558746ef38aaf07f7f12e3911619`（tree `470a1a55f92ea2771f2dd2b7
 用户指令：“下一步开发 Runtime……老样子，写文档后，直接开发，Runtime 验收成功后再找我确认。”据此记录 G1/G2/G3 已由负责人批准并进入正式开发；Runtime 最终验收后再向负责人汇报确认。
 
 - 唯一推进心跳：`c046058f`（`*/10 * * * *` Asia/Shanghai，目标 Team_Main / Architect 8d95474b）。
+
+## D15-T04 Lead 复核与冻结记录
+
+- Worker 交回：`REVIEW`；Agent `581cece7-d3a3-42ca-985e-ce9d39278ef4`，workspace `wks_32bf706523eaa413`，branch `feat/d15-t04-cron-scheduler`。
+- Worker HEAD 保持 `cb367daa92d1d103fb52ea70b3fe7a63433c8f78` / tree `d1ed218aee29d7cec8901fbf4bd15247e84f8ebd`；无 commit/stage/amend/merge/push。
+- 精确写集：6 个新增路径，仅 Plan §7.1 白名单；受保护路径 diff=0，生产 scheduler 零 Adapter/collect/fetch/DB/SQL/setInterval/process.exit。
+- 首轮冻结：tree `d10d373c6a977037d835f9dfd6288496172e2dba`，patch `/private/tmp/d15-t04-freeze.JDnSf7/d15-t04.patch`，SHA-256 `5a37015921fb7ee982e8363db4a504391b470c506a7fe9f823b32dc36a2319cb`；G4 退回（hostile rollback 缺陷）。
+- 修复后新冻结：tree `654ddf012063ef92bf3d3445a41d3c7f36979b67`；patch `/private/tmp/d15-t04-refreeze.DR4fS1/d15-t04.patch`，SHA-256 `396366b49d8afd88ce83e2bb75408004fdae5c507ebcba8446b21b2a68c959ff`，32693 bytes、6 路径；从 base+patch 重建 tree 逐字一致；`git diff --check` 通过。
+- 新冻结 blob：`contracts.ts`=`ca7d5d0426b40594fa2efdab3be6686b34e2ed82`；`cron-scheduler.ts`=`e79a23b76dfde55800e058ab2db9abd404a072cc`；`index.ts`=`9b091eb1a0ad66111c8d64f2ee4b7b4617097a36`；`tests/fixtures/scheduler.ts`=`7e5b5c5b776d369a34ba3bf461e1a02fb3e32451`；`cron-scheduler.test.ts`=`498b6bf84808b893e4ed013b94da9d216c191d7f`；`cron-scheduler-sqlite.test.ts`=`1cefe9417ff3edb80ad67079f5c3440952d5c696`。
+- 独立验证（修复后）：typecheck PASS；定向 5/5 files、31/31 tests PASS（scheduler 2/18）；full `npm run verify` PASS（93/93 files、1106/1106 tests；build、全部 smoke、database smoke、252 files format PASS）；`git diff --check` PASS；指定扫描 0 命中。
+- 十项：零部分注册 `[valid, invalid]`→schedule 0；`CFG-07_REGISTRATION_ROLLBACK` 回滚清空；真实 SQLite `SqliteSourceRepository.listEnabled()` 仅 S-ON；回调仅 COLLECT + rejection 捕获；trigger disabled/missing resolve；stop 幂等/destroy；默认 Asia/Shanghai；start 幂等；真实 node-cron validate；错误 shape；NO_ADAPTER。
+- T04 Lead 冻结结论：`REVIEW · FROZEN_PENDING_G4`（第二次冻结）；冻结证据保持有效。
+
+## D15-T04 G4（第二次冻结）、Candidate、Merge 与归档
+
+- Architect G4：`APPROVED`（第二次冻结 `654ddf01…`）；敌对 backend 探针 6/6 PASS（错误形状、无泄漏、重试不重复、全部 stop/destroy 抛错下 stop 不抛、首 schedule 失败后 stop 幂等）；旧 `d10d373c…` 作废。
+- Candidate：`b823837818bced54969e7afe3644eb30aee5bc2d`，唯一 parent `cb367daa92d1d103fb52ea70b3fe7a63433c8f78`，tree `654ddf012063ef92bf3d3445a41d3c7f36979b67`，精确 6 新增路径。
+- 预演与 Merge：`git merge-tree --write-tree --no-messages cb367da b8238378` = `654ddf01`（整树相等）；实际 merge `73e8da767c2d8474587838ee16ee8895762db9f5`，第一 parent `cb367da`、第二 parent candidate `b8238378`，merge tree `654ddf01`，整树相等。
+- Merge 后复验：typecheck PASS；定向 5/5 files、31/31 tests PASS；full `npm run verify` PASS（93/93 files、1106/1106 tests；build、全部 smoke、database smoke、252 files format PASS）；`git diff --check` PASS。
+- Worker 归档：`archive_workspace(wks_32bf706523eaa413)` 返回 `archivedAgentIds=[581cece7-d3a3-42ca-985e-ce9d39278ef4]`、`removedDirectory=true`；Agent `closed/archived`，活跃 agent/worktree 无残留。
+- 遗留本地 branch 清理：`feat/d15-t04-cron-scheduler` 以 `git branch -d` 安全删除（tip `cb367da`，已交付/归档）；main 未动。
+- T04 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T05 尚未启动；未 push、未签发 D15 最终 PASS。
 
 ## D15-T03 Lead 复核与冻结记录
 
