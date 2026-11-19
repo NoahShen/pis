@@ -194,3 +194,12 @@
 - 快照完整性复验：测试后 source 与同 commit 新解包 archive 逐文件一致，PASS。
 - Case Gate：EVT-01～EVT-18、EVT-21～EVT-24、PMT-14/15、PMT-09、E2E-14 分析部分、ATOMIC、PRIVACY、PUBLIC_SHAPE 的 D09 P0 责任均有服务/真实 SQLite 集成证据；EVT-19/20、PMT-03/04 保持 S0，不用 Stub 冒充。
 - 结论：`D09_LOCAL_GATE=EVIDENCE_READY`；等待 Architect 独立 Gate、push 与精确 SHA CI；Lead 不 push。
+
+## D09 本地集成 Gate（Architect 独立复核）
+
+- Gate 输入：`2d36b79bf32c4355c75513a06c95a0856a72fbb7`；tree `92f78ebce526c5116a9a539973407cf88b21b89d`。
+- Architect 独立快照：`git archive HEAD` 至 `/private/tmp/d09-arch-gate`；无 `.git`、无 `node_modules`；tar SHA-256 `c4ac111a99cd2946bfe2ae8bae8e6b16b99fae14a22169399fbb9c98031b8404`。
+- 快照独立验证：`npm ci --offline` 退出 0；typecheck 退出 0；`npm run verify` 全绿：`77/77` 文件、`937/937` 用例、build、全部 smoke、database smoke、`210` 文件 format PASS。
+- 相对 D08 closeout `2ab5de8`：**28** 个 tracked 路径；受保护路径 diff = **0**。
+- 六个 Prompt 哈希与 D08 基线一致；真实 `config/prompt/user-context.md` 未跟踪。
+- 结论：`D09_LOCAL_GATE=APPROVED`。
