@@ -380,7 +380,7 @@ describe("event search service orchestration", () => {
     expect(candidate.search).not.toHaveBeenCalled();
   });
 
-  it("MISSING reads Content once, skips LLM/candidates, and returns empty", async () => {
+  it("MISSING / D08_REASON reads Content once, skips LLM/candidates, and returns missing_content", async () => {
     const content = contentReader(() => null);
     const typed = searchEvents();
     const candidate = candidateRepository();
@@ -393,14 +393,14 @@ describe("event search service orchestration", () => {
           candidateRepository: candidate.repository,
         }),
       ).search(CONTENT_ID),
-    ).resolves.toEqual({ candidates: [] });
+    ).resolves.toEqual({ candidates: [], reason: "missing_content" });
 
     expect(content.getById).toHaveBeenCalledTimes(1);
     expect(typed).not.toHaveBeenCalled();
     expect(candidate.search).not.toHaveBeenCalled();
   });
 
-  it("EVT-21 calls the LLM exactly once and candidates zero times for empty clues", async () => {
+  it("EVT-21 / D08_REASON calls the LLM exactly once, skips candidates, and returns empty_clues", async () => {
     const content = contentReader();
     const typed = searchEvents(async () => ({ clues: [] }));
     const candidate = candidateRepository();
@@ -413,14 +413,14 @@ describe("event search service orchestration", () => {
           candidateRepository: candidate.repository,
         }),
       ).search(CONTENT_ID),
-    ).resolves.toEqual({ candidates: [] });
+    ).resolves.toEqual({ candidates: [], reason: "empty_clues" });
 
     expect(content.getById).toHaveBeenCalledTimes(1);
     expect(typed).toHaveBeenCalledTimes(1);
     expect(candidate.search).not.toHaveBeenCalled();
   });
 
-  it("EVT-22 / CALL_COUNT calls the LLM and candidate repository once when clues have no matches", async () => {
+  it("EVT-22 / D08_REASON / CALL_COUNT returns no_candidates after one LLM and candidate repository call", async () => {
     const typed = searchEvents();
     const candidate = candidateRepository();
 
@@ -431,7 +431,7 @@ describe("event search service orchestration", () => {
           candidateRepository: candidate.repository,
         }),
       ).search(CONTENT_ID),
-    ).resolves.toEqual({ candidates: [] });
+    ).resolves.toEqual({ candidates: [], reason: "no_candidates" });
 
     expect(typed).toHaveBeenCalledTimes(1);
     expect(candidate.search).toHaveBeenCalledTimes(1);
@@ -791,7 +791,7 @@ describe("event search service orchestration", () => {
             candidateRepository: candidateRepository().repository,
           }),
         ).search(CONTENT_ID),
-      ).resolves.toEqual({ candidates: [] });
+      ).resolves.toEqual({ candidates: [], reason: "no_candidates" });
       await Promise.resolve();
       expect(logger.entries.length).toBeGreaterThan(0);
     },
@@ -818,7 +818,7 @@ describe("event search service orchestration", () => {
     },
   );
 
-  it("PUBLIC_SHAPE returns only candidates with exact Event/Update fields", async () => {
+  it("D08_REASON / PUBLIC_SHAPE returns candidates plus reason with exact Event/Update fields", async () => {
     const context = contextDatabase({
       events: [eventRow("event-public")],
       updates: [updateRow("event-public", "update-public")],
@@ -835,7 +835,8 @@ describe("event search service orchestration", () => {
       }),
     ).search(CONTENT_ID);
 
-    expect(Object.keys(result)).toEqual(["candidates"]);
+    expect(Object.keys(result)).toEqual(["candidates", "reason"]);
+    expect(result.reason).toBe("candidates");
     expect(Object.keys(result.candidates[0] ?? {}).sort()).toEqual([
       "description",
       "discovered_at",

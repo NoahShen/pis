@@ -140,7 +140,8 @@ describe("event search integration", () => {
           const result = await service.search(EVENT_SEARCH_CURRENT_CONTENT_ID);
 
           expect(result).toHaveProperty("candidates");
-          expect(Object.keys(result)).toEqual(["candidates"]);
+          expect(Object.keys(result)).toEqual(["candidates", "reason"]);
+          expect(result.reason).toBe("candidates");
           expect(result.candidates.map(({ id }) => id)).toEqual([
             EVENT_SEARCH_FIXTURE_IDS.window,
           ]);
@@ -240,6 +241,9 @@ describe("event search integration", () => {
           }
 
           expectLoggerWhitelist(harness);
+          expect(
+            harness.logger.entries.every(({ reason }) => reason === undefined),
+          ).toBe(true);
           expect(snapshotEventSearchDatabase(harness.rawDatabase)).toEqual(
             before,
           );
@@ -276,6 +280,7 @@ describe("event search integration", () => {
 
         await expect(service.search("missing-content-id")).resolves.toEqual({
           candidates: [],
+          reason: "missing_content",
         });
         const invalidError = await captureRejection(service.search("   "));
         expectEventSearchError(invalidError, "invalid_input");
@@ -322,6 +327,23 @@ describe("event search integration", () => {
         );
       },
     );
+  });
+
+  it("EVT-21_PRE / D08_REASON returns empty_clues after one P-02 call and no candidate or write work", async () => {
+    await withEventSearchHarness([response()], async (harness) => {
+      const before = snapshotEventSearchDatabase(harness.rawDatabase);
+      const result = await createEventSearch(harness.dependencies).search(
+        EVENT_SEARCH_CURRENT_CONTENT_ID,
+      );
+
+      expect(result).toEqual({ candidates: [], reason: "empty_clues" });
+      expect(harness.stubLlm.requests).toHaveLength(1);
+      expect(harness.candidateRepository.calls).toHaveLength(0);
+      expect(eventContextStatementCount(harness)).toBe(0);
+      expect(harness.observedDatabase.updateCalls).toEqual([]);
+      expect(harness.observedDatabase.transactionCalls).toBe(0);
+      expect(snapshotEventSearchDatabase(harness.rawDatabase)).toEqual(before);
+    });
   });
 
   it("EVT-06 keeps same-entity/different-subject clues separate through the real pipeline", async () => {
@@ -696,7 +718,10 @@ describe("event search integration", () => {
           maxUpdates: 100,
         }).search(EVENT_SEARCH_CURRENT_CONTENT_ID);
 
-        expect(result).toEqual({ candidates: [] });
+        expect(result).toEqual({
+          candidates: [],
+          reason: "no_candidates",
+        });
         expect(harness.candidateRepository.calls).toHaveLength(1);
         expect(harness.candidateRepository.lastHitCount).toBe(0);
         expect(eventContextStatementCount(harness)).toBe(0);
@@ -728,7 +753,10 @@ describe("event search integration", () => {
           maxUpdates: 10,
         }).search(EVENT_SEARCH_CURRENT_CONTENT_ID);
 
-        expect(result).toEqual({ candidates: [] });
+        expect(result).toEqual({
+          candidates: [],
+          reason: "no_candidates",
+        });
         expect(harness.candidateRepository.calls).toHaveLength(1);
         expect(harness.candidateRepository.lastHitCount).toBe(0);
         expect(snapshotEventSearchDatabase(harness.rawDatabase)).toEqual(

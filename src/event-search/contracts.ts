@@ -18,8 +18,12 @@ export interface EventSearchOptions {
   readonly signal?: AbortSignal;
 }
 
+export type EventSearchReason =
+  "missing_content" | "empty_clues" | "no_candidates" | "candidates";
+
 export interface EventSearchResult {
   candidates: EventCandidate[];
+  readonly reason?: EventSearchReason;
 }
 
 export interface EventSearchService {
