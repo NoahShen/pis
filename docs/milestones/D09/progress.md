@@ -1,21 +1,22 @@
 # D09 Progress：Event Analysis 新主线、进展与重复证据
 
 - Plan：`docs/milestones/D09/plan.md` v0.1
-- Plan 状态：`DRAFT · G3_PENDING_ARCHITECT_REVIEW`
-- Intent：`DRAFT · G1_PENDING_OWNER_APPROVAL`
-- Spec：`DRAFT · G1_PENDING_OWNER_APPROVAL`
+- Plan 状态：`APPROVED · G3`
+- Intent：`APPROVED · G1`
+- Spec：`APPROVED · G2`
 - 计划参考基线：main `2484b2876522027b5da4c95ca1b5c03e757d8139` / tree `e995e484a53d4ccbe0f15a90e8f5fbab07679b2c`
+- 执行基线：`1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff` / tree `18bd1c36453db769f69f09acc8b04dac1f050e20`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
-- 当前 Worker：`NONE`
-- 开发心跳：`NONE`（Lead 不创建；G3 批准且正式开发触发后由 Architect 创建）
-- 当前结论：`D09_PLAN=G3_PENDING_ARCHITECT_REVIEW`、`D09_DEVELOPMENT=NOT_AUTHORIZED`、`D09_FINAL_PASS=NOT_ISSUED`
+- 当前 Worker：`NONE · D09-T01 Worker 已归档`
+- 开发心跳：`06ccf8ea`（`*/10 * * * *`，Asia/Shanghai；Architect 创建）
+- 当前结论：`D09_PLAN=APPROVED_G3`、`D09_DEVELOPMENT=AUTHORIZED_T01_ONLY`、`D09_T01=PASS_LOCAL_MERGE_VERIFIED_ARCHIVED`、`D09_FINAL_PASS=NOT_ISSUED`
 
 ## 任务状态
 
 | 任务 ID | 状态 | 前置/固定 base | 测试结果 | Lead | Architect | 阻塞说明 |
 |---|---|---|---|---|---|---|
-| D09-T01 D08 reason/P-03 前置 | `NOT_STARTED` | `PENDING_G3_EXECUTION_BASELINE` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 G1/G2/G3 与执行授权 |
-| D09-T02 Repository/基础持久化 | `NOT_STARTED` | `PENDING_T01_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 T01 PASS/合并/归档 |
+| D09-T01 D08 reason/P-03 前置 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff` | PASS（merge 后定向 7 files/105 tests；full 72 files/870 tests；typecheck/build/smoke/database smoke/format 197 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
+| D09-T02 Repository/基础持久化 | `NOT_STARTED` | `991158bbc8cccd1b7f62d71c55891548b6bc6b4a` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 Architect 核对 main 后另行授权 |
 | D09-T03 Reuse/NO_INCREMENT/alias/FTS | `NOT_STARTED` | `PENDING_T02_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 T02 PASS/合并/归档 |
 | D09-T04 多结果单事务/回滚 | `NOT_STARTED` | `PENDING_T03_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 T03 PASS/合并/归档 |
 | D09-T05 Factory/集成/P0 | `NOT_STARTED` | `PENDING_T04_MERGE_SHA` | `NOT_RUN` | `PENDING` | `PENDING` | 等待 T04 PASS/合并/归档 |
@@ -26,8 +27,8 @@
 
 | 任务 ID | BASE_SHA | WORKER_AGENT | WORKER_WORKSPACE | WORKER_BRANCH | CHANGED_PATHS | FROZEN_TREE | PATCH_SHA256 | ARCHITECT_TREE_APPROVAL | CANDIDATE_SHA | MERGE_SHA | MERGE_TREE | VERIFICATION | ARCHIVE_RESULT |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| D09-T01 | `PENDING_G3_EXECUTION_BASELINE` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
-| D09-T02 | `PENDING_T01_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D09-T01 | `1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff` | `745f900c-548e-43af-9211-3c5ae9fd2573` | `wks_59b60a0c186a3da0` | `feat/d09-t01-p03-boundary` | 精确 10 路径：4 修改 + 6 新增，见 Plan §4.1 | `9044ac9a76095c3179d73dc3e0624154a2dff4ea` | `17cc714958c42797c74566bfb2e0dbe0a7bba8a36ff1fd2b1eb25452c93f4e86` | `APPROVED · G4` | `36c3474d3066a8ae2dc0cb16c16449c259d59569` | `991158bbc8cccd1b7f62d71c55891548b6bc6b4a` | `9044ac9a76095c3179d73dc3e0624154a2dff4ea` | PASS（merge 后定向 7/105；full 72/870；typecheck/build/smoke/database smoke/format 197） | `archive_workspace` success；Agent closed/archived；`removedDirectory=true`；活跃 workspace/worktree 无残留 |
+| D09-T02 | `991158bbc8cccd1b7f62d71c55891548b6bc6b4a` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D09-T03 | `PENDING_T02_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D09-T04 | `PENDING_T03_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 | D09-T05 | `PENDING_T04_MERGE_SHA` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
@@ -59,17 +60,16 @@
 
 ## 当前阻塞与待决策事项
 
-- D09 Intent/Spec 在 Git 中仍为 G1 待批准，G2 未记录；G3 未审核。当前不进入开发。
-- D09 Intent/Spec 头部仍写旧基线 `2ab5de8`；本轮 Architect 固定基线为 `2484b2876522027b5da4c95ca1b5c03e757d8139`，待 Architect 在 G1/G2 同步。
-- 技术实现设计 §17.5 写有 P-02 clues 进入 P-03；D09 当前 Spec 与本次任务边界只允许 Content 六字段 + candidates。Lead 不自行改权威文档，待 Architect 在 G2/G3 明确处理。
-- D08 `EventSearchResult.reason` 是 Spec 允许的受控可选只读扩展。Lead 审核认为它在“不重调 P-02、不暴露 clues”约束下最小且自洽；仍需 Architect 随 G2/G3 批准。
+- D09 G1/G2/G3 已批准；技术实现设计 §17.5 已统一为 P-02 clues 仅用于候选检索，不注入 P-03。
+- D08 `EventSearchResult.reason` 可选只读扩展已获 G4；T01 已完成精确冻结、candidate、`--no-ff` merge、合并后复验与归档。
+- T01 无阻塞。T02 尚未授权；等待 Architect 核对 main `991158bb…` 后另行启动。
 - 未发现 D09 Spec 与当前 D02 strict Schema 或 D01 DDL/FTS 事务能力的冲突。
 
 ## 下一可执行动作
 
-1. Architect 审核本 Plan 的 G3；同时处理 G1/G2 状态、基线头部和技术设计 P-03 输入冲突。
-2. G3 通过且正式开发授权后，由 Architect 创建唯一 D09 心跳并记录 ID；Lead 再按 T01→T05 串行准备全新 Paseo Worker。
-3. T01 固定执行基线必须是批准文档后的精确 SHA，且为 `2484b2876522027b5da4c95ca1b5c03e757d8139` 的后代；不得使用 branch 名代替。
+1. Architect 核对 main `991158bbc8cccd1b7f62d71c55891548b6bc6b4a` 与进度记录。
+2. 收到 T02 明确授权后，再以全新 Paseo Worker、独立 worktree 和固定 base `991158bb…` 启动 T02。
+3. T02 及其他后续卡不得与当前 T01 并行，也不得在授权前创建。
 
 ## 本次 Lead 文档交付
 
@@ -84,7 +84,7 @@
 
 - 统一技术设计 §17.5：P-02 clues 仅用于候选检索，不注入 P-03；P-03 输入为当前 Content + 候选 DTO，与 D09 Spec 一致。
 - D08 可选 `reason` 扩展经 Lead 审核为最小兼容方案；D09 对缺失/矛盾 reason 保守失败，不重复 P-02。
-- Intent/Spec/Plan 的 G1/G2/G3 批准点待负责人统一确认；未启动 Worker、心跳或编码。
+- 上述修订随后由负责人统一批准 G1/G2/G3；该时点尚未启动 Worker、心跳或编码。
 
 ## G1/G2/G3 批准与执行基线
 
@@ -93,3 +93,19 @@
 - 开发心跳：`06ccf8ea`，`*/10 * * * *`，Asia/Shanghai。
 - D09 首个执行基线为本批准提交 SHA；T01 使用全新 Worker、独立 worktree，严格按 Plan §4 写集。
 - 本提交后启动 T01，不并行启动其他卡。
+
+## D09-T01 Lead 复核与冻结记录
+
+- Worker 交回：`REVIEW`；HEAD 保持 `1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff`，无 commit/merge/push。
+- 精确写集：10 路径（4 修改 + 6 新增），仅 Plan §4.1 白名单；受保护路径 diff 为空。
+- D08：四个成功返回精确设置 `missing_content/empty_clues/no_candidates/candidates`；候选 DTO、排序、窗口、P-02/P-03 调用次数与只读行为未改。
+- D09：Content 六字段与 candidate/update 显式投影；P-03 task data 顶层仅 `{content,candidates}`；references 仅 `candidateEventIds/eventIdByUpdateId`；无 clues/user_context/Topic/Knowledge/raw/URL/Token。
+- 错误/取消：四码精确 message、无 cause；`AbortError`/`ABORT_ERR`/`LLM_CANCELLED` 与 pre/during/post 取消均映射 `aborted`；非取消调用失败映射 `llm_failed`；D02 返回不二次解析。
+- 独立验证：typecheck PASS；定向 7/7 files、105/105 tests PASS；full `npm run verify` PASS（72/72 files、870/870 tests；build、全部 smoke、database smoke、197 files format PASS）；`git diff --check` 无输出；禁止路径与 `.only/.skip` 为空；静态扫描 9 个命中均为测试禁止字段/action 字面量或 `EVENT_UPDATE` 类型字符串。
+- 精确冻结：tree `9044ac9a76095c3179d73dc3e0624154a2dff4ea`；canonical full-index binary patch `/private/tmp/d09-t01-freeze.6ERboG/d09-t01.patch`，SHA-256 `17cc714958c42797c74566bfb2e0dbe0a7bba8a36ff1fd2b1eb25452c93f4e86`，39786 bytes、10 路径；从干净 base 应用 patch 重建 tree 与冻结 tree 一致。
+- Architect G4：`APPROVED`；独立复核冻结 tree、patch SHA/10 路径、tsc、11 files/142 tests 与额外隐私/abort/references 探针通过。
+- Candidate：`36c3474d3066a8ae2dc0cb16c16449c259d59569`，唯一 parent `1e7fba52e5139f6a0bc859c7ade54f0f9e4a26ff`，tree `9044ac9a76095c3179d73dc3e0624154a2dff4ea`，精确 10 路径；Worker branch tip 对齐且 clean。
+- Merge：`991158bbc8cccd1b7f62d71c55891548b6bc6b4a`；第一 parent `1e7fba52`、第二 parent candidate `36c3474`，merge tree `9044ac9a76095c3179d73dc3e0624154a2dff4ea`，与候选逐字一致。
+- Merge 后复验：typecheck PASS；定向 7/7 files、105/105 tests PASS；full `npm run verify` PASS（72/72 files、870/870 tests；build、全部 smoke、database smoke、197 files format PASS）。
+- Worker 归档：`archive_workspace(wks_59b60a0c186a3da0)` 返回 `archivedAgentIds=[745f900c-548e-43af-9211-3c5ae9fd2573]`、`removedDirectory=true`；Agent `closed/archived`，活跃 workspace 列表与 Git worktree 均无该项。
+- T01 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；未启动 T02、未 push、未签发 D09 最终 PASS。
