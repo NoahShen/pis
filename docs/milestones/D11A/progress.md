@@ -18,7 +18,7 @@
 | 卡片 | 状态 | 前置 base | 交接/证据 |
 |---|---|---|---|
 | `D11A-T01` 配置与 smoke 兼容 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `5765bd7a362988e82caf0f506e15446dd4339e85` | G4 APPROVED；定向 9/93；full 107/1198；merge tree `9b02c4911b3841a7291b41354e9c827e2988bbc7` |
-| `D11A-T02` SSRF 与 zstd | `IN_PROGRESS` | `a8f8dcc2cb193ecf0c40d9813cfc34924cf01c47` | Worker 基线/Fixture 设计中 |
+| `D11A-T02` SSRF 与 zstd | `REVIEW` | `a8f8dcc2cb193ecf0c40d9813cfc34924cf01c47` | Worker 自测定向 4/197、full 108/1220；Lead 审核中 |
 | `D11A-T03` 生产装配与生命周期 | `NOT_STARTED` | T02 closeout 文档提交 | 未派发 |
 | `D11A-T04` 集成、smoke、文档 | `NOT_STARTED` | T03 closeout 文档提交 | 未派发 |
 
@@ -29,7 +29,8 @@
 - T01 合并后独立复验：full 107 files/1198 tests；typecheck/build/全部 smoke/format 通过。
 - T01 frozen tree `5b61cf5f5b89a00337170b3d4d7871c31e82193d`；patch `/tmp/d11a-t01-freeze.s1UkIn/d11a-t01-frozen.patch`；SHA-256 `9d0647324c72d792490bd62ac65f7ae28f0511f4ec4f61726804e5224048ebd4`；11 blobs 与 Lead 清单一致。
 - T01 Worker/Workspace `wks_366bb3154631565a` 已归档，目录已移除。
-- T02 尚无实现或测试结果。
+- T02 Worker 已交付 REVIEW：7 个允许路径，写集外 0；真实 zstd XML/HTML、解压后超限/取消及 SSRF false 其余防护测试完成。定向 4 files/197 tests，full 108 files/1220 tests，build/smoke/format 280 files 通过。
+- Lead 中间审核发现 relax 误拒绝 public unicast，Worker 已修复并增加 public/loopback 正向测试；冻结候选与 Architect G4 尚未完成。
 
 ## 关键风险
 
