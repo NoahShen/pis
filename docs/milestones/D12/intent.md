@@ -11,7 +11,7 @@
 
 - Event Updates 包含 EVENT 与 EVENT_UPDATE；Curated Content 只包含 KNOWLEDGE。
 - RSS 2.0 + `content:encoded`，中文、HTML、XML 特殊字符、GUID、来源链接和 RFC 822 发布时间稳定。
-- 每类主 Feed 保留最新 200 条；每满 200 条形成一个独立不可变归档，使用 RFC 5005 `fh:archive` / `atom:link rel="prev-archive"` 串联。
+- 每类主 Feed 保留最新 200 条；每满 200 条形成一个独立不可变归档；不足一批的未封存余量写入可重建的 pending XML，使用 RFC 5005 `fh:archive` / `atom:link rel="prev-archive"` 串联完整历史。
 - 以归档中已有 GUID 集合恢复封存边界；新条目、迟到数据、相同发布时间和时钟回拨不得重写历史归档。
 - 本地文件逐份完整生成、校验并原子替换；新归档先于引用它的主文件落盘。
 - 同一数据库和文件快照重复生成结果稳定；静态读取不查询数据库、不调用 LLM。
@@ -19,11 +19,12 @@
 ## 2. 已批准设计取舍
 
 1. 不增加 RSS 表、归档表、Outbox 或第七种 Runtime 任务；归档 GUID 集合从既有 XML 恢复。
-2. 主 Feed 与最新归档允许 GUID 重叠；各归档互不重叠，主文件与全部归档按 GUID 去重后覆盖全部 Published Item。
+2. 主 Feed 与最新归档允许 GUID 重叠；各归档互不重叠，主文件、pending 与全部归档按 GUID 去重后覆盖全部 Published Item。
 3. 已封存归档同名同内容可复用；同名不同内容必须报告冲突，保留旧字节，并停止该 Feed 本次主文件更新。
 4. D11 没有独立来源 URL 列。RSS `<link>` 只从不可变 `published_items.body` 的“来源”快照中提取第一条合法 HTTP(S) 链接；无链接时省略。不得查询后来新增的证据或重新渲染正文。
 5. D12 原子性仅指**单个本地文件**临时写入、完整校验、关闭后 rename；不宣称多文件、Git、CDN 或云端原子可见性。
 6. D12 交付独立生成器、归档规划器、本地/Fake Artifact Store 和文件集 smoke；生产自动通知、启动同步、Publisher 版本提交与云端重试由 D13 接线。
+7. 为满足任意快照的完整历史覆盖，除固定 200 条主窗口与满 200 条不可变归档外，每类 Feed 生成一个 `*-pending.xml` 余量投影。pending 只含不足一批的未封存条目，可随新快照原子重建，不冒充封存归档；静态链为主 Feed → pending → 最新封存归档。
 
 ## 3. 范围
 
@@ -45,6 +46,6 @@
 
 - `RSS-01`～`RSS-14`、`RSS-17/18/24` 的 D12 范围全部由确定性 P0/P1 自动化覆盖；`RSS-15/16` 云端/阅读器证据留给 D13。
 - 归档 URI、GUID 集合和 bytes 在新增、迟到、回拨、重复同步后不变；冲突安全失败且主文件不引入坏链。
-- 主文件与所有归档联合覆盖完整历史，类型不串档，排序稳定，XML 可由现有 `fast-xml-parser` 验证。
+- 主文件、pending 与所有归档联合覆盖完整历史，类型不串档，排序稳定，XML 可由现有 `fast-xml-parser` 验证。
 - 本地生成不访问网络/LLM，不写数据库，不触碰默认 `data/pis.sqlite`。
 - D12 四卡均完成 G4、合并复验和归档；最终干净快照 Gate 与精确 SHA 远程 CI Success 后，交负责人验收，不自动开始 D13。

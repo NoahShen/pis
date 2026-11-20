@@ -15,7 +15,7 @@
 - `RssPublishedItem` 复用/兼容 `PublishedItem` 七列；读取按 `(published_at DESC,id DESC)`。
 - `RssArtifact { key, bytes }`；key 是输出根目录内的相对 POSIX 路径，XML bytes 为 UTF-8。
 - `RssArtifactStore`：`list(prefix)`、`read(key)`、`write(key,bytes,{onlyIfAbsent?})`；D12 本地实现直接落盘，Fake 实现用于故障/静态 GET 测试。不增加 `publish()` 云端版本语义。
-- `RssSyncResult`：主文件、已验证既有归档、新归档、冲突/写入结果等安全元数据；错误不包含正文、完整订阅 URL、secret 或环境变量。
+- `RssSyncResult`：主文件、pending 文件、已验证既有归档、新归档、冲突/写入结果等安全元数据；错误不包含正文、完整订阅 URL、secret 或环境变量。
 - `RssSyncService.sync(feed)`：读取数据库与现存归档，验证/创建完整归档，最后更新主文件。D12 提供显式调用，不在本里程碑接生产启动/通知。
 
 ## 2. RSS XML 契约
@@ -41,10 +41,11 @@
 - 归档发现：列举该 Feed `archive/<feed>-NNNN.xml`，解析 XML、验证 RSS 类型、GUID、序号及链。重复 GUID、非法序号/空洞、伪造/错误类型均安全失败。
 - 归档命名：序号从 `0001` 连续增长，每个文件恰好 200 个唯一 GUID；归档内按该批次的 `(published_at ASC,id ASC)` 固定，文件名不依赖时间或秘密。
 - 未封存集合：数据库当前 Published Item 排除所有既有归档 GUID；若归档引用数据库已不存在的 GUID，归档仍作为历史保留并报告安全边界，不要求删除或重写。
-- 新批次：未封存集合按 `(published_at ASC,id ASC)` 排序，只在达到 200 时追加下一个序号；不足 200 留在主文件，不提前封存。迟到旧时间条目进入后续批次，不重切旧批。
-- 归档 item bytes 必须只由 Published Item 快照和固定归档链接元数据决定。已存在归档复用原 bytes，不重新格式化、不改 category、不回填链接。
-- 主文件可含归档 GUID；归档彼此不重叠。主+归档按 GUID 去重覆盖数据库当前全集，归档还可保留数据库已不存在的历史。
-- RFC 5005：主文件指向最新归档；每个归档指向上一归档；首归档不指向不存在文件。链接均为受控相对 URI，不含 query cursor。
+- 新批次：未封存集合按 `(published_at ASC,id ASC)` 排序，只在达到 200 时追加下一个序号；剩余不足 200 条写入可重建 pending 文件，不提前封存。迟到旧时间条目进入后续批次或当前 pending，不重切旧批。
+- pending 文件固定 `<feed>-pending.xml`，包含全部未封存余量（0～199 条），按 `(published_at ASC,id ASC)` 稳定排序。它可随数据库快照变化而重建，不是不可变归档、业务队列或 Outbox；不得用 `pendingUnsealedCount` 代替实际可达条目。
+- 主文件、pending 与所有封存归档按 GUID 去重覆盖数据库当前全集；主文件与 pending/归档允许重叠，封存归档彼此不重叠。归档还可保留数据库已不存在的历史。
+- RFC 5005：主文件 `prev-archive` 指向 pending；pending 指向最新封存归档；每个封存归档指向上一封存归档；首归档不指向不存在文件。无 pending 时主文件直接指向最新封存归档。链接均为受控相对 URI，不含 query cursor。
+- 写入顺序固定为新封存归档 → pending → 主文件。pending 可替换但必须完整原子更新；任何前序失败不得更新主文件。
 
 ## 4. 冲突与恢复
 
@@ -72,7 +73,7 @@
 | RSS-03/04 | 中文、XML 字符、HTML/CDATA、GUID、重复生成 bytes；Fake 静态 GET 不查 DB/LLM |
 | RSS-05 | `+08:00` 到 RFC 822 同一 instant；与来源发布时间无关 |
 | RSS-06/07 | 无来源省略 link；正文快照首链接稳定，后续证据不改变 |
-| RSS-08/09/17 | 201/400/401/451 条、多批、两类交错；静态链覆盖、去重、无跨类 |
+| RSS-08/09/17 | 201/400/401/451 条、多批、两类交错；主文件/pending/静态归档链覆盖、去重、无跨类 |
 | RSS-10 | 相同时间稳定排序；同 GUID 主/归档内容一致 |
 | RSS-11/24 | 新 Item、迟到、回拨、重复同步归档 bytes/URI 不变；同名冲突保护旧归档和主文件 |
 | RSS-12/13 | 正确/错误/缺失本地路径；静态 key 不授予 API，API Bearer 不替代路径；无 Feed Token |
