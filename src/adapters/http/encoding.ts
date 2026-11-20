@@ -17,6 +17,7 @@ const SUPPORTED_CONTENT_ENCODINGS = new Set([
   "x-gzip",
   "deflate",
   "br",
+  "zstd",
 ]);
 
 function unsupportedMime(): AcquisitionError {

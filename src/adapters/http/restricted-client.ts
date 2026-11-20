@@ -95,6 +95,7 @@ export interface RestrictedClientDependencies {
 export interface RestrictedClientOptions extends RestrictedClientDependencies {
   readonly signal: AbortSignal;
   readonly policy: AdapterPolicy;
+  readonly allowPrivateAddresses?: boolean;
 }
 
 interface HopResources {
@@ -514,6 +515,7 @@ async function acquire(
   request: Readonly<RssTransportRequest>,
   signal: AbortSignal,
   policy: AdapterPolicy,
+  allowPrivateAddresses: boolean,
   dependencies: RestrictedClientDependencies,
 ): Promise<RssTransportDocument> {
   let currentUrl = canonicalizeRestrictedUrl(request.url);
@@ -531,7 +533,8 @@ async function acquire(
     try {
       dependencies.tracker?.lookupScheduled?.();
       address = await raceWithSignal(
-        () => resolveRestrictedAddress(currentUrl, resolver),
+        () =>
+          resolveRestrictedAddress(currentUrl, resolver, allowPrivateAddresses),
         signal,
         finalUrl !== null,
         finalUrl,
@@ -739,6 +742,7 @@ export function createRestrictedRssTransport(
           request,
           controller.signal,
           options.policy,
+          options.allowPrivateAddresses === true,
           dependencies,
         );
       } catch (error) {

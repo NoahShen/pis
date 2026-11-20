@@ -1,4 +1,9 @@
-import { brotliCompressSync, deflateSync, gzipSync } from "node:zlib";
+import {
+  brotliCompressSync,
+  deflateSync,
+  gzipSync,
+  zstdCompressSync,
+} from "node:zlib";
 import { getEventListeners } from "node:events";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -12,6 +17,7 @@ import {
 } from "../../src/adapters/http/address-policy.js";
 import {
   decodeResponseBody,
+  validateContentEncoding,
   validateContentType,
 } from "../../src/adapters/http/encoding.js";
 import { createRestrictedRssTransport } from "../../src/adapters/http/restricted-client.js";
@@ -198,6 +204,74 @@ describe("restricted URL and address policy", () => {
       expect(() => validateResolvedAddress(address)).not.toThrow();
     },
   );
+
+  it("allows only explicitly relaxable special ranges when private addresses are enabled", () => {
+    for (const address of [
+      "8.8.8.8",
+      "93.184.216.34",
+      "0.0.0.0",
+      "10.0.0.1",
+      "100.64.0.1",
+      "127.0.0.1",
+      "169.254.1.1",
+      "172.16.0.1",
+      "192.0.2.1",
+      "198.18.0.1",
+      "::",
+      "::1",
+      "fe80::1",
+      "fc00::1",
+      "2001:db8::1",
+      "3fff::1",
+      "::ffff:127.0.0.1",
+    ]) {
+      expect(() =>
+        validateResolvedAddress(address, undefined, true),
+      ).not.toThrow();
+    }
+    for (const address of [
+      "224.0.0.1",
+      "255.255.255.255",
+      "ff02::1",
+      "2001::1",
+      "2002::1",
+      "4000::1",
+    ]) {
+      expect(() => validateResolvedAddress(address, undefined, true)).toThrow(
+        AcquisitionError,
+      );
+    }
+  });
+
+  it("retains syntax, family, and DNS result-count limits when private addresses are enabled", async () => {
+    expect(() => validateResolvedAddress("not-an-ip", undefined, true)).toThrow(
+      AcquisitionError,
+    );
+    expect(() => validateResolvedAddress("127.0.0.1", 6, true)).toThrow(
+      AcquisitionError,
+    );
+    await expect(
+      resolveRestrictedAddress(
+        new URL("http://fixture.example.test"),
+        async () => [
+          { address: "127.0.0.1", family: 4 },
+          { address: "not-an-ip", family: 4 },
+        ],
+        true,
+      ),
+    ).rejects.toMatchObject({ reason: "blocked_url" });
+    await expect(
+      resolveRestrictedAddress(
+        new URL("http://fixture.example.test"),
+        async () =>
+          Array.from({ length: 33 }, () => ({
+            address: "127.0.0.1",
+            family: 4,
+          })),
+        true,
+      ),
+    ).rejects.toMatchObject({ reason: "blocked_url" });
+  });
 
   it("normalizes an IPv4-mapped public address without treating it as IPv6", () => {
     expect(validateResolvedAddress("::ffff:8.8.8.8")).toEqual({
@@ -437,6 +511,285 @@ describe("restricted native fetch transport", () => {
     expect(getEventListeners(caller.signal, "abort")).toHaveLength(0);
   });
 
+  it("rejects a loopback resolver by default and connects to the real fixture only when enabled", async () => {
+    await fixture.start();
+    fixture.route("/loopback", ({ response }) => {
+      response.setHeader("content-type", "application/xml");
+      response.end("<rss>loopback</rss>");
+    });
+    const resolver = async (): Promise<
+      readonly { address: string; family: number }[]
+    > => [{ address: "127.0.0.1", family: 4 }];
+    let dispatchersCreated = 0;
+    const dispatcherFactory = (address: {
+      address: string;
+      family: number;
+    }) => {
+      dispatchersCreated += 1;
+      return fixture.dispatcherFactory(address);
+    };
+    const protectedTransport = createRestrictedRssTransport({
+      signal: new AbortController().signal,
+      policy,
+      resolver,
+      dispatcherFactory,
+    });
+    await expect(
+      protectedTransport.fetch({
+        kind: "feed",
+        url: `${fixture.origin}/loopback`,
+        timeoutMs: 2_000,
+        maxBytes: 1_024,
+      }),
+    ).rejects.toMatchObject({ reason: "blocked_url" });
+    expect(dispatchersCreated).toBe(0);
+    expect(fixture.requests).toEqual([]);
+
+    const relaxedTransport = createRestrictedRssTransport({
+      signal: new AbortController().signal,
+      policy,
+      resolver,
+      dispatcherFactory,
+      allowPrivateAddresses: true,
+    });
+    await expect(
+      relaxedTransport.fetch({
+        kind: "feed",
+        url: `${fixture.origin}/loopback`,
+        timeoutMs: 2_000,
+        maxBytes: 1_024,
+      }),
+    ).resolves.toMatchObject({ body: "<rss>loopback</rss>" });
+    await waitFor(
+      () => fixture.dispatchersClosed === 1 && fixture.sockets.size === 0,
+      "the relaxed loopback dispatcher and socket to close",
+    );
+    expect(dispatchersCreated).toBe(1);
+    expect(fixture.dispatcherAddresses).toEqual([
+      { address: "127.0.0.1", family: 4 },
+    ]);
+    expect(fixture.requests).toEqual(["/loopback"]);
+  });
+
+  it("continues to use public unicast addresses when private addresses are enabled", async () => {
+    await fixture.start();
+    fixture.route("/relaxed-public", ({ response }) => {
+      response.setHeader("content-type", "application/xml");
+      response.end("<rss>public</rss>");
+    });
+    const transport = createRestrictedRssTransport({
+      signal: new AbortController().signal,
+      policy,
+      resolver: fixture.resolver,
+      dispatcherFactory: fixture.dispatcherFactory,
+      allowPrivateAddresses: true,
+    });
+    await expect(
+      transport.fetch({
+        kind: "feed",
+        url: `${fixture.origin}/relaxed-public`,
+        timeoutMs: 2_000,
+        maxBytes: 1_024,
+      }),
+    ).resolves.toMatchObject({ body: "<rss>public</rss>" });
+    await waitFor(
+      () => fixture.dispatchersClosed === 1 && fixture.sockets.size === 0,
+      "the relaxed public dispatcher and socket to close",
+    );
+    expect(fixture.dispatcherAddresses).toEqual([
+      { address: "93.184.216.34", family: 4 },
+    ]);
+    expect(fixture.requests).toEqual(["/relaxed-public"]);
+  });
+
+  it("keeps URL and localhost restrictions when private addresses are enabled", async () => {
+    let lookups = 0;
+    let dispatchers = 0;
+    const transport = createRestrictedRssTransport({
+      signal: new AbortController().signal,
+      policy,
+      allowPrivateAddresses: true,
+      resolver: async () => {
+        lookups += 1;
+        return [{ address: "127.0.0.1", family: 4 }];
+      },
+      dispatcherFactory: () => {
+        dispatchers += 1;
+        return new Agent();
+      },
+      fetch: async () => {
+        throw new Error("unsafe URL reached fetch");
+      },
+    });
+    for (const url of [
+      "http://localhost/",
+      "https://localhost./",
+      "http://user:secret@127.0.0.1/",
+      "http://127.0.0.1:8080/",
+      "ftp://127.0.0.1/",
+      "http://127.0.0.1/#fragment",
+    ]) {
+      await expect(
+        transport.fetch({
+          kind: "feed",
+          url,
+          timeoutMs: 2_000,
+          maxBytes: 1_024,
+        }),
+      ).rejects.toMatchObject({ reason: "blocked_url" });
+    }
+    expect(lookups).toBe(0);
+    expect(dispatchers).toBe(0);
+  });
+
+  it("retains timeout and caller cancellation when private addresses are enabled", async () => {
+    await fixture.start();
+    fixture
+      .route("/relaxed-timeout", ({ response }) => {
+        response.setHeader("content-type", "application/xml");
+        response.write("<rss>");
+      })
+      .route("/relaxed-cancel", ({ response }) => {
+        response.setHeader("content-type", "application/xml");
+        response.write("<rss>");
+      });
+    let cancelled = 0;
+    const transportFor = (controller: AbortController) =>
+      createRestrictedRssTransport({
+        signal: controller.signal,
+        policy,
+        allowPrivateAddresses: true,
+        resolver: async () => [{ address: "127.0.0.1", family: 4 }],
+        dispatcherFactory: fixture.dispatcherFactory,
+        tracker: {
+          dispatcherCreated() {},
+          readerCancelled() {
+            cancelled += 1;
+          },
+        },
+      });
+
+    await expect(
+      transportFor(new AbortController()).fetch({
+        kind: "feed",
+        url: `${fixture.origin}/relaxed-timeout`,
+        timeoutMs: 50,
+        maxBytes: 1_024,
+      }),
+    ).rejects.toMatchObject({ reason: "timeout", receivedResponse: true });
+    await waitFor(
+      () => fixture.dispatchersDestroyed === 1 && fixture.sockets.size === 0,
+      "the relaxed timeout dispatcher and socket to clean up",
+    );
+    expect(cancelled).toBe(1);
+
+    const controller = new AbortController();
+    const pending = transportFor(controller).fetch({
+      kind: "feed",
+      url: `${fixture.origin}/relaxed-cancel`,
+      timeoutMs: 2_000,
+      maxBytes: 1_024,
+    });
+    await waitFor(
+      () =>
+        fixture.requests.includes("/relaxed-cancel") &&
+        fixture.dispatchers.size === 1,
+      "the relaxed cancellable request",
+    );
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({
+      reason: "aborted",
+      receivedResponse: true,
+    });
+    await waitFor(
+      () =>
+        cancelled === 2 &&
+        fixture.dispatchersDestroyed === 2 &&
+        fixture.sockets.size === 0,
+      "the relaxed canceled reader and dispatcher to clean up",
+    );
+    expect(cancelled).toBe(2);
+    expect(fixture.dispatcherDestroyStarted).toBe(2);
+    expect(fixture.dispatchersDestroyed).toBe(2);
+    expect(fixture.dispatchers.size).toBe(0);
+  });
+
+  it("revalidates relaxed redirect targets at every hop", async () => {
+    await fixture.start();
+    fixture
+      .route("/start-relaxed", ({ response }) => {
+        response.statusCode = 302;
+        response.setHeader("location", "http://other.example.test/end-relaxed");
+        response.end("redirect");
+      })
+      .route("/end-relaxed", ({ response }) => {
+        response.setHeader("content-type", "application/xml");
+        response.end("<rss>redirected</rss>");
+      });
+    let resolverCalls = 0;
+    const transport = createRestrictedRssTransport({
+      signal: new AbortController().signal,
+      policy,
+      allowPrivateAddresses: true,
+      resolver: async () => {
+        resolverCalls += 1;
+        return [{ address: "127.0.0.1", family: 4 }];
+      },
+      dispatcherFactory: fixture.dispatcherFactory,
+    });
+    await expect(
+      transport.fetch({
+        kind: "feed",
+        url: `${fixture.origin}/start-relaxed`,
+        timeoutMs: 2_000,
+        maxBytes: 1_024,
+      }),
+    ).resolves.toMatchObject({
+      body: "<rss>redirected</rss>",
+      finalUrl: "http://other.example.test/end-relaxed",
+    });
+    await settle();
+    expect(resolverCalls).toBe(2);
+    expect(fixture.dispatcherAddresses).toEqual([
+      { address: "127.0.0.1", family: 4 },
+      { address: "127.0.0.1", family: 4 },
+    ]);
+    expect(fixture.requests).toEqual(["/start-relaxed", "/end-relaxed"]);
+    expect(fixture.dispatchersClosed).toBe(2);
+  });
+
+  it("still rejects unsafe redirect targets when private addresses are enabled", async () => {
+    await fixture.start();
+    fixture.route("/unsafe-relaxed", ({ response }) => {
+      response.statusCode = 302;
+      response.setHeader("location", "http://localhost/blocked");
+      response.end("redirect");
+    });
+    let resolverCalls = 0;
+    const transport = createRestrictedRssTransport({
+      signal: new AbortController().signal,
+      policy,
+      allowPrivateAddresses: true,
+      resolver: async () => {
+        resolverCalls += 1;
+        return [{ address: "127.0.0.1", family: 4 }];
+      },
+      dispatcherFactory: fixture.dispatcherFactory,
+    });
+    await expect(
+      transport.fetch({
+        kind: "feed",
+        url: `${fixture.origin}/unsafe-relaxed`,
+        timeoutMs: 2_000,
+        maxBytes: 1_024,
+      }),
+    ).rejects.toMatchObject({ reason: "blocked_url", receivedResponse: true });
+    await settle();
+    expect(resolverCalls).toBe(1);
+    expect(fixture.requests).toEqual(["/unsafe-relaxed"]);
+    expect(fixture.dispatchersClosed).toBe(1);
+  });
+
   it("follows relative redirects and enforces decompressed byte limits", async () => {
     const expanded = "x".repeat(2_048);
     await fixture.start();
@@ -583,6 +936,7 @@ describe("restricted native fetch transport", () => {
     ["x-gzip", gzipSync],
     ["deflate", deflateSync],
     ["br", brotliCompressSync],
+    ["zstd", zstdCompressSync],
   ] as const)(
     "accepts supported %s content encoding",
     async (encoding, encode) => {
@@ -616,6 +970,7 @@ describe("restricted native fetch transport", () => {
         ["x-gzip", gzipSync],
         ["deflate", deflateSync],
         ["br", brotliCompressSync],
+        ["zstd", zstdCompressSync],
       ] as const
     ).flatMap(([encoding, encode]) =>
       [1_023, 1_024, 1_025].map(
@@ -737,6 +1092,96 @@ describe("restricted native fetch transport", () => {
     expect(fixture.destroyCompletedDispatchers.size).toBe(1);
     expect(fixture.dispatchers.size).toBe(0);
     expect(fixture.sockets.size).toBe(0);
+  });
+
+  it("rejects a native zstd payload by decompressed length and cleans up exactly once", async () => {
+    const expanded = "<rss>" + "x".repeat(64 * 1_024) + "</rss>";
+    const compressed = zstdCompressSync(expanded);
+    expect(compressed.byteLength).toBeLessThan(1_024);
+    const responseHeaders = Object.freeze({
+      "content-type": "application/xml",
+      "content-encoding": "zstd",
+      "content-length": String(compressed.byteLength),
+    });
+    await fixture.start();
+    fixture.route("/native-zstd-overflow", ({ response }) => {
+      for (const [name, value] of Object.entries(responseHeaders)) {
+        response.setHeader(name, value);
+      }
+      response.end(compressed);
+    });
+    let cancelled = 0;
+    let destroyed = 0;
+    let observedEncoding: string | null = null;
+    let observedLength: string | null = null;
+    const transport = createRestrictedRssTransport({
+      signal: new AbortController().signal,
+      policy,
+      resolver: fixture.resolver,
+      dispatcherFactory: fixture.dispatcherFactory,
+      fetch: async (input, init) => {
+        const response = await globalThis.fetch(input, init);
+        observedEncoding = response.headers.get("content-encoding");
+        observedLength = response.headers.get("content-length");
+        return response;
+      },
+      tracker: {
+        dispatcherCreated() {},
+        dispatcherDestroyed() {
+          destroyed += 1;
+        },
+        readerCancelled() {
+          cancelled += 1;
+        },
+      },
+    });
+
+    await expect(
+      transport.fetch({
+        kind: "feed",
+        url: `${fixture.origin}/native-zstd-overflow`,
+        timeoutMs: 2_000,
+        maxBytes: 1_024,
+      }),
+    ).rejects.toMatchObject({
+      reason: "response_too_large",
+      receivedResponse: true,
+    });
+    await waitFor(
+      () =>
+        cancelled === 1 &&
+        destroyed === 1 &&
+        fixture.dispatchersDestroyed === 1 &&
+        fixture.sockets.size === 0,
+      "the zstd overflow reader and dispatcher to clean up once",
+    );
+    expect(Number(responseHeaders["content-length"])).toBe(
+      compressed.byteLength,
+    );
+    expect(observedEncoding).toBe("zstd");
+    expect(observedLength).toBe(String(compressed.byteLength));
+    expect(new TextEncoder().encode(expanded).byteLength).toBeGreaterThan(
+      1_024,
+    );
+    expect(cancelled).toBe(1);
+    expect(destroyed).toBe(1);
+    expect(fixture.dispatchersCreated).toBe(1);
+    expect(fixture.dispatcherDestroyStarted).toBe(1);
+    expect(fixture.dispatchersDestroyed).toBe(1);
+    expect(fixture.dispatcherCloseStarted).toBe(0);
+    expect(fixture.dispatchers.size).toBe(0);
+  });
+
+  it.each(["unknown", "compress", "zstd, gzip", "gzip,zstd"])(
+    "rejects unsupported or multi-value content encoding %s",
+    (encoding) => {
+      expect(() => validateContentEncoding(encoding)).toThrow(AcquisitionError);
+    },
+  );
+
+  it("accepts a single native zstd content encoding label", () => {
+    expect(() => validateContentEncoding("zstd")).not.toThrow();
+    expect(() => validateContentEncoding(" ZSTD ")).not.toThrow();
   });
 
   it.each([
