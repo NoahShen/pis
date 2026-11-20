@@ -1,7 +1,7 @@
 # D11 Plan：Published Item 与模板
 
-> 版本：v0.2
-> 状态：`G3_PENDING_ARCHITECT_REVIEW`
+> 版本：v0.3
+> 状态：`G3_APPROVED`
 > 日期：2026-11-20
 > 计划基线：main `5d95f8b6eb3e7beff89e3f52498c3b7de203feb1` / tree `e71bad95094e39b1be6b87443267349627a0509b`
 > Intent：`docs/milestones/D11/intent.md`（`APPROVED · G1`）
@@ -429,6 +429,7 @@ git diff --name-only <BASE_SHA> -- src/database src/collection src/processing sr
 
 - 前置：D11-T03 已 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；base 固定为 T03 merge 后的 D11 docs record commit SHA。
 - 修改且仅允许改：`src/runtime/contracts.ts`（唯一受控例外：仅 `PublishResult.published_item_id` 由 `string` 改为 `string | null`，不得改变其他字段/注释语义或 D15 行为）。
+- 修改且仅允许改：`src/publication/contracts.ts`（仅扩展通知日志类型：`PublicationLogStage` 增加 `"notify"`，新增 `PublicationLogReason = PublicationErrorCode | "notify_failed"` 并用于 `PublicationLogEntry.reason`；不得改变 Publish/Repository/DTO/Notifier 等其他契约）。
 - 修改且仅允许改：`src/publication/publication.ts`（事务内 target/association 复检、COMMIT 后通知、最终工厂行为）。
 - 修改且仅允许改：`src/publication/publication-logger.ts`（新增 notify stage 与 notify_failed 白名单）。
 - 新增且仅允许写：`src/publication/index.ts`（最终运行时代码只导出 `createPublication`、`PublicationError`）。
@@ -458,7 +459,7 @@ git diff --name-only <BASE_SHA> -- src/database src/collection src/processing sr
 2. 事务内顺序固定：find → context → association → clock.now 一次 → idGenerator.next 一次 → formatTimestamp 一次 → insert/readback。`withTransaction()` 的返回值携带“新建/复用/空结果”状态供 COMMIT 后分支，不得用外部可变全局值猜测。
 3. 仅当状态为“实际新建”时，在 `withTransaction()` 返回后调用 `notify(feed)`；`EVENT`/`EVENT_UPDATE → "EVENT"`，`KNOWLEDGE → "KNOWLEDGE"`。无 notify 可跳过；重复/空结果不通知。
 4. `notify` 允许 `void | Promise<void>`。同步抛错或异步拒绝都被吞掉，并通过 logger 记录 `stage=notify`、`reason=notify_failed`；不得回滚、重试 Publish 或重新渲染。返回值不得等待 notify 完成。
-5. 公共 `createPublication()` 使用默认 `TemplatePublicationRenderer`、默认 `maxSourceLinks=5`；`PublicationDependencies` 不暴露 completionClient/Prompt/User Context。公共 DTO 不增加 `raw_data` 或历史字段。
+5. 公共 `createPublication()` 使用默认 `TemplatePublicationRenderer`、默认 `maxSourceLinks=5`；`PublicationDependencies` 不暴露 completionClient/Prompt/User Context。公共 DTO 不增加 `raw_data` 或历史字段。`PublicationLogStage` 精确为 `check | render | persist | notify`，`PublicationLogReason` 精确为 `PublicationErrorCode | "notify_failed"`；`notify_failed` 只用于通知失败日志，不加入稳定错误码，不作为 `PublicationError` 的 code。
 6. `index.ts` 仅运行时代码导出 `createPublication` 与 `PublicationError`；所有 Context/Draft/Result/Repository/Logger/Notifier 等以 `export type` 暴露。不得导出具体 SQLite Repository、renderer helper 或 source helper 的运行时代码。
 7. 不可变性：Repository 无 update/delete；发布后修改 Event/Update/Knowledge 显示字段、补证据、添加 Topic、新增 Update，再执行 publish 仍返回原 ID/true，renderer/source/clock/ID/notify 不再触发，七列逐字节一致。
 8. 真实 SQLite 集成：`openDatabase` + `initializeDatabase` + 真实 D11 Repository + 一线程发布服务；用合成 Source/Content/Event/EventUpdate/Knowledge/Topic/Association/Evidence 数据验证 Event、Update、Knowledge 各一份快照。HTTP/LLM/completion client 均以零依赖断言而非 stub 冒充分支。
@@ -524,7 +525,7 @@ git diff --unified=0 <BASE_SHA> -- src/runtime/contracts.ts
 | `WORKER_WORKSPACE` | `PENDING` |
 | `WORKER_BRANCH` | `PENDING` |
 | `CHANGED_PATHS` | `PENDING`；允许路径见 §7.1 |
-| `PATH_COUNT` | `PENDING · expected 10` |
+| `PATH_COUNT` | `PENDING · expected 11` |
 | `FROZEN_TREE` | `PENDING` |
 | `FROZEN_BLOBS` | `PENDING`；逐路径 blob |
 | `PATCH_PATH` | `PENDING` |
