@@ -1,6 +1,6 @@
 # D11 Progress：Published Item 与模板
 
-- Plan：`docs/milestones/D11/plan.md` v0.2
+- Plan：`docs/milestones/D11/plan.md` v0.3
 - Plan 状态：`G3_APPROVED`
 - Intent：`APPROVED · G1`
 - Spec：`APPROVED · G2`
@@ -17,7 +17,7 @@
 | D11-T01 Context/Draft DTO、HTML 安全与三类纯模板 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `d780e1bfe5284713f274e538bf4ae4f44f0bbca6` | PASS（merge 后定向 2 files/10 tests；full 98 files/1136 tests；format 261 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D11-T02 已存证据来源链接、URL 校验、去重与追加 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `5a604416ba4a8a2f184f643b09816c88eb5dd319` | PASS（merge 后定向 4 files/21 tests；full 100 files/1147 tests；format 265 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
 | D11-T03 目标资格、Repository、唯一短事务与重复复用 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `49368da978a8bf275b40c45102160970512de137` | PASS（merge 后定向 6 files/43 tests；full 102 files/1169 tests；format 272 files） | APPROVED | APPROVED · G4 | 无；Worker/workspace 已归档 |
-| D11-T04 不可变性、事务内复检、通知、公共出口与 P0 集成 | `READY` | T03 收尾 docs record commit（本轮交回 SHA） | `NOT_RUN` | `PENDING` | `PENDING` | 本轮不启动 |
+| D11-T04 不可变性、事务内复检、通知、公共出口与 P0 集成 | `READY` | `1aed31f3f694c9b2857442ca8221a493f5d89c88`（T03 收尾 docs record commit） | `NOT_RUN` | `PENDING` | `PENDING` | Plan v0.3 日志契约写集冲突已裁决；待 Lead 派发 |
 
 状态语义：`NOT_STARTED → READY → IN_PROGRESS → REVIEW → PASS`；失败转 `FAIL/IN_PROGRESS`，设计或外部依赖缺失转 `BLOCKED`。Worker 不得自行写 `PASS`。
 
@@ -28,7 +28,7 @@
 | D11-T01 | `d780e1bfe5284713f274e538bf4ae4f44f0bbca6` | `0df2d268-6129-48aa-9490-9389a6bcb6bb` | `wks_aafda88a9976039e` | `feat/d11-t01-publication-templates` | 精确 6 新增，见 Plan §4.1 | `6` | `877ba3f60bf30893e6288a49b3570151125029dc` | 6 blobs；见下方 T01 冻结记录 | `/private/tmp/d11-t01-freeze.aXXLBp/d11-t01.patch` | `e930ab2abdd15c5cd05ac8ecc3abc35724b68daa44c70c2ac072f4cf36faf61a` | `APPROVED · G4` | `6f3fd442a5d63a13ad5a3549d26534fb72482a85` | `477701beb87d8219bf0def28d97366b457be42a1` | `877ba3f60bf30893e6288a49b3570151125029dc` | PASS（merge 后定向 2/10；full 98/1136；format 261） | `archive_workspace` success；archivedAgentIds=[`0df2d268-6129-48aa-9490-9389a6bcb6bb`]；`removedDirectory=true`；无残留 |
 | D11-T02 | `5a604416ba4a8a2f184f643b09816c88eb5dd319` | `4e2026fd-759a-4b05-920f-adc20bbbdf28` | `wks_0a92e3e913d4962c` | `feat/d11-t02-source-links` | 精确 6 路径（2 修改 + 4 新增），见 Plan §5.1 | `6` | `86533a4ca39d320db3c5206bd9c83a702220ca3a` | 6 blobs；见下方 T02 记录 | `/private/tmp/d11-t02-freeze.0ijpL9/d11-t02.patch` | `d40b03ff63bae972cefbf2219ae38478536df38a852ef28dda2eca05fe6af38e` | `APPROVED · G4` | `730ef51f440163d0898adf72a524b094e1e3374c` | `7c47b64a5a7c9891a4cf2382336d77d0bc155398` | `86533a4ca39d320db3c5206bd9c83a702220ca3a` | PASS（merge 后定向 4/21；full 100/1147；format 265） | `archive_workspace` success；archivedAgentIds=[`4e2026fd-759a-4b05-920f-adc20bbbdf28`]；`removedDirectory=true`；无残留 |
 | D11-T03 | `49368da978a8bf275b40c45102160970512de137` | `015c6c9c-55d2-4945-abfe-87ad110b743b` | `wks_7d52bd369b402118` | `feat/d11-t03-publication-persistence` | 精确 9 路径（2 修改 + 7 新增），见 Plan §6.1 | `9` | `80a3ac2a60d32bbeb5d25f10e7ff2d627fb7b7fd` | 9 blobs；见下方 T03 记录 | `/private/tmp/d11-t03-freeze.tWoIV6/d11-t03.patch` | `a8cb9e5ea40e98d131a6743ca723f4ab052861ad6eafe81bdf2411c2577e21c9` | `APPROVED · G4` | `f0334287ced0663b746aa0ee4e3f3d6ec18298a2` | `bc58cbf7a3e7555a391af2a9d8929250d57bacbe` | `80a3ac2a60d32bbeb5d25f10e7ff2d627fb7b7fd` | PASS（merge 后定向 6/43；full 102/1169；format 272） | `archive_workspace` success；archivedAgentIds=[`015c6c9c-55d2-4945-abfe-87ad110b743b`]；`removedDirectory=true`；无残留 |
-| D11-T04 | `PENDING_T03_CLOSEOUT` | `PENDING` | `PENDING` | `PENDING` | 待 Plan §7.1 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
+| D11-T04 | `1aed31f3f694c9b2857442ca8221a493f5d89c88` | `PENDING` | `PENDING` | `PENDING` | 待 Plan §7.1 | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `PENDING` | `NOT_RUN` | `PENDING` |
 
 任一 evidence 缺失时不得用 `N/A` 冒充已完成门禁；未发生写 `PENDING`/`NOT_RUN`。冻结完成后 Lead 必须在同一次回复给出精确 tree、canonical patch SHA-256、路径数、逐路径 blob、定向/full 验证数字与交回结论，不接受事后补报。
 
@@ -55,7 +55,7 @@
 
 ## 当前阻塞与待决策事项
 
-- T03 已完成 G4、candidate、merge、merge 后复验与 Worker 归档；当前不启动 T04，等待本轮 T03 交回确认。
+- T03 已完成 G4、candidate、merge、merge 后复验与 Worker 归档；T04 由 Lead 按 Plan v0.3 继续派发。
 - T01 base 必须固定为包含 G3 批准结论的精确文档提交；T02～T04 base 必须分别固定为前卡 merge 后更新 `progress.md` 的 docs record commit，不使用前卡 merge SHA。
 - 每卡候选前必须先以 `git merge-tree --write-tree --no-messages BASE CANDIDATE` 预演；预演 tree 与 frozen tree 不等即停止报告，不实际 merge。
 - `PUB-11` 属 P1，不能因为它不阻断 P0 就跳过 T04 的注入测试；`PUB-09/12` 的不可变性必须按七列逐字节断言。
@@ -65,8 +65,8 @@
 ## 下一可执行动作
 
 1. T04 以本 T03 收尾 docs record commit 为唯一 base，创建全新 Paseo Worker/独立 worktree。
-2. T04 只允许修改 Plan §7.1 精确 10 路径，包括 D15 `PublishResult.published_item_id` 单行 nullable 例外；主会话 Architect 负责 G4。
-3. 本轮不启动 T04，等待 T03 交回确认。
+2. T04 只允许修改 Plan v0.3 §7.1 精确 11 路径，包括 Publication 通知日志类型扩展与 D15 `PublishResult.published_item_id` 单行 nullable 例外；主会话 Architect 负责 G4。
+3. T04 完成后进入 D11 本地集成 Gate，不提前宣称最终验收。
 
 ## 本次 Lead 文档交付
 
@@ -173,3 +173,10 @@ Plan v0.2 `a4e6e77dc8e3e186616dad4cca4d3838fd4be65c`（tree `e026b7cd…`）diff
 - Merge 后复验：typecheck PASS；定向 6/6 files、43/43 tests PASS；full `npm run verify` PASS（102/102 files、1169/1169 tests；build、7 项 smoke、database smoke、272 files format PASS）；`git diff --check` PASS。
 - Worker 归档：`archive_workspace(wks_7d52bd369b402118)` 返回 `archivedAgentIds=[015c6c9c-55d2-4945-abfe-87ad110b743b]`、`removedDirectory=true`；活动 workspace 与 `git worktree list` 均无残留；主工作区与 Lead 工作区未归档。
 - T03 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T04 尚未启动，以本 T03 收尾 docs record commit 为下一 base。
+
+## D11-T04 派发阻塞裁决与 Plan v0.3（2026-11-21）
+
+- Lead 在创建 Worker 前发现：Plan v0.2 §7.1 的 10 路径不含 `src/publication/contracts.ts`，但 §7.3 要求类型安全的 `stage=notify`、`reason=notify_failed`；T03 契约中的 stage/reason 联合类型无法表达，单独修改 logger 只能依赖不安全断言。
+- Architect 裁决：这是 Plan 写集遗漏，不是架构或 Spec 变化。Plan 升级为 v0.3，T04 增加且仅增加 `src/publication/contracts.ts` 一个允许路径，总写集由 10 调整为 11。
+- 类型修订范围：`PublicationLogStage` 增加 `"notify"`；新增 `PublicationLogReason = PublicationErrorCode | "notify_failed"` 并用于 `PublicationLogEntry.reason`。`notify_failed` 不加入稳定 `PublicationErrorCode`，不得改变 Publish/Repository/DTO/Notifier 等其他契约。
+- `D11_T04_LOG_CONTRACT_RULING=APPROVED`；T04 base 仍为 `1aed31f3f694c9b2857442ca8221a493f5d89c88`，由 Lead 创建全新 Worker 后继续原 G4/冻结/candidate/merge 门禁。
