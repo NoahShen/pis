@@ -1,6 +1,6 @@
 # PIS
 
-PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00 的构建、测试、配置校验、日志、Bearer 鉴权、健康检查和进程生命周期基础设施，D01 的 SQLite 连接、冻结 schema、同步事务与 Event FTS 维护基础，D02-T01 的 Prompt 逐次读取基础，以及 D03 的 Source/Topic 配置 API。Prompt、RSS 抓取与调度尚未接入 HTTP 服务启动流程。
+PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00～D11 的业务基础，以及 D11A 的生产运行整合：真实 SQLite、共享依赖、六阶段 Service、Runtime、Cron Scheduler、配置 API 与进程生命周期由同一条生产装配链持有。D12 本地静态 RSS 生成与归档尚未实现；本 README 不把确定性 Stub/本地 Fixture 结果表述为真实 RSS + 真实 LLM 的端到端验收。
 
 ## 先决版本
 
@@ -28,19 +28,20 @@ npm ci
 npm run verify
 ```
 
-`npm run verify` 依次执行工具链校验、类型检查、单次测试、生产构建、真实进程 smoke 和格式检查；本地与 CI 共用此入口。可单独运行常用命令：
+`npm run verify` 依次执行工具链校验、类型检查、单次测试、生产构建、全部 smoke 和格式检查；`npm run smoke` 包含既有进程/配置 smoke、新增生产装配进程 smoke 与数据库 smoke。本地与 CI 共用此入口，不得通过跳过 smoke 降低门禁。可单独运行常用命令：
 
 ```sh
 npm run typecheck
 npm test
 npm run build
 npm run smoke
+npm run smoke:production
 npm run database:smoke
 npm run format:check
 npm run format
 ```
 
-`npm run smoke` 会先重新构建，然后依次运行真实进程 smoke 和编译产物数据库 smoke。`npm run database:smoke` 要求先执行 `npm run build`，它核对 `src/database/schema.sql` 与 `dist/database/schema.sql` 字节一致，并从编译产物初始化临时数据库。`npm start` 不会隐式安装或编译，执行前必须已有 `dist/server.js`。格式工具只处理白名单内的工程文件；`docs/`、`通用规范/`、`config/`、Prompt、依赖、构建产物和临时文件不会被重写。
+`npm run smoke:production` 会先假定已执行 `npm run build`，再启动编译产物 `dist/server.js` 并显式使用独立的临时数据库、合成 LLM 配置、有效绝对 Prompt 目录、SSRF 防护开启和临时端口。它只验证 ready、Bearer 健康检查、SIGTERM 正常退出、schema、端口释放、临时库清理及敏感输出零命中，不调用真实 LLM，也不访问真实 RSS。`npm run database:smoke` 要求先执行 `npm run build`，它核对 `src/database/schema.sql` 与 `dist/database/schema.sql` 字节一致，并从编译产物初始化临时数据库。`npm start` 不会隐式安装或编译，执行前必须已有 `dist/server.js`。格式工具只处理白名单内的工程文件；`docs/`、`通用规范/`、`config/`、Prompt、依赖、构建产物和临时文件不会被重写。
 
 ## 数据库基础
 
@@ -68,7 +69,7 @@ npm run format
 
 ## 配置
 
-配置从进程环境变量读取，不自动加载 `.env` 文件。开发时可在当前 shell 中设置本地测试值：
+配置从进程环境变量读取，不自动加载 `.env` 文件。生产启动的所有必填项必须在进程环境中显式提供；下面只演示合成/本地值，不是生产秘密：
 
 ```sh
 export HOST=127.0.0.1
@@ -76,19 +77,31 @@ export PORT=3000
 export API_TOKEN=local-test-token-change-me
 export LOG_LEVEL=info
 export DATABASE_PATH=./data/pis.sqlite
+export PIS_LLM_ENDPOINT=https://llm.example.invalid/v1/chat/completions
+export PIS_LLM_API_KEY=local-test-llm-key-change-me
+export PIS_LLM_MODEL=local-test-model
+export PROMPTS_DIR=/absolute/path/to/PIS/config/prompts
+export RSS_SSRF_PROTECTION=true
+export CRON_TIMEZONE=Asia/Shanghai
 ```
 
-上例 Token 仅用于本地演示，不是生产秘密。
+上例 Token、endpoint、key 和 model 仅用于本地演示，不是生产秘密。部署必须提供真实但受控的 HTTPS LLM endpoint、密钥和模型名，以及包含实际运行 Prompt 的单一目录。
 
-| 变量            | 默认值              | 约束                                                           |
-| --------------- | ------------------- | -------------------------------------------------------------- |
-| `HOST`          | `127.0.0.1`         | 非空且不能有首尾空白；无法绑定的地址会在启动时失败             |
-| `PORT`          | `3000`              | 十进制整数，范围 `0`～`65535`；`0` 表示由操作系统分配端口      |
-| `API_TOKEN`     | 无                  | 必填、非空且不能包含空白；没有开发默认 Token                   |
-| `LOG_LEVEL`     | `info`              | `fatal`、`error`、`warn`、`info`、`debug`、`trace` 或 `silent` |
-| `DATABASE_PATH` | `./data/pis.sqlite` | 非空且不能只有空白；相对路径按进程当前目录解析，父目录自动创建 |
+| 变量                  | 默认值              | 约束                                                                             |
+| --------------------- | ------------------- | -------------------------------------------------------------------------------- |
+| `HOST`                | `127.0.0.1`         | 非空且不能有首尾空白；无法绑定的地址会在启动时失败                               |
+| `PORT`                | `3000`              | 十进制整数，范围 `0`～`65535`；`0` 表示由操作系统分配端口                        |
+| `API_TOKEN`           | 无                  | 必填、非空且不能包含空白；没有开发默认 Token                                     |
+| `LOG_LEVEL`           | `info`              | `fatal`、`error`、`warn`、`info`、`debug`、`trace` 或 `silent`                   |
+| `DATABASE_PATH`       | `./data/pis.sqlite` | 非空且不能只有空白；相对路径按进程当前目录解析，父目录自动创建                   |
+| `PIS_LLM_ENDPOINT`    | 无                  | 必填绝对 HTTP(S) URL；禁止 userinfo、query 和 fragment；生产环境应使用 HTTPS     |
+| `PIS_LLM_API_KEY`     | 无                  | 必填非空；日志、错误和 smoke 输出不得回显                                        |
+| `PIS_LLM_MODEL`       | 无                  | 必填；trim 后非空，且原文不能含首尾空白                                          |
+| `PROMPTS_DIR`         | `config/prompts`    | resolve 为绝对路径；每个 Prompt operation 仍需在调用时从磁盘读取                 |
+| `RSS_SSRF_PROTECTION` | `true`              | 只接受精确 `true` 或 `false`；默认拒绝私网/Fake-IP/loopback，线上必须保持 `true` |
+| `CRON_TIMEZONE`       | `Asia/Shanghai`     | 非空；Scheduler 启动时用 `Intl.DateTimeFormat` 校验时区                          |
 
-显式空字符串不会使用默认值。配置错误时进程在监听前以非零状态退出，错误信息不包含配置原值。启动成功时日志会记录实际监听地址与端口；使用 `PORT=0` 时请以 ready 日志中的端口为准。
+显式空字符串不会使用可选字段的默认值。`API_TOKEN` 与三项 `PIS_LLM_*` 缺失或非法时，进程在创建 app 前以非零状态退出；错误信息只包含字段路径和安全 reason，不回显 endpoint query、API key、model、Prompt 目录或输入原值。启动成功时日志只记录实际监听地址与端口；使用 `PORT=0` 时请以 ready 日志中的端口为准。
 
 ### 配置 API
 
@@ -129,6 +142,10 @@ system 消息只包含本次读取的功能指令、固定标签和代码生成�
 
 一次 feed 或 article 获取共用一个总超时预算，重定向不会重置预算；相对重定向会重新执行 URL、DNS 和公网地址校验，HTTPS 不得降级到 HTTP。DNS 必须返回全部公网地址，连接固定到已校验的单个地址，不读取代理环境变量，也不修改 Node 全局 dispatcher。响应只接受 RSS/XML 或 article HTML 的受支持字符集和内容编码，并在原生 fetch 解压后的流式字节上限处取消；Content-Length 仅用于在读取前提前拒绝明显超限的响应。
 
+`RSS_SSRF_PROTECTION` 默认且线上必须为 `true`。显式设置 `RSS_SSRF_PROTECTION=false` 只跳过解析地址范围中的私网、loopback、link-local、reserved、unspecified/Fake-IP 拒绝，仍保留 scheme、userinfo、localhost 名称、非默认端口、逐跳 DNS 固定、redirect、HTTPS 降级、超时、大小、MIME/charset/encoding 和取消限制。关闭启动时只记录一次安全 `rss_ssrf_protection_disabled` 警告，不包含 URL、IP、Header 或正文；不得在线上使用该配置。
+
+Content-Encoding 白名单支持单值 `identity`、`gzip`、`x-gzip`、`deflate`、`br` 与 Node 26 原生 `zstd` 解压路径；未知或多值编码仍拒绝。zstd 支持但只保证解压后大小上限，不宣称限制网络上的压缩字节数；不得用 `arrayBuffer()` 绕过上限或取消。
+
 每次逻辑请求单独拥有 undici `Agent`；成功流正常关闭，失败、超限、超时和取消路径会取消 reader、解绑调用方 signal、清除计时器并销毁 dispatcher。调用方取消与内部超时会保持不同的错误原因。受限 HTTP 内部不进入公共 adapter API。
 
 ## 启动、健康检查与关闭
@@ -154,14 +171,14 @@ curl --fail-with-body \
 { "status": "ok" }
 ```
 
-缺失、错误或格式非法的 Bearer 凭据返回 HTTP `401` 和 `{"error":"unauthorized"}`。`/health` 仅表示 HTTP 空服务可用，不表示数据库、队列、LLM 或 RSS 已就绪。未注册路径返回 HTTP `404`。
+缺失、错误或格式非法的 Bearer 凭据返回 HTTP `401` 和 `{"error":"unauthorized"}`。生产启动会先初始化临时或部署数据库，创建单一共享 Clock/ID/Prompt/LLM 依赖、六阶段 Service、Runtime 与 Scheduler；Fastify ready 时启动 Runtime，listen 成功后启动 Scheduler。`/health` 只表示 HTTP 可用，不主动调用 LLM/RSS；未注册路径返回 HTTP `404`。
 
-在运行 `npm start` 的终端按 Ctrl+C（`SIGINT`），或向进程发送 `SIGTERM`，服务会停止接收新请求、关闭监听资源并以成功状态退出。正常关闭最多等待 5 秒；失败或超时会以非零状态退出。
+在运行 `npm start` 的终端按 Ctrl+C（`SIGINT`），或向进程发送 `SIGTERM`，服务会停止接收新请求，并按 Scheduler stop → Runtime 排空/取消 → HTTP 关闭 → SQLite 关闭的顺序释放资源。单个清理失败不会跳过后续资源关闭；最终 close 以稳定错误反映聚合失败，重复 close 保持幂等。正常关闭最多等待 5 秒；失败或超时会以非零状态退出。
 
 ## 当前范围与未决项
 
-D00 范围包括严格 TypeScript/ESM 构建、Vitest、Prettier、Fastify 健康端点、Pino 安全日志、环境配置校验和可测试的启停生命周期。D01 当前提供 better-sqlite3 连接、冻结 schema 初始化、同步事务基础、TEXT 时间存取和 Event FTS 刷新/重建基础。
+D00～D11 已提供工程、数据库、Prompt/LLM、配置、RSS Adapter、Collection、Processing、Event、Knowledge、Topic Matching 与 Published Item 基础。D11A 已把真实六阶段 Service、共享依赖、Runtime、Scheduler、配置 API、数据库和启停所有权装配到编译后生产入口；确定性 `ASM-05_INTEGRATION` 使用真实临时 SQLite、本地受限 HTTP Fixture 与 Stub LLM 完成 `COLLECT → PROCESS → KNOWLEDGE_ANALYSIS → TOPIC_MATCHING → PUBLISH`。这些证据只覆盖 ASM-01～ASM-07，不等于 D16、S0/S1 或真实双 RSS + 测试 LLM 的 E2E 通过。
 
-当前包含 Source/Topic 配置 API 和可注入的 RSS Adapter，但 RSS 抓取尚未接入 HTTP 服务或调度执行，也不包含 LLM 调用接入、任务队列、历史查询、匹配回填或发布 API。`/feeds/*` 尚未实现，`/health` 不探测 RSS transport。
+D12 本地静态 RSS 生成/归档尚未实现，因此 `/feeds/*`、主 Feed 文件、封存归档和历史补读尚不可用；D13 云端 Publisher 与 D14 历史查询 API 也未实现。当前 HTTP API 只提供健康检查与 Source/Topic 配置；没有业务 HTTP 触发端点或持久化任务表。真实 RSS/LLM 验证不进入 CI/P0，必须由后续人工 `ASM-08_REAL_E2E` 在独立临时 DB 中执行并另行记录。
 
 工程已配置 GitHub Actions，在拉取请求、推送到 `main` 和手动触发时执行与本地一致的门禁。**远程 CI 尚未实际运行，状态为 `NOT_RUN`；本地通过不能替代远程执行证据。**
