@@ -1,6 +1,6 @@
 # PIS
 
-PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00～D11 的业务基础，以及 D11A 的生产运行整合：真实 SQLite、共享依赖、六阶段 Service、Runtime、Cron Scheduler、配置 API 与进程生命周期由同一条生产装配链持有。D12 本地静态 RSS 生成与归档尚未实现；本 README 不把确定性 Stub/本地 Fixture 结果表述为真实 RSS + 真实 LLM 的端到端验收。
+PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00～D11 的业务基础，以及 D11A 的生产运行整合：真实 SQLite、共享依赖、六阶段 Service、Runtime、Cron Scheduler、配置 API 与进程生命周期由同一条生产装配链持有。D12 已实现本地静态 RSS 的显式同步与完整文件集（head/pending/封存归档），由 `createLocalRssSync` 显式调用；本 README 不把确定性 Stub/本地 Fixture 结果表述为真实 RSS + 真实 LLM 的端到端验收，也不把本地子集冒充 D13 云端与阅读器验收。
 
 ## 先决版本
 
@@ -37,6 +37,7 @@ npm run build
 npm run smoke
 npm run smoke:production
 npm run database:smoke
+npm run smoke:rss
 npm run format:check
 npm run format
 ```
@@ -179,6 +180,10 @@ curl --fail-with-body \
 
 D00～D11 已提供工程、数据库、Prompt/LLM、配置、RSS Adapter、Collection、Processing、Event、Knowledge、Topic Matching 与 Published Item 基础。D11A 已把真实六阶段 Service、共享依赖、Runtime、Scheduler、配置 API、数据库和启停所有权装配到编译后生产入口；确定性 `ASM-05_INTEGRATION` 使用真实临时 SQLite、本地受限 HTTP Fixture 与 Stub LLM 完成 `COLLECT → PROCESS → KNOWLEDGE_ANALYSIS → TOPIC_MATCHING → PUBLISH`。这些证据只覆盖 ASM-01～ASM-07，不等于 D16、S0/S1 或真实双 RSS + 测试 LLM 的 E2E 通过。
 
-D12 本地静态 RSS 生成/归档尚未实现，因此 `/feeds/*`、主 Feed 文件、封存归档和历史补读尚不可用；D13 云端 Publisher 与 D14 历史查询 API 也未实现。当前 HTTP API 只提供健康检查与 Source/Topic 配置；没有业务 HTTP 触发端点或持久化任务表。真实 RSS/LLM 验证不进入 CI/P0，必须由后续人工 `ASM-08_REAL_E2E` 在独立临时 DB 中执行并另行记录。
+D12 已实现**本地静态 RSS 生成与归档**。`createLocalRssSync({ reader, outputDirectory })` 显式把两类 Published Item 快照写成完整静态文件集：`event-updates.xml`（`EVENT` + `EVENT_UPDATE`）与 `curated-content.xml`（`KNOWLEDGE`）。每份 Feed 固定主窗口 `200`、封存批次 `200`，产出根级 `<feed>.xml`（主文件）、`<feed>-pending.xml`（pending）与 `archive/<feed>-NNNN.xml`（封存归档）。
+
+主文件是普通 RSS document，不含 `<fh:archive/>`；pending 是可重建的 RFC 5005 archive document，包含 `<fh:archive/>`，按 `(published_at ASC, id ASC)` 渲染当前全部 `0～199` 条未封存余量，可随快照原子替换，但它**不是**满 200 条的不可变封存批次，也不是业务队列或 Outbox；满 200 条的封存归档同样包含 `<fh:archive/>`，只创建/校验、不重写。静态链固定为 `head → pending → archive(N) → … → archive0001`，链接均为同一输出根内的规范相对 URI，不含 `?before` 游标。主文件、pending 与封存归档按 GUID 去重覆盖数据库当前全集，主文件与 pending/归档允许 GUID 重叠，封存归档彼此不重叠；同名封存冲突会停止该 Feed 的 pending/head 更新并保留旧文件。
+
+D12 只提供显式本地同步；自动通知、云端上传、HTTP Feed GET 路由与 Feed Token 在 D12 中未实现。静态 URL 中的随机秘密段只是普通路径段，不构成访问控制，公开产物不含数据库、env、Prompt、User Context 或 Token。`npm run smoke:rss` 从 `dist/**` 编译产物对 201/201 与 200/200 两组临时快照做确定性校验；`scripts/rss-readonly-acceptance.mjs` 是人工/Lead/Architect 的只读验收工具，以 `better-sqlite3` `readonly` + `query_only` 打开指定数据库并核对主文件及现存 `-wal`/`-shm` 的 pre/post 哈希。D13 云端发布尚未实现，届时才处理 Gitee/Pages、上传顺序、重试与缓存；D14 才提供历史查询 API。当前 HTTP API 仍只提供健康检查与 Source/Topic 配置，没有业务 HTTP 触发端点或持久化任务表。D12 的本地 P0 通过不等于 `RSS-15/16` 阅读器或中国大陆网络验证，也不等于 D13/D16；真实 RSS/LLM 验证不进入 CI/P0，必须由后续人工 `ASM-08_REAL_E2E` 在独立临时 DB 中执行并另行记录。
 
 工程已配置 GitHub Actions，在拉取请求、推送到 `main` 和手动触发时执行与本地一致的门禁。**远程 CI 尚未实际运行，状态为 `NOT_RUN`；本地通过不能替代远程执行证据。**
