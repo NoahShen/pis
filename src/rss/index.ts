@@ -11,6 +11,8 @@ export {
   validateRssBatchSize,
 } from "./archive.js";
 export { planAndRenderSync } from "./archive-planner.js";
+export { createLocalArtifactStore } from "./local-artifact-store.js";
+export { createLocalRssSync } from "./local-sync.js";
 export { createRssSyncService } from "./sync-service.js";
 export { RSS_FEEDS, getRssFeed } from "./feed.js";
 export { createPublishedItemSource } from "./published-item-source.js";
@@ -49,3 +51,7 @@ export type {
   RssSyncSnapshot,
 } from "./archive-planner.js";
 export type { RssSyncServiceDependencies } from "./sync-service.js";
+export type {
+  LocalRssSyncDependencies,
+  LocalRssSyncService,
+} from "./local-sync.js";

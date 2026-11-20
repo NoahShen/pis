@@ -276,3 +276,7 @@ export function parsedRssItems(
 export function xmlBytesToText(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
+
+export function xmlTextToBytes(xml: string): Uint8Array {
+  return new TextEncoder().encode(xml);
+}
