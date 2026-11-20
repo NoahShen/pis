@@ -8,7 +8,7 @@
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 当前 Worker：`NONE · T04 Worker 已归档`
 - 开发心跳：`bcff3b7f`（`create_heartbeat`，`*/10 * * * *`，Asia/Shanghai；仅提醒主会话 Architect）
-- 当前结论：`D11_PLAN=G3_APPROVED`；T01～T04 均为 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；D11 本地集成 Gate 待执行
+- 当前结论：`D11_PLAN=G3_APPROVED`；T01～T04 均为 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；`D11_LOCAL_GATE=EVIDENCE_READY`
 
 ## 任务状态
 
@@ -55,7 +55,7 @@
 
 ## 当前阻塞与待决策事项
 
-- T01～T04 已完成 G4、candidate、merge、merge 后复验与 Worker 归档；当前执行 D11 本地集成 Gate，不签发最终 PASS。
+- T01～T04 已完成 G4、candidate、merge、merge 后复验与 Worker 归档；D11 Local Gate evidence 已准备，等待主会话 Architect 独立 Gate、push/CI 与最终 PASS。
 - T01 base 必须固定为包含 G3 批准结论的精确文档提交；T02～T04 base 必须分别固定为前卡 merge 后更新 `progress.md` 的 docs record commit，不使用前卡 merge SHA。
 - 每卡候选前必须先以 `git merge-tree --write-tree --no-messages BASE CANDIDATE` 预演；预演 tree 与 frozen tree 不等即停止报告，不实际 merge。
 - `PUB-11` 属 P1，不能因为它不阻断 P0 就跳过 T04 的注入测试；`PUB-09/12` 的不可变性必须按七列逐字节断言。
@@ -64,9 +64,9 @@
 
 ## 下一可执行动作
 
-1. 从本 T04 收尾以及后续 Gate docs record 的干净快照执行 Plan §9 的 D11 本地集成 Gate。
-2. 记录 tar SHA、路径范围、受保护 diff、Prompt 哈希、定向/full 数字与 Case 边界。
-3. Lead 只提交 `D11_LOCAL_GATE=EVIDENCE_READY`，由主会话 Architect 负责独立 Gate、push/CI、最终 PASS、心跳删除与 Lead 归档。
+1. 主会话 Architect 从 T04 closeout `d77bfcb345a5c5d224468dab7ac1a677894c8fb1` / tree `34762ce01d065fb91f021ca5501314d6a8f6d0f9` 做独立干净快照 Gate。
+2. Architect 按持续授权 push 已批准 main，等待精确 pushed SHA CI Success。
+3. Lead 不 push、不签发最终 PASS、不删除心跳、不归档 Lead 工作区；最终收尾由主会话 Architect 执行。
 
 ## 本次 Lead 文档交付
 
@@ -193,6 +193,19 @@ Plan v0.2 `a4e6e77dc8e3e186616dad4cca4d3838fd4be65c`（tree `e026b7cd…`）diff
 - `PUB-11` P1 注入：target 撤销、association 撤销和事务内既有竞态均通过；保持 P1，不计入 P0。
 - Worker 归档：`archive_workspace(wks_88ca14f5a352f4bc)` 返回 `archivedAgentIds=[0041bf74-0583-4a69-a91c-76b71aa0c5ab]`、`removedDirectory=true`；活动 workspace 与 `git worktree list` 均无残留；主工作区与 Lead 工作区未归档。
 - T04 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；四卡均完成，进入 D11 本地集成 Gate。
+
+## D11 Local Integration Gate（2026-11-21）
+
+- Gate 快照：`d77bfcb345a5c5d224468dab7ac1a677894c8fb1` / tree `34762ce01d065fb91f021ca5501314d6a8f6d0f9`；工作树 clean，parent `3f8eaeff7015d68d11ff64661eaebbd1924cc27b`。
+- Tar：`/private/tmp/d11-local-gate-d77bfcb.tar`，SHA-256 `65eb968b8cfa540c23e41f06c2bb04f0c36f0190ef4f2b3684b3631dd3d2ce96`，3993600 bytes，413 entries。
+- 批准基线：`d780e1bfe5284713f274e538bf4ae4f44f0bbca6`。相对该基线的路径范围共 29 条：`src/publication/*` 11、`tests/publication/*.test.ts` 11、`tests/fixtures/publication.ts` 1、`src/runtime/contracts.ts` 1、docs 5（`docs/heartbeat-rules.md`、D11 Plan/Progress、D15 Progress、`docs/project-development.md`）。无其他 tracked/untracked 路径。
+- 受保护 diff：仅 `src/runtime/contracts.ts`，且只有 `PublishResult.published_item_id: string → string | null` 一行；schema、D01～D10、D15 其他文件、config、CI、package/lock、Prompt 文件 diff 均为空。
+- 五个公开 Prompt 文件哈希（不含私有 user-context，未读取）：event-analysis `a59ec7d780f0a1e2c43e3a83df12b02e025a6f50d3e325e93a7d9d4012b96235`；event-search `e75b656c7cb69c93d6c77af47c0e254f0c6386da74c6d2156221109abfd2d746`；knowledge-analysis `037eceafb9e927a31b57668ab85f3bafd4b410ef9b6118590ec1f00577aa0512`；processing-route `fe953fa14d34ee8e91509071307a8104f43a3d99ed6bcfd5806499cad9f5b701`；topic-matching `040a083e1b413a30f7d21a3c161fbb1c8edc47f0cb45006aeb36b6438c20e12b`。
+- 工具链：Node `26.13.1` / npm `11.20.0` PASS；`npm ci --offline` 124 packages/0 vulnerabilities；typecheck PASS；Plan §9 定向 17/17 files、103/103 tests PASS；full `npm run verify` PASS（107/107 files、1193/1193 tests；build、7 项 smoke、database smoke、278 files format PASS）。
+- 静态边界：D11 publication source 的 completion/Prompt/User Context/network/raw_data 扫描 0；Published Item update/delete/upsert 扫描 0；`Promise/async` 仅 best-effort notifier settlement、注释和公共 API，事务体无 `await`。现有 D02～D10 LLM/transaction 引用未被 D11 修改；受保护 diff 已证明范围。
+- Case 边界：`PUB-01`～`PUB-10`、`PUB-12`、`PUB-13`、`DB-13` 均为 P0 并有 publication 测试覆盖；`PUB-11` 的 target/association 撤销和 existing-race 仅按 P1 结构注入记录，不冒充 P0；`TX_RECHECK_ORDER`、`NOTIFY_AFTER_COMMIT`、`NOTIFY_BEST_EFFORT`、`NO_LLM_PRIVACY`、`EXPORT_BOUNDARY`、`D15_DIRECT_ASSIGNMENT` 均通过。
+- 范围声明：未实现 RSS XML/归档/云端/API/Runtime/app 接线；未调用 LLM；未读取私有 Prompt/User Context；PUB-11 保持 P1；事件发布快照七列不可变。
+- Lead 结论：`D11_LOCAL_GATE=EVIDENCE_READY`；Lead 未 push、未签发最终 PASS、未删除心跳、未归档 Lead 工作区。
 
 ## D11-T04 派发阻塞裁决与 Plan v0.3（2026-11-21）
 
