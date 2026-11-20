@@ -5,11 +5,11 @@
 - G1：`APPROVED`（`intent.md`）
 - G2：`APPROVED`（`spec.md`，含 Node 26 单值 zstd 口径）
 - G3：`APPROVED · Architect · 2026-11-21`
-- 当前交付：T01～T03 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T04 `READY`
+- 当前交付：T01～T03 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T04 `IN_PROGRESS`
 - 当前 Lead：`f2cdf8e5-c3ec-46bb-9bd8-a6e9c58d1d8f` / `wks_1b975dad53475f31`
-- 固定执行 base：T03 `a9ea7aab380d0ef4fb88a8fe2251349b2594f4d9`
+- 固定执行 base：T04 `354367a2affc5a6f033a16a9b3dcd413320c57ef`
 - 当前写集：仅 `docs/milestones/D11A/plan.md`、`docs/milestones/D11A/progress.md`
-- Worker：T01～T03 已归档；当前 `NONE`
+- Worker：T01～T03 已归档；T04 `13ec778a-6296-4536-998d-11b4655bda01` / `d11a-t04-worker`
 - Candidate/Merge/Push：T01 `7ee1c99d9ef3551ff5da72eec20264757227e0d4` / `6f1e4e419c3a66453b1df758df00d01e65f9c858`；T02 `a11774fa0b3d68ef032b6ae9536e7bb34e073e60` / `82a0c97ae9292c0a320097c0c62ac14ea3627635`；T03 `d0da981a340746bd372da87c117053f5fae6987b` / `93da31ceb7201659cfac82cbf832da9a12be5c49`；尚未 push
 - 开发心跳：`ca6cd3ae`（active，10 分钟，只提醒主 Architect）
 
@@ -20,7 +20,7 @@
 | `D11A-T01` 配置与 smoke 兼容 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `5765bd7a362988e82caf0f506e15446dd4339e85` | G4 APPROVED；定向 9/93；full 107/1198；merge tree `9b02c4911b3841a7291b41354e9c827e2988bbc7` |
 | `D11A-T02` SSRF 与 zstd | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a8f8dcc2cb193ecf0c40d9813cfc34924cf01c47` | G4 APPROVED；定向 4/197；full 108/1220；merge tree `b26eee4c675cc629bcf32791570dea576d72145b` |
 | `D11A-T03` 生产装配与生命周期 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a9ea7aab380d0ef4fb88a8fe2251349b2594f4d9` | G4 APPROVED；定向 15/131；full 110/1233；merge tree `0d19d0a9e3887685abd8e673dabbcbbdfe7cc1f4` |
-| `D11A-T04` 集成、smoke、文档 | `READY` | T03 closeout 文档提交 | 待 Lead 派发 |
+| `D11A-T04` 集成、smoke、文档 | `IN_PROGRESS` | `354367a2affc5a6f033a16a9b3dcd413320c57ef` | Runtime/Stub/文档边界核对中 |
 
 ## 当前验证
 
