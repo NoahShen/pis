@@ -1,6 +1,6 @@
 # D11 Plan：Published Item 与模板
 
-> 版本：v0.1
+> 版本：v0.2
 > 状态：`G3_PENDING_ARCHITECT_REVIEW`
 > 日期：2026-11-20
 > 计划基线：main `5d95f8b6eb3e7beff89e3f52498c3b7de203feb1` / tree `e71bad95094e39b1be6b87443267349627a0509b`
@@ -46,7 +46,7 @@ export interface PublicationService {
 ```
 
 - `PublicationTargetType` 必须复用 D10 `TopicTargetType`，不得另造第二套字符串联合。
-- D11 **成功返回对象**比 D15 `StageServices.publish` 的 `{ published_item_id: string }` 多一个只读布尔字段，按对象结构可被 D15 成功结果形状吸收；但 D11 全量返回允许正常空结果的 `published_item_id:null`，所以完整 `PublicationService.publish()` 返回类型不能直接赋给当前 D15 `StageServices.publish()`。D11 不修改也不接线 D15，G3 必须确认“结构兼容”仅指成功对象形状，或在 D11 范围外另行批准 Runtime 适配。
+- **G3 已裁决**：D11-T04 可对 D15 `src/runtime/contracts.ts` 作唯一受控例外，将 `PublishResult.published_item_id` 由 `string` 放宽为 `string | null`。裁决依据是技术设计 §14.2 允许 null 正常空结果，而 D15 对 PUBLISH 结果不读取字段。T04 必须证明 D11 完整 `PublicationService.publish()`（含 null）可直接赋给 `StageServices.publish`；不得修改 D15 其他文件、运行时逻辑、映射或错误分类。
 - 目标缺失或无 Topic Association 返回 `{published_item_id:null, already_published:false}`，是正常空结果，不抛业务错误。
 - 已存在 Published Item 返回原 ID 和 `already_published:true`；不得重新读取渲染上下文、来源链接或调用 renderer。
 - 稳定错误仅 `invalid_input | aborted | publication_failed`，固定安全 message，无 cause，不携带正文、标题原文、URL、SQL 或底层异常。
@@ -54,7 +54,7 @@ export interface PublicationService {
 
 不可变更边界：
 
-- 不修改 D01 DDL/schema、D02 LLM、D03～D10、D15 任何生产代码；不修改 `src/database`、`src/time`、`src/id` 的既有实现。
+- 不修改 D01 DDL/schema、D02 LLM、D03～D10 生产代码；D15 仅允许 T04 在 `src/runtime/contracts.ts` 将 `PublishResult.published_item_id` 单行放宽为 `string | null`，其余 D15 文件/逻辑禁止修改。不修改 `src/database`、`src/time`、`src/id` 的既有实现。
 - 不新增表，不修改表约束，不新增依赖，不修改 `package.json`/`package-lock.json`、CI、app/server/lifecycle、配置 API。
 - 不实现 RSS XML、归档、云端上传、HTTP API 或 Runtime 接线；不实现 LLM Renderer、Prompt 或 Prompt 文件读取。
 - 不读取真实私有 `config/prompts/*.md`、`config/prompt/user-context.md`、API Key 或 Token；测试只用合成 sentinel。
@@ -75,10 +75,10 @@ export interface PublicationService {
 - `src/topic-matching/topic-matching-target-repository.ts`：现有 DTO 已证明 Event/Update/Knowledge 的 SQL 字段与 findings JSON 校验方式可复用；D11 新建自己的 PublicationContext DTO，只包含 Spec §2 字段，不修改 D10 文件。
 - `src/database/transaction.ts`：`withTransaction()` 使用同步 `BEGIN IMMEDIATE`，拒绝 async function 与 thenable 返回值；D11 只能用其包裹同步复检、时钟/ID 和插入。
 - `src/time/*`、`src/id/*`：发布使用注入 `Clock`，仅在事务内成功写入路径调用一次 `now()`；使用注入 `IdGenerator.next()` 一次，并以 `formatTimestamp()` 存储 `+08:00` ISO 时间。
-- `src/runtime/contracts.ts`：D15 的 `PublishResult.published_item_id` 为非空 `string`；D11 新增只读 `already_published` 的成功对象可按多余属性规则赋给该成功结果形状，但 D11 的 `string | null` 全量返回与 D15 服务签名存在静态类型差异。D11 不修改 D15，且本轮不做 Runtime 接线；该差异登记为 G3 契约确认项。
+- `src/runtime/contracts.ts`：G3 已裁决允许 D11-T04 将 `PublishResult.published_item_id` 从 `string` 单行放宽为 `string | null`；D11 完整 `PublicationService.publish()` 由此可直接满足 `StageServices.publish`。D15 其他文件/运行时逻辑/映射/错误分类不得触碰，D11 仍不做 Runtime 接线。
 - 当前 `src/publication/` 与 `tests/publication/` 不存在；D11 只新增该范围及 `tests/fixtures/publication.ts`。
 
-未发现已批准 D11 Spec 与 D01 schema、D10 target DTO、D15 Runtime 契约之间的实现冲突。若 Worker 在执行时发现实际行为偏离以上只读结论，立即 `BLOCKED`，不得修补上游或复制第二套规则。
+除 G3 已明确裁决的 D15 单行契约修正外，未发现已批准 D11 Spec 与 D01 schema、D10 target DTO、D15 Runtime 契约之间的实现冲突。若 Worker 在执行时发现实际行为偏离以上只读结论或裁决，立即 `BLOCKED`，不得扩展修补上游或复制第二套规则。
 
 ### 2.2 模块职责与文件布局
 
@@ -428,6 +428,7 @@ git diff --name-only <BASE_SHA> -- src/database src/collection src/processing sr
 ### 7.1 依赖与精确允许写集
 
 - 前置：D11-T03 已 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；base 固定为 T03 merge 后的 D11 docs record commit SHA。
+- 修改且仅允许改：`src/runtime/contracts.ts`（唯一受控例外：仅 `PublishResult.published_item_id` 由 `string` 改为 `string | null`，不得改变其他字段/注释语义或 D15 行为）。
 - 修改且仅允许改：`src/publication/publication.ts`（事务内 target/association 复检、COMMIT 后通知、最终工厂行为）。
 - 修改且仅允许改：`src/publication/publication-logger.ts`（新增 notify stage 与 notify_failed 白名单）。
 - 新增且仅允许写：`src/publication/index.ts`（最终运行时代码只导出 `createPublication`、`PublicationError`）。
@@ -437,7 +438,7 @@ git diff --name-only <BASE_SHA> -- src/database src/collection src/processing sr
 - 新增且仅允许写：`tests/publication/publication-notification.test.ts`。
 - 新增且仅允许写：`tests/publication/publication-integration.test.ts`。
 - 新增且仅允许写：`tests/publication/publication-export-boundary.test.ts`。
-- 只读复用：T01～T03 全部、D01 open/init、schema fixture、D10 target DTO 形状、D15 `PublishResult` 结构兼容断言。
+- 只读复用：T01～T03 全部、D01 open/init、schema fixture、D10 target DTO 形状；D15 仅按上述单行契约修正后做直接类型兼容断言。
 - 依赖/包变更：`NONE`。
 - 其他任何 tracked/untracked 路径：禁止。
 - Spec/Case 映射：Spec §1、§2、§5、§6、§7、§8、§9；Intent §2.1～§2.10；`PUB-01`～`PUB-10`、`PUB-12`、`PUB-13`、`DB-13` 的集成收口及 `PUB-11` P1。
@@ -446,7 +447,7 @@ git diff --name-only <BASE_SHA> -- src/database src/collection src/processing sr
 
 - 不得新增 RSS XML、Feed 文件、归档、云端、HTTP API、Runtime/app/server/lifecycle 接线或持久化通知任务。
 - 不得实现 LLM/Completion/Prompt、读取任何 Prompt 或 User Context，不得从模型输出取 URL。
-- 不得修改 schema、D01～D10/D15、D10 target repository、package/lock、CI、config。
+- 不得修改 schema、D01～D10、D10 target repository、package/lock、CI、config；D15 仅允许 §7.1 的单行契约修正，其他 D15 文件/逻辑/错误分类均禁止。
 - 不得在事务内调用 renderer、source repository、notifier、logger 中的异步操作或任何 await；通知应在 COMMIT 后且不阻塞返回值。
 - 不得 update/delete/upsert Published Item，不得新增第二份 Published Item，不得用后补证据重构 body。
 - 不得通过放宽 `PUB-11` 为 P0 或删除注入测试冒充 P0；它必须忠实记录为 P1 结构证明。
@@ -465,6 +466,7 @@ git diff --name-only <BASE_SHA> -- src/database src/collection src/processing sr
 10. `PUB-11` P1 注入：外部 getContext/hasAnyTopicAssociation 成功后，事务内下一次复检分别返回 null/false；断言 insert/clock/id/notify 均为 0，业务表除既有种子外不变。再注入“事务内发现已存在”场景，返回既有 ID/true、零竞态第二行。
 11. 集成测试必须断言 body 标签 allowlist、恶意 HTML 转义、真实 http(s) 链接只来自证据；无 URL 仍发布；重复 URL 去重；无 Topic 不发布；多 Topic 一快照；三目标 DTO 无 raw_data；SQLite 唯一约束不被绕过。
 12. `publication-export-boundary.test.ts` 以命名空间 import 检查最终运行时值导出集合精确为 `PublicationError`、`createPublication`，类型导出不产生运行时代码；同时断言无 `completionClient`/LLM/Prompt 文件读取。
+13. `src/runtime/contracts.ts` 只将 `PublishResult.published_item_id` 从 `string` 改为 `string | null`；在既有 `tests/publication/publication-integration.test.ts` 内加入直接类型赋值，证明 D11 完整 `PublicationService.publish`（含 null 空结果）可赋给 `StageServices["publish"]`，并复验 D15 `mapResultToDownstreamTasks(PUBLISH)` 对 null 结果仍返回 `[]`。
 
 ### 7.4 测试矩阵
 
@@ -490,7 +492,7 @@ git diff --name-only <BASE_SHA> -- src/database src/collection src/processing sr
 | `NOTIFY_BEST_EFFORT` | 同步 throw/异步 reject 不影响返回值、快照与后续复用 |
 | `NO_LLM_PRIVACY` | 生产源码无 completionClient/TypedLlmCalls/Prompt/User Context；DTO 无 raw_data/历史 Updates |
 | `EXPORT_BOUNDARY` | 运行时值导出恰为 `createPublication`/`PublicationError`；无 Repository/helper 值导出 |
-| `D15_SUCCESS_SHAPE` | D11 新建成功对象 `{published_item_id:string,already_published:boolean}` 可赋给 D15 成功结果形状；不冒充完整空结果服务可直连 D15 |
+| `D15_DIRECT_ASSIGNMENT` | D11 完整 `PublicationService.publish`（含 null 空结果）可直接赋给 `StageServices["publish"]`；D15 PUBLISH 映射仍为 `[]`，其他 runtime 行为零变化 |
 
 ### 7.5 验证命令与交回
 
@@ -508,9 +510,10 @@ rg -n 'UPDATE published_items|DELETE FROM published_items|INSERT OR REPLACE|ON C
 rg -n 'await|Promise' src/publication/publication.ts || true
 rg -n 'published_items|event_content_links|source_items|topic_associations|knowledge' src/publication/*.ts | sed -n '1,240p'
 git diff --name-only <BASE_SHA> -- src/database src/collection src/processing src/knowledge src/event-analysis src/event-search src/topic-matching src/llm src/prompt src/adapters src/configuration src/config.ts src/time src/id src/runtime src/app.ts src/server.ts src/lifecycle.ts config/prompts config/prompt .github package.json package-lock.json
+git diff --unified=0 <BASE_SHA> -- src/runtime/contracts.ts
 ```
 
-禁止 diff 必须为空。`Promise`/`async` 仅允许公共 `Publish` API 与不阻塞 notifier 调用，`publication.ts` 事务体必须无可执行 await；SQL 扫描必须只对应七个绑定列、唯一查询和只读 Feed 列表。交回须列三目标行数、重复/并发渲染计数、事务内复检注入、`inTransaction` 时序、通知故障结果、标签/URL 安全证据、full 测试与 format 数字，仅报 `REVIEW`/`BLOCKED`。
+受保护 diff 仅允许出现 `src/runtime/contracts.ts`，其 diff 必须只有 `PublishResult.published_item_id` 的 `string → string | null` 单行语义变更；其余受保护路径 diff 必须为空。`Promise`/`async` 仅允许公共 `Publish` API 与不阻塞 notifier 调用，`publication.ts` 事务体必须无可执行 await；SQL 扫描必须只对应七个绑定列、唯一查询和只读 Feed 列表。交回须列三目标行数、重复/并发渲染计数、事务内复检注入、`inTransaction` 时序、通知故障结果、标签/URL 安全证据、D15 直接类型赋值、full 测试与 format 数字，仅报 `REVIEW`/`BLOCKED`。
 
 ### 7.6 冻结与交付证据
 
@@ -521,7 +524,7 @@ git diff --name-only <BASE_SHA> -- src/database src/collection src/processing sr
 | `WORKER_WORKSPACE` | `PENDING` |
 | `WORKER_BRANCH` | `PENDING` |
 | `CHANGED_PATHS` | `PENDING`；允许路径见 §7.1 |
-| `PATH_COUNT` | `PENDING · expected 9` |
+| `PATH_COUNT` | `PENDING · expected 10` |
 | `FROZEN_TREE` | `PENDING` |
 | `FROZEN_BLOBS` | `PENDING`；逐路径 blob |
 | `PATCH_PATH` | `PENDING` |
@@ -568,6 +571,7 @@ npx vitest run tests/publication tests/database/schema-consistency.test.ts tests
 npm run verify
 git diff --check
 git diff --name-only <APPROVED_BASE_SHA> -- src/database src/collection src/processing src/knowledge src/event-analysis src/event-search src/topic-matching src/llm src/prompt src/adapters src/configuration src/config.ts src/time src/id src/runtime src/app.ts src/server.ts src/lifecycle.ts config/prompts config/prompt .github package.json package-lock.json
+git diff --unified=0 <APPROVED_BASE_SHA> -- src/runtime/contracts.ts
 rg -n 'completionClient|TypedLlmCalls|ChatCompletion|config/prompts|user-context|apiKey|Authorization|fetch\(|raw_data|historical_updates' src/publication || true
 rg -n 'UPDATE published_items|DELETE FROM published_items|INSERT OR REPLACE|ON CONFLICT.*published_items' src/publication || true
 rg -n 'await|Promise' src/publication/publication.ts || true
@@ -585,7 +589,7 @@ Gate 必须保留：
 - COMMIT 后仅新建时 notify，EVENT/UPDATE→EVENT、KNOWLEDGE→KNOWLEDGE；同步 throw/异步 reject 不回滚、不重渲染、不重试 Publish。
 - 已发布快照七列逐字节不变；任何后补证据/字段/关联/Update 均不改写。
 - 公共运行时值导出仅 `createPublication`/`PublicationError`；无 completion client、LLM、Prompt、User Context、RSS/API/Runtime 接线。
-- 相对批准基线仅允许 D11 `src/publication`、`tests/publication`、`tests/fixtures/publication.ts` 与 D11 文档路径；受保护路径 diff=0，schema/package/lock/CI=0。
+- 相对批准基线仅允许 D11 `src/publication`、`tests/publication`、`tests/fixtures/publication.ts`、D11 文档路径，以及 T04 对 `src/runtime/contracts.ts` 的单行 nullable 修正。受保护路径仅允许该文件出现且只含单行语义差异；其他受保护路径、schema/package/lock/CI=0。
 
 Lead 提交 `D11_LOCAL_GATE=EVIDENCE_READY` 后交 Architect。Architect 独立复核干净快照，按持续授权 push 已批准 main SHA 并等待精确 SHA CI Success；Lead 不 push、不签发最终 PASS。只有 Architect 独立 Gate 与精确 pushed SHA CI 都通过后，才可签发 `D11_FINAL_PASS`。
 
@@ -594,7 +598,7 @@ Lead 提交 `D11_LOCAL_GATE=EVIDENCE_READY` 后交 Architect。Architect 独立�
 ## 10. 风险、回滚与停止条件
 
 - **G3 门禁**：Intent/Spec 已批准，但本 Plan 仍待 Architect G3；未批准不派发 Worker、不写生产代码、不创建 candidate/merge/push。
-- **D15 结构兼容确认**：D11 成功对象可赋给 D15 的 `{published_item_id:string}`，但 D11 正常空结果的 `published_item_id:null` 使完整服务返回类型不能直接赋给当前 D15 `StageServices.publish()`。本 Plan 不修改、不接线 D15；G3 若要求服务级直接赋值，必须由 Architect 明确在 D11 范围外调整 D15 契约或批准适配策略，Worker 不得自行改类型。
+- **D15 契约例外（G3 已裁决）**：T04 仅将 `src/runtime/contracts.ts` 的 `PublishResult.published_item_id` 放宽为 `string | null`，不得触碰其他 D15 文件/逻辑/错误分类，并必须以直接类型赋值测试证明 D11 完整 publish 返回可直接赋给 `StageServices.publish`。该例外不得被 Worker 扩展到其他上游位置。
 - **固定基线**：T01 base 必须是批准后的精确文档提交；T02～T04 必须是前卡 merge 后的 docs record commit。不得用浮动 `main`、branch 名或前卡 merge SHA 代替。
 - **公共出口**：`index.ts` 若把 helper/Repository/renderer 作为运行时值导出，违反 Spec；若 createPublication 暴露 completionClient/Prompt 依赖，判 BLOCKER。
 - **LLM 越界**：任何 Completion/Prompt/User Context 读取、模型 URL 或模板块调用，判 BLOCKER；T01～T04 只使用合成数据。
@@ -615,5 +619,5 @@ Lead 提交 `D11_LOCAL_GATE=EVIDENCE_READY` 后交 Architect。Architect 独立�
 - 多 Topic 一快照；事务外渲染/链接收集；事务内同步复检目标/关联/唯一性；COMMIT 后 best-effort 通知。
 - `PUB-01`～`PUB-10`、`PUB-12`、`PUB-13`、`DB-13` 有 P0 测试归属；`PUB-11` 为 P1 结构证明 + 注入测试。
 - `PUB-07`/`PUB-08` 无链接与坏链接均不阻断；`PUB-13` 内容转义与真实 URL 来源分离；三目标 DTO 无 raw_data/User Context/历史 Updates/父关联。
-- D15 结构兼容按“成功对象可吸收”记录；正常 null 空结果与 D15 当前非空返回签名的差异已显式提交 G3 决策，不通过改 D15 或删除空结果规避。
+- D15 结构兼容已由 G3 裁决：T04 单行将 `PublishResult.published_item_id` 放宽为 `string | null`，并以 D11 完整 publish 到 `StageServices.publish` 的直接类型赋值测试收口；不删除正常 null 空结果，不修改 D15 其他行为。
 - 当前结论：`D11_PLAN=G3_PENDING_ARCHITECT_REVIEW`。G3 复核通过前四卡保持 `NOT_STARTED`，不创建 Worker、心跳、candidate、merge、push 或最终验收。
