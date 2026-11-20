@@ -1,0 +1,147 @@
+import type {
+  PublicationContext,
+  PublicationDraft,
+  PublicationEvent,
+  PublicationEventSummary,
+  PublicationKnowledge,
+  PublicationRenderer,
+  PublicationUpdate,
+} from "./contracts.js";
+import { escapeHtml } from "./html.js";
+
+const DEFAULT_SUMMARY_LIMIT = 240;
+
+function isHighSurrogate(codeUnit: number): boolean {
+  return codeUnit >= 0xd800 && codeUnit <= 0xdbff;
+}
+
+function isLowSurrogate(codeUnit: number): boolean {
+  return codeUnit >= 0xdc00 && codeUnit <= 0xdfff;
+}
+
+export function truncateSummary(
+  value: string,
+  max = DEFAULT_SUMMARY_LIMIT,
+): string {
+  if (!Number.isFinite(max)) {
+    return value;
+  }
+
+  const limit = Math.max(0, Math.floor(max));
+  if (limit === 0) {
+    return "";
+  }
+
+  if (value.length <= limit) {
+    return value;
+  }
+
+  let end = Math.max(0, limit - 1);
+  if (
+    end > 0 &&
+    end < value.length &&
+    isHighSurrogate(value.charCodeAt(end - 1)) &&
+    isLowSurrogate(value.charCodeAt(end))
+  ) {
+    end -= 1;
+  }
+
+  return `${value.slice(0, end)}…`;
+}
+
+function formatOccurredAt(value: string | null): string {
+  return value === null || value.trim() === "" ? "时间未确定" : value;
+}
+
+function renderEvent(
+  event: PublicationEvent,
+  occurredAt: string | null,
+): PublicationDraft {
+  return {
+    title: event.title,
+    summary: truncateSummary(event.description),
+    body: [
+      "<section>",
+      `<h2>${escapeHtml(event.title)}</h2>`,
+      `<p>核心实体：${escapeHtml(event.entityName)}</p>`,
+      `<p>主题：${escapeHtml(event.subject)}</p>`,
+      `<p>范围：${escapeHtml(event.scope)}</p>`,
+      `<p>发生时间：${escapeHtml(formatOccurredAt(occurredAt))}</p>`,
+      "<h3>初始事实</h3>",
+      `<p>${escapeHtml(event.description)}</p>`,
+      "</section>",
+    ].join("\n"),
+  };
+}
+
+function renderEventUpdate(
+  update: PublicationUpdate,
+  parentEvent: PublicationEventSummary,
+  occurredAt: string | null,
+): PublicationDraft {
+  return {
+    title: update.title,
+    summary: truncateSummary(update.description),
+    body: [
+      "<section>",
+      `<h2>${escapeHtml(update.title)}</h2>`,
+      `<p>所属主线：${escapeHtml(parentEvent.title)}</p>`,
+      `<p>核心实体：${escapeHtml(parentEvent.entityName)}</p>`,
+      `<p>主题：${escapeHtml(parentEvent.subject)}</p>`,
+      `<p>范围：${escapeHtml(parentEvent.scope)}</p>`,
+      `<p>发生时间：${escapeHtml(formatOccurredAt(occurredAt))}</p>`,
+      "<h3>本次进展</h3>",
+      `<p>${escapeHtml(update.description)}</p>`,
+      "</section>",
+    ].join("\n"),
+  };
+}
+
+function renderKnowledge(knowledge: PublicationKnowledge): PublicationDraft {
+  const findings =
+    knowledge.findings.length === 0
+      ? ["<p>暂无 Findings</p>"]
+      : [
+          "<ul>",
+          ...knowledge.findings.map(
+            (finding) =>
+              `<li>${escapeHtml(finding.title)}：${escapeHtml(finding.description)}</li>`,
+          ),
+          "</ul>",
+        ];
+
+  return {
+    title: knowledge.title,
+    summary: knowledge.summary,
+    body: [
+      "<section>",
+      `<h2>${escapeHtml(knowledge.title)}</h2>`,
+      `<p>分类：${escapeHtml(knowledge.category ?? "未分类")}</p>`,
+      `<p>摘要：${escapeHtml(knowledge.summary)}</p>`,
+      `<p>价值：${escapeHtml(knowledge.value)}</p>`,
+      "<h3>Findings</h3>",
+      ...findings,
+      "</section>",
+    ].join("\n"),
+  };
+}
+
+export class TemplatePublicationRenderer implements PublicationRenderer {
+  render(context: PublicationContext): PublicationDraft {
+    switch (context.targetType) {
+      case "EVENT":
+        return renderEvent(context.event, context.occurredAt);
+      case "EVENT_UPDATE":
+        return renderEventUpdate(
+          context.update,
+          context.parentEvent,
+          context.occurredAt,
+        );
+      case "KNOWLEDGE":
+        return renderKnowledge(context.knowledge);
+    }
+
+    const unreachable: never = context;
+    throw new Error(`Unsupported publication target type: ${unreachable}`);
+  }
+}
