@@ -2,7 +2,6 @@ import type { AddressInfo } from "node:net";
 
 import type { FastifyInstance } from "fastify";
 
-import { buildApp } from "./app.js";
 import {
   ConfigError,
   loadConfig,
@@ -10,6 +9,7 @@ import {
   type LogLevel,
 } from "./config.js";
 import { createLogger, type Logger } from "./logger.js";
+import { buildProductionApp } from "./production/application.js";
 
 export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 5_000;
 
@@ -462,7 +462,7 @@ export async function main(deps: MainDependencies = {}): Promise<void> {
   const shutdownTimeoutMs =
     deps.shutdownTimeoutMs ?? DEFAULT_SHUTDOWN_TIMEOUT_MS;
   const loggerFactory = deps.loggerFactory ?? createLogger;
-  const appFactory = deps.appFactory ?? buildApp;
+  const appFactory = deps.appFactory ?? buildProductionApp;
   let config: AppConfig;
 
   try {
