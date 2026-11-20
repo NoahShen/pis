@@ -80,3 +80,27 @@
 - 状态：`G3_PENDING_ARCHITECT_REVIEW`。
 - 批准前：四卡 `NOT_STARTED`，无 Worker、心跳、candidate、merge、push。
 - 批准后：以包含本记录/批准结论的精确文档提交为执行基线；T01 使用全新 Worker、独立 worktree，严格按 Plan §4 写集。
+
+## Architect G3 审核（2026-11-21）
+
+Plan `8feb660f83453bfad95c075db8d9e763698eab65`（tree `de992a0a…`，parent 基线 `5d95f8b6`，精确 2 个新增文档路径）已逐卡核对。四卡拆分、base 规则（前一卡 docs commit）、预演 merge 门禁、冻结证据同次回复、Case 映射与禁止范围均符合 Spec 与 D15 已确立流程。
+
+### Lead G3 待确认项裁决：D15 契约差异
+
+**批准修改 D15 契约，作为 D11-T04 的受控例外**：
+
+- 允许且仅允许修改 `src/runtime/contracts.ts` 一处：`PublishResult.published_item_id` 由 `string` 放宽为 `string | null`。
+- 依据：技术设计 §14.2 权威伪代码本来就允许 `publishedItemId: null`（门槛不满足是正常空结果）；D15 当时收窄为非空是契约疏忽。D15 对 PUBLISH 结果不读任何字段（`mapResultToDownstreamTasks` 直接返回 `[]`），该改动纯类型层面、零运行时行为变化。
+- D11-T04 必须附类型兼容测试：D11 完整 `PublicationService.publish`（含 null 空结果）可直接赋给 `StageServices.publish`。
+- 禁止借该行放宽触碰 D15 其他任何文件、运行时逻辑、映射或错误分类；D15 progress.md 由 Lead 追加一行事后契约更正记录。
+
+### Plan v0.2 修订要求（G3 批准的前置）
+
+当前 Plan 多处显式写"不修改 D15 / `src/runtime` 禁止 diff"，与上述裁决冲突。请提交 Plan v0.2：
+
+1. §7.1 T04 写集增加 `src/runtime/contracts.ts`（仅此一行语义变更）与对应兼容测试文件（可并入既有测试）。
+2. §7.2 与 §9/§10 中 `src/runtime` 的禁止/受保护表述改为"仅允许上述单行契约修正"。
+3. §2.1/line 49/line 597 的 G3 待确认项标记为已裁决。
+4. 除此之外不改任何内容。
+
+v0.2 回传后即签发 `D11_PLAN=G3_APPROVED` 与执行基线；心跳与 Worker 派发在批准后开始。在此之前仍不得开发。
