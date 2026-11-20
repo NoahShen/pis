@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app.js";
 import type { ConfigurationRepositories } from "../src/configuration/app-assembly.js";
-import type { AppConfig } from "../src/config.js";
+import { appConfig } from "./fixtures/app-config.js";
 import { CapturedLogger } from "./fixtures/captured-logger.js";
 
 const API_TOKEN = "detector-application-token";
@@ -13,12 +13,7 @@ const QUERY_SENTINEL = "detector-query-sentinel";
 const PATH_SENTINEL = "detector-path-sentinel";
 const COOKIE_SENTINEL = "detector-cookie-sentinel";
 const RSS_SENTINEL = "https://detector-rss-sentinel.example/private";
-const config: AppConfig = {
-  host: "127.0.0.1",
-  port: 3000,
-  apiToken: API_TOKEN,
-  logLevel: "silent",
-};
+const config = appConfig({ apiToken: API_TOKEN, port: 3000 });
 const apps: FastifyInstance[] = [];
 
 const unusedRepositories: ConfigurationRepositories = {

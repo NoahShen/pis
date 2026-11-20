@@ -32,12 +32,17 @@ const REQUEST_TIMEOUT_MS = 2_000;
 const CLEANUP_TIMEOUT_MS = 1_000;
 
 const API_TOKEN = `smoke-token-${process.pid}`;
+const LLM_ENDPOINT = `http://127.0.0.1:9/smoke-llm-${process.pid}`;
+const LLM_API_KEY = `smoke-llm-key-${process.pid}`;
+const LLM_MODEL = `smoke-llm-model-${process.pid}`;
+const PROMPTS_DIR = path.join(projectRoot, "config", "prompts");
 const QUERY_SENTINEL = `smoke-query-${process.pid}`;
 const BODY_SENTINEL = `smoke-body-${process.pid}`;
 const COOKIE_SENTINEL = `smoke-cookie-${process.pid}`;
 const RSS_SENTINEL = `https://smoke-rss-${process.pid}.example/private`;
 const SENSITIVE_SENTINELS = [
   API_TOKEN,
+  LLM_API_KEY,
   QUERY_SENTINEL,
   BODY_SENTINEL,
   COOKIE_SENTINEL,
@@ -78,6 +83,12 @@ function spawnCaptured(entry, environment) {
       HOST: "127.0.0.1",
       PORT: "0",
       LOG_LEVEL: "info",
+      PIS_LLM_ENDPOINT: LLM_ENDPOINT,
+      PIS_LLM_API_KEY: LLM_API_KEY,
+      PIS_LLM_MODEL: LLM_MODEL,
+      PROMPTS_DIR,
+      RSS_SSRF_PROTECTION: "true",
+      CRON_TIMEZONE: "Asia/Shanghai",
       ...environment,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -311,10 +322,10 @@ async function assertPortReleased(port) {
 
 function assertNoSensitiveOutput(state) {
   const output = `${state.stdout}\n${state.stderr}`;
-  for (const sentinel of SENSITIVE_SENTINELS) {
+  for (const [index, sentinel] of SENSITIVE_SENTINELS.entries()) {
     assert(
       !output.includes(sentinel),
-      `captured output contained sensitive sentinel ${sentinel}`,
+      `captured output contained sensitive sentinel ${index + 1}`,
     );
   }
 }

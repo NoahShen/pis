@@ -4,6 +4,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { describe, expect, it, vi } from "vitest";
 
 import { closeWithTimeout, main, startServer } from "../src/lifecycle.js";
+import { testEnvironment } from "./fixtures/app-config.js";
 import { CapturedLogger, FakeSignals } from "./fixtures/captured-logger.js";
 
 function isPending(promise: Promise<unknown>): Promise<boolean> {
@@ -899,7 +900,7 @@ describe("closeWithTimeout", () => {
 
     try {
       const running = main({
-        env: { API_TOKEN: "test-token", PORT: "0" },
+        env: testEnvironment({ PORT: "0" }),
         loggerFactory: () => productionLogger,
         appFactory: () => productionApp,
         signalSource: signals,
@@ -962,7 +963,7 @@ describe("main", () => {
     const forceExit = vi.fn();
 
     await main({
-      env: { API_TOKEN: "test-token" },
+      env: testEnvironment(),
       loggerFactory: () => logger,
       appFactory: () => app,
       signalSource: signals,
@@ -990,7 +991,7 @@ describe("main", () => {
 
     try {
       await main({
-        env: { API_TOKEN: "test-token" },
+        env: testEnvironment(),
         loggerFactory: () => logger,
         appFactory: () => {
           const app = Fastify({ logger: false });
@@ -1019,7 +1020,7 @@ describe("main", () => {
     const signals = new FakeSignals();
     const forceExit = vi.fn();
     const running = main({
-      env: { API_TOKEN: "test-token", PORT: "0" },
+      env: testEnvironment({ PORT: "0" }),
       loggerFactory: () => logger,
       appFactory: () => app,
       signalSource: signals,
@@ -1043,7 +1044,7 @@ describe("main", () => {
     const signals = new FakeSignals();
     const forceExit = vi.fn();
     const running = main({
-      env: { API_TOKEN: "test-token", PORT: "0" },
+      env: testEnvironment({ PORT: "0" }),
       loggerFactory: () => logger,
       appFactory: () => app,
       signalSource: signals,
@@ -1086,7 +1087,7 @@ describe("main", () => {
     const signals = new FakeSignals();
     const forceExit = vi.fn();
     const running = main({
-      env: { API_TOKEN: "test-token", PORT: "0" },
+      env: testEnvironment({ PORT: "0" }),
       loggerFactory: () => logger,
       appFactory: () => app,
       signalSource: signals,
@@ -1117,7 +1118,7 @@ describe("main", () => {
     const signals = new FakeSignals();
     const forceExit = vi.fn();
     const running = main({
-      env: { API_TOKEN: "test-token", PORT: "0" },
+      env: testEnvironment({ PORT: "0" }),
       loggerFactory: () => logger,
       appFactory: () => app,
       signalSource: signals,
@@ -1148,7 +1149,7 @@ describe("main", () => {
     const signals = new FakeSignals();
     const forceExit = vi.fn();
     const running = main({
-      env: { API_TOKEN: "test-token", PORT: "0" },
+      env: testEnvironment({ PORT: "0" }),
       loggerFactory: () => logger,
       appFactory: () => app,
       signalSource: signals,
@@ -1167,11 +1168,16 @@ describe("main", () => {
     expect(logger.readyEntries).toEqual([]);
   });
 
-  it("missing configuration is rejected before creating an app", async () => {
+  it("missing LLM configuration is rejected before creating an app", async () => {
     const logger = new CapturedLogger();
     const appFactory = vi.fn();
     const forceExit = vi.fn();
-    await main({ env: {}, loggerFactory: () => logger, appFactory, forceExit });
+    await main({
+      env: { API_TOKEN: "test-token" },
+      loggerFactory: () => logger,
+      appFactory,
+      forceExit,
+    });
 
     expect(appFactory).not.toHaveBeenCalled();
     expect(logger.errorEntries).toEqual([

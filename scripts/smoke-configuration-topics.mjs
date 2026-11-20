@@ -14,6 +14,10 @@ const STARTUP_TIMEOUT_MS = 5_000;
 const REQUEST_TIMEOUT_MS = 2_000;
 const EXIT_TIMEOUT_MS = 3_000;
 const API_TOKEN = `topic-configuration-smoke-token-${process.pid}`;
+const LLM_ENDPOINT = `http://127.0.0.1:9/topic-configuration-smoke-llm-${process.pid}`;
+const LLM_API_KEY = `topic-configuration-smoke-llm-key-${process.pid}`;
+const LLM_MODEL = `topic-configuration-smoke-llm-model-${process.pid}`;
+const PROMPTS_DIR = path.join(projectRoot, "config", "prompts");
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -29,6 +33,12 @@ function spawnServer(databasePath) {
       HOST: "127.0.0.1",
       LOG_LEVEL: "info",
       PORT: "0",
+      PIS_LLM_ENDPOINT: LLM_ENDPOINT,
+      PIS_LLM_API_KEY: LLM_API_KEY,
+      PIS_LLM_MODEL: LLM_MODEL,
+      PROMPTS_DIR,
+      RSS_SSRF_PROTECTION: "true",
+      CRON_TIMEZONE: "Asia/Shanghai",
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -61,6 +71,15 @@ function spawnServer(databasePath) {
 
 function outputFor(state) {
   return `stdout:\n${state.stdout || "<empty>"}\nstderr:\n${state.stderr || "<empty>"}`;
+}
+
+function assertNoSensitiveOutput(state) {
+  const output = `${state.stdout}\n${state.stderr}`;
+  assert.equal(
+    output.includes(LLM_API_KEY),
+    false,
+    "captured output contained the synthetic LLM API key",
+  );
 }
 
 function jsonLines(output) {
@@ -180,6 +199,7 @@ export default async function runTopicPersistenceSmoke() {
     assert.equal(created.enabled, true);
     assert.ok(typeof created.id === "string" && created.id.length > 0);
     await stopServer(first);
+    assertNoSensitiveOutput(first);
     first = undefined;
 
     second = spawnServer(databasePath);
@@ -198,6 +218,7 @@ export default async function runTopicPersistenceSmoke() {
     assert.equal(listResponse.status, 200);
     assert.deepEqual(await listResponse.json(), { items: [created] });
     await stopServer(second);
+    assertNoSensitiveOutput(second);
     second = undefined;
 
     console.log("Smoke passed: Topic configuration persisted across restart");
