@@ -8,7 +8,7 @@
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 当前 Worker：`NONE · T04 Worker 已归档`
 - 开发心跳：`bcff3b7f`（`create_heartbeat`，`*/10 * * * *`，Asia/Shanghai；仅提醒主会话 Architect）
-- 当前结论：`D11_PLAN=G3_APPROVED`；T01～T04 均为 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；`D11_LOCAL_GATE=EVIDENCE_READY`
+- 当前结论：`D11_PLAN=G3_APPROVED`；T01～T04 均为 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；`D11_LOCAL_GATE=APPROVED`；等待精确 SHA 远程 CI 与最终 PASS
 
 ## 任务状态
 
@@ -213,3 +213,13 @@ Plan v0.2 `a4e6e77dc8e3e186616dad4cca4d3838fd4be65c`（tree `e026b7cd…`）diff
 - Architect 裁决：这是 Plan 写集遗漏，不是架构或 Spec 变化。Plan 升级为 v0.3，T04 增加且仅增加 `src/publication/contracts.ts` 一个允许路径，总写集由 10 调整为 11。
 - 类型修订范围：`PublicationLogStage` 增加 `"notify"`；新增 `PublicationLogReason = PublicationErrorCode | "notify_failed"` 并用于 `PublicationLogEntry.reason`。`notify_failed` 不加入稳定 `PublicationErrorCode`，不得改变 Publish/Repository/DTO/Notifier 等其他契约。
 - `D11_T04_LOG_CONTRACT_RULING=APPROVED`；T04 base 仍为 `1aed31f3f694c9b2857442ca8221a493f5d89c88`，由 Lead 创建全新 Worker 后继续原 G4/冻结/candidate/merge 门禁。
+
+## D11 Architect 独立集成 Gate（2026-11-21）
+
+- Gate 输入：main `443619c9c383f32d5445e793600dc5095bdb0d91` / tree `d92f21c11a7529771b924309006e6d49d9e39e74`；四张任务卡的 candidate、merge tree、父提交、复验和 Worker 归档关系均由 Architect 核对。
+- Architect 独立快照：`git archive HEAD` 至 `/private/tmp/d11-arch-gate.jV7yPG/d11-gate.tar`，SHA-256 `f680964f7cba8e307dda873de511ad89c2d15a2293afe408698f8d00dcd58770`；解包目录 `/private/tmp/d11-arch-gate.jV7yPG/source`，不含 `.git` 与 `node_modules`。
+- 快照内 `npm ci --offline` PASS（124 packages，0 vulnerabilities）；`verify:toolchain` PASS；typecheck PASS。
+- Plan §9 定向：17/17 files、103/103 tests PASS。
+- Full `npm run verify`：107/107 files、1193/1193 tests PASS；build、7 项 smoke、database smoke、278 files format 全部 PASS。
+- 相对批准基线 `d780e1bfe5284713f274e538bf4ae4f44f0bbca6` 精确 29 路径；受保护 diff 仅 D15 `published_item_id` 单行 nullable；五个公开 Prompt 哈希与 D16 回归后的新基线一致，私有 User Context 未读取。
+- 结论：`D11_LOCAL_GATE=APPROVED`。等待推送精确 SHA、远程 CI Success 后签发最终 PASS；本记录不包含最终验收或收尾完成声明。
