@@ -5,12 +5,12 @@
 - G1：`APPROVED`（`intent.md`）
 - G2：`APPROVED`（`spec.md`，含 Node 26 单值 zstd 口径）
 - G3：`APPROVED · Architect · 2026-11-21`
-- 当前交付：T01/T02 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T03 `IN_PROGRESS`
+- 当前交付：T01～T03 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T04 `READY`
 - 当前 Lead：`f2cdf8e5-c3ec-46bb-9bd8-a6e9c58d1d8f` / `wks_1b975dad53475f31`
 - 固定执行 base：T03 `a9ea7aab380d0ef4fb88a8fe2251349b2594f4d9`
 - 当前写集：仅 `docs/milestones/D11A/plan.md`、`docs/milestones/D11A/progress.md`
-- Worker：T01/T02 已归档；T03 `6ffa05c1-8d1a-4064-af4a-9c1b6847dc7d` / `d11a-t03-worker`
-- Candidate/Merge/Push：T01 `7ee1c99d9ef3551ff5da72eec20264757227e0d4` / `6f1e4e419c3a66453b1df758df00d01e65f9c858`；T02 `a11774fa0b3d68ef032b6ae9536e7bb34e073e60` / `82a0c97ae9292c0a320097c0c62ac14ea3627635`；尚未 push
+- Worker：T01～T03 已归档；当前 `NONE`
+- Candidate/Merge/Push：T01 `7ee1c99d9ef3551ff5da72eec20264757227e0d4` / `6f1e4e419c3a66453b1df758df00d01e65f9c858`；T02 `a11774fa0b3d68ef032b6ae9536e7bb34e073e60` / `82a0c97ae9292c0a320097c0c62ac14ea3627635`；T03 `d0da981a340746bd372da87c117053f5fae6987b` / `93da31ceb7201659cfac82cbf832da9a12be5c49`；尚未 push
 - 开发心跳：`ca6cd3ae`（active，10 分钟，只提醒主 Architect）
 
 ## 任务状态
@@ -19,8 +19,8 @@
 |---|---|---|---|
 | `D11A-T01` 配置与 smoke 兼容 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `5765bd7a362988e82caf0f506e15446dd4339e85` | G4 APPROVED；定向 9/93；full 107/1198；merge tree `9b02c4911b3841a7291b41354e9c827e2988bbc7` |
 | `D11A-T02` SSRF 与 zstd | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a8f8dcc2cb193ecf0c40d9813cfc34924cf01c47` | G4 APPROVED；定向 4/197；full 108/1220；merge tree `b26eee4c675cc629bcf32791570dea576d72145b` |
-| `D11A-T03` 生产装配与生命周期 | `IN_PROGRESS` | `a9ea7aab380d0ef4fb88a8fe2251349b2594f4d9` | 主体实现完成，最终全量门禁中 |
-| `D11A-T04` 集成、smoke、文档 | `NOT_STARTED` | T03 closeout 文档提交 | 未派发 |
+| `D11A-T03` 生产装配与生命周期 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a9ea7aab380d0ef4fb88a8fe2251349b2594f4d9` | G4 APPROVED；定向 15/131；full 110/1233；merge tree `0d19d0a9e3887685abd8e673dabbcbbdfe7cc1f4` |
+| `D11A-T04` 集成、smoke、文档 | `READY` | T03 closeout 文档提交 | 待 Lead 派发 |
 
 ## 当前验证
 
@@ -33,7 +33,11 @@
 - T02 合并后独立复验：定向 4 files/197 tests；full 108 files/1220 tests；typecheck/build/全部 smoke/format 280 files 通过。
 - T02 relax 保留 public unicast，只放宽明确地址范围；zstd 单值支持仍走流式 readBody，未知/多值拒绝，解压后上限与取消有效。
 - T02 Worker/Workspace `wks_e6a7e7a1c257783e` 已归档，目录已移除。
-- T03 已新增 `src/production/application.ts`、装配/生命周期测试与 fixture，生产 main 默认装配已切换；正在对最终工作树重跑完整门禁，尚无 Lead 冻结候选。
+- T03 Architect G4 独立复核通过：frozen tree `3a866b0a1cea92e20f2aedb3667c0a418b5078ab`；patch `/tmp/d11a-t03-freeze.NB1Lfk/d11a-t03-frozen.patch`；SHA-256 `0d32aa17aea4de4e336b99ac0c89019c846caf519adccb7460e48373ccd96908`；5 blobs 与 Lead 清单一致。
+- T03 合并后独立复验：定向 15 files/131 tests；full 110 files/1233 tests；typecheck/build/全部 smoke/format 284 files 通过。
+- T03 六阶段真实 factory/共享依赖/配置 API/单 Runtime+Scheduler 接线通过；正常与失败路径均按 Scheduler→Runtime→HTTP→DB 清理，listen Promise/callback 兼容，SSRF false 警告恰好一次。
+- T03 Worker/Workspace `wks_1051e6b982b31a7f` 已归档，目录已移除。
+- T04 尚无实现或测试结果。
 
 ## 关键风险
 
