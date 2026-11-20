@@ -42,7 +42,7 @@
 - 归档命名：序号从 `0001` 连续增长，每个文件恰好 200 个唯一 GUID；归档内按该批次的 `(published_at ASC,id ASC)` 固定，文件名不依赖时间或秘密。
 - 未封存集合：数据库当前 Published Item 排除所有既有归档 GUID；若归档引用数据库已不存在的 GUID，归档仍作为历史保留并报告安全边界，不要求删除或重写。
 - 新批次：未封存集合按 `(published_at ASC,id ASC)` 排序，只在达到 200 时追加下一个序号；剩余不足 200 条写入可重建 pending 文件，不提前封存。迟到旧时间条目进入后续批次或当前 pending，不重切旧批。
-- pending 文件固定 `<feed>-pending.xml`，包含全部未封存余量（0～199 条），按 `(published_at ASC,id ASC)` 稳定排序。它可随数据库快照变化而重建，不是不可变归档、业务队列或 Outbox；不得用 `pendingUnsealedCount` 代替实际可达条目。
+- pending 文件固定 `<feed>-pending.xml`，包含全部未封存余量（0～199 条），按 `(published_at ASC,id ASC)` 稳定排序。它是 RFC 5005 链中的可重建归档文档，包含 `<fh:archive/>`，但**不是满 200 条的不可变封存批次**、业务队列或 Outbox；不得用 `pendingUnsealedCount` 代替实际可达条目。
 - 主文件、pending 与所有封存归档按 GUID 去重覆盖数据库当前全集；主文件与 pending/归档允许重叠，封存归档彼此不重叠。归档还可保留数据库已不存在的历史。
 - RFC 5005：主文件 `prev-archive` 指向 pending；pending 指向最新封存归档；每个封存归档指向上一封存归档；首归档不指向不存在文件。无 pending 时主文件直接指向最新封存归档。链接均为受控相对 URI，不含 query cursor。
 - 写入顺序固定为新封存归档 → pending → 主文件。pending 可替换但必须完整原子更新；任何前序失败不得更新主文件。
