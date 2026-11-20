@@ -5,17 +5,19 @@
 - G1：`APPROVED`（`intent.md`）
 - G2：`APPROVED`（`spec.md`，含 Node 26 单值 zstd 口径）
 - G3：`APPROVED · Architect · 2026-11-21`
-- 当前交付：G3 已批准；T01 `READY`，等待 Lead 派发
+- 当前交付：T01 `IN_PROGRESS`；Lead 已派发独立 Worker
+- 当前 Lead：`f2cdf8e5-c3ec-46bb-9bd8-a6e9c58d1d8f` / `wks_1b975dad53475f31`
+- 固定执行 base：`5765bd7a362988e82caf0f506e15446dd4339e85`
 - 当前写集：仅 `docs/milestones/D11A/plan.md`、`docs/milestones/D11A/progress.md`
-- Worker：`NONE`
+- Worker：`23dce48a-2ff0-4369-9878-c0c09bc7ac88` / `d11a-t01-worker`（T01，全量验证中）
 - Candidate/Merge/Push：`NONE`
-- 开发心跳：`NOT_CREATED · 仅主 Architect 在 G3 批准后创建`
+- 开发心跳：`ca6cd3ae`（active，10 分钟，只提醒主 Architect）
 
 ## 任务状态
 
 | 卡片 | 状态 | 前置 base | 交接/证据 |
 |---|---|---|---|
-| `D11A-T01` 配置与 smoke 兼容 | `READY` | G3 closeout 文档提交 | 待 Lead 派发 |
+| `D11A-T01` 配置与 smoke 兼容 | `IN_PROGRESS` | `5765bd7a362988e82caf0f506e15446dd4339e85` | Lead 已派发 |
 | `D11A-T02` SSRF 与 zstd | `NOT_STARTED` | T01 closeout 文档提交 | 未派发 |
 | `D11A-T03` 生产装配与生命周期 | `NOT_STARTED` | T02 closeout 文档提交 | 未派发 |
 | `D11A-T04` 集成、smoke、文档 | `NOT_STARTED` | T03 closeout 文档提交 | 未派发 |
@@ -23,8 +25,8 @@
 ## 当前验证
 
 - 已核对固定 base、G1/G2、当前 `src`/`tests`/`scripts` 基线及文档索引冲突。
-- 尚未执行或宣称实现测试通过；Plan 当前仅待 Architect G3 审核。
-- `Plan G3` 通过后才允许创建首张 Worker 卡；开发心跳届时由主 Architect 创建。
+- T01 Worker 正在执行全量门禁；Lead 初审确认配置、测试 helper、smoke 合成环境和敏感 key 负断言均已覆盖，未发现写集外改动。
+- T01 尚无完整测试结果或冻结候选，不得标记 REVIEW/PASS。
 
 ## 关键风险
 
