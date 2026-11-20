@@ -19,7 +19,7 @@
 |---|---|---|---|
 | `D11A-T01` 配置与 smoke 兼容 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `5765bd7a362988e82caf0f506e15446dd4339e85` | G4 APPROVED；定向 9/93；full 107/1198；merge tree `9b02c4911b3841a7291b41354e9c827e2988bbc7` |
 | `D11A-T02` SSRF 与 zstd | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a8f8dcc2cb193ecf0c40d9813cfc34924cf01c47` | G4 APPROVED；定向 4/197；full 108/1220；merge tree `b26eee4c675cc629bcf32791570dea576d72145b` |
-| `D11A-T03` 生产装配与生命周期 | `IN_PROGRESS` | `a9ea7aab380d0ef4fb88a8fe2251349b2594f4d9` | Fastify 失败/清理语义验证中 |
+| `D11A-T03` 生产装配与生命周期 | `IN_PROGRESS` | `a9ea7aab380d0ef4fb88a8fe2251349b2594f4d9` | 主体实现完成，最终全量门禁中 |
 | `D11A-T04` 集成、smoke、文档 | `NOT_STARTED` | T03 closeout 文档提交 | 未派发 |
 
 ## 当前验证
@@ -33,7 +33,7 @@
 - T02 合并后独立复验：定向 4 files/197 tests；full 108 files/1220 tests；typecheck/build/全部 smoke/format 280 files 通过。
 - T02 relax 保留 public unicast，只放宽明确地址范围；zstd 单值支持仍走流式 readBody，未知/多值拒绝，解压后上限与取消有效。
 - T02 Worker/Workspace `wks_e6a7e7a1c257783e` 已归档，目录已移除。
-- T03 尚无实现或测试结果。
+- T03 已新增 `src/production/application.ts`、装配/生命周期测试与 fixture，生产 main 默认装配已切换；正在对最终工作树重跑完整门禁，尚无 Lead 冻结候选。
 
 ## 关键风险
 
