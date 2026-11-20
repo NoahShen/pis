@@ -7,8 +7,8 @@
 - 计划基线：main `5d95f8b6eb3e7beff89e3f52498c3b7de203feb1` / tree `e71bad95094e39b1be6b87443267349627a0509b`
 - 固定运行时：Node `v26.13.1` / npm `11.20.0`
 - 当前 Worker：`NONE · T04 Worker 已归档`
-- 开发心跳：`bcff3b7f`（`create_heartbeat`，`*/10 * * * *`，Asia/Shanghai；仅提醒主会话 Architect）
-- 当前结论：`D11_PLAN=G3_APPROVED`；T01～T04 均为 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；`D11_LOCAL_GATE=APPROVED`；等待精确 SHA 远程 CI 与最终 PASS
+- 开发心跳：`bcff3b7f` 已删除（D11 开发任务与最终验收完成）
+- 当前结论：`D11_PLAN=G3_APPROVED`；T01～T04 均为 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；`D11_LOCAL_GATE=APPROVED`；`D11_REMOTE_CI=PASS`；`D11_FINAL_PASS=ISSUED`
 
 ## 任务状态
 
@@ -223,3 +223,13 @@ Plan v0.2 `a4e6e77dc8e3e186616dad4cca4d3838fd4be65c`（tree `e026b7cd…`）diff
 - Full `npm run verify`：107/107 files、1193/1193 tests PASS；build、7 项 smoke、database smoke、278 files format 全部 PASS。
 - 相对批准基线 `d780e1bfe5284713f274e538bf4ae4f44f0bbca6` 精确 29 路径；受保护 diff 仅 D15 `published_item_id` 单行 nullable；五个公开 Prompt 哈希与 D16 回归后的新基线一致，私有 User Context 未读取。
 - 结论：`D11_LOCAL_GATE=APPROVED`。等待推送精确 SHA、远程 CI Success 后签发最终 PASS；本记录不包含最终验收或收尾完成声明。
+
+## D11 远程 CI、最终验收与收尾（2026-11-21）
+
+- 推送提交：`22064243b74eba13680f117f77937362d95c1fb3`；本地 main 与远程 `origin/main` SHA 一致，推送前工作区 clean，Gate 后仅 D11 Progress 文档变化。
+- 精确 SHA 远程 CI：run #45 / `44701037339`，[GitHub Actions](https://github.com/NoahShen/pis/actions/runs/44701037339)，`status=completed`、`conclusion=success`。
+- 本地 Architect 独立干净快照 Gate 与精确 pushed SHA CI Success 同时满足，`D11_REMOTE_CI=PASS`、`D11_FINAL_PASS=ISSUED`。
+- 四张任务卡均为 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；D11 交付 Published Item 纯模板发布、证据链接、安全 HTML、资格门槛、唯一短事务、不可变快照、COMMIT 后通知与公共出口。未实现 RSS/归档/云端/API/Runtime 接线；`PUB-11` 保持 P1。
+- 开发心跳 `bcff3b7f` 已使用 `delete_heartbeat` 删除并核实成功，无 D11 活动推进心跳。
+- D11 Lead Agent `e9ee3395-6890-4978-90ae-aef822c3a97a` 与 workspace `wks_30bc18badb5d5ee3` 已归档，`removedDirectory=true`；四个 Worker/workspace 已分别归档。主工作区 `Team_Main` 保留，无活动 D11 Agent/Worker 工作区残留。
+- 本最终验收记录为 Gate/CI 后的文档提交，不包含任何新的生产代码或测试变更。
