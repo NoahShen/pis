@@ -3,7 +3,6 @@ import type { FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../../src/app.js";
-import type { AppConfig } from "../../src/config.js";
 import type { ConfigurationRepositories } from "../../src/configuration/app-assembly.js";
 import type { SourceRepository } from "../../src/configuration/source-repository.js";
 import {
@@ -13,6 +12,7 @@ import {
 import { openDatabase } from "../../src/database/open-database.js";
 import { initializeDatabase } from "../../src/database/schema.js";
 import { CapturedLogger } from "../fixtures/captured-logger.js";
+import { appConfig } from "../fixtures/app-config.js";
 import { closeDatabase, withDatabasePath } from "../fixtures/database.js";
 import { SequenceIdGenerator } from "../fixtures/sequence-id-generator.js";
 
@@ -43,14 +43,8 @@ afterEach(async () => {
   await Promise.all(openApps.splice(0).map(async (app) => app.close()));
 });
 
-function config(databasePath: string): AppConfig {
-  return {
-    host: "127.0.0.1",
-    port: 0,
-    apiToken: API_TOKEN,
-    logLevel: "silent",
-    databasePath,
-  };
+function config(databasePath: string) {
+  return appConfig({ apiToken: API_TOKEN, databasePath });
 }
 
 async function openTopicApp(

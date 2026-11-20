@@ -20,10 +20,26 @@ export interface AppConfig {
   apiToken: string;
   logLevel: LogLevel;
   databasePath?: string;
+  llmEndpoint: string;
+  llmApiKey: string;
+  llmModel: string;
+  promptsDirectory: string;
+  rssSsrfProtection: boolean;
+  cronTimezone: string;
 }
 
 export type ConfigPath =
-  "HOST" | "PORT" | "API_TOKEN" | "LOG_LEVEL" | "DATABASE_PATH";
+  | "HOST"
+  | "PORT"
+  | "API_TOKEN"
+  | "LOG_LEVEL"
+  | "DATABASE_PATH"
+  | "PIS_LLM_ENDPOINT"
+  | "PIS_LLM_API_KEY"
+  | "PIS_LLM_MODEL"
+  | "PROMPTS_DIR"
+  | "RSS_SSRF_PROTECTION"
+  | "CRON_TIMEZONE";
 
 export class ConfigError extends Error {
   readonly path: ConfigPath;
@@ -41,8 +57,29 @@ const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 3000;
 const DEFAULT_LOG_LEVEL: LogLevel = "info";
 export const DEFAULT_DATABASE_PATH = "data/pis.sqlite";
+const DEFAULT_PROMPTS_DIRECTORY = "config/prompts";
+const DEFAULT_CRON_TIMEZONE = "Asia/Shanghai";
 const DECIMAL_PORT = /^[0-9]+$/;
 const WHITESPACE = /\s/u;
+const INVALID_LLM_ENDPOINT =
+  "must be an absolute HTTP(S) URL without credentials, query, or fragment";
+
+function isLlmEndpoint(value: string): boolean {
+  try {
+    const endpoint = new URL(value);
+    return (
+      (endpoint.protocol === "http:" || endpoint.protocol === "https:") &&
+      endpoint.username.length === 0 &&
+      endpoint.password.length === 0 &&
+      endpoint.search.length === 0 &&
+      endpoint.hash.length === 0 &&
+      !value.includes("?") &&
+      !value.includes("#")
+    );
+  } catch {
+    return false;
+  }
+}
 
 const environmentSchema = z.object({
   HOST: z
@@ -79,6 +116,39 @@ const environmentSchema = z.object({
       message: "must not be empty or whitespace-only",
     })
     .optional(),
+  PIS_LLM_ENDPOINT: z
+    .string()
+    .refine(isLlmEndpoint, { message: INVALID_LLM_ENDPOINT })
+    .optional(),
+  PIS_LLM_API_KEY: z
+    .string()
+    .refine((value) => value.length > 0, {
+      message: "must not be empty",
+    })
+    .optional(),
+  PIS_LLM_MODEL: z
+    .string()
+    .refine((value) => value.length > 0 && value.trim() === value, {
+      message: "must be non-empty without surrounding whitespace",
+    })
+    .optional(),
+  PROMPTS_DIR: z
+    .string()
+    .refine((value) => value.length > 0 && value.trim().length > 0, {
+      message: "must not be empty or whitespace-only",
+    })
+    .optional(),
+  RSS_SSRF_PROTECTION: z
+    .enum(["true", "false"], {
+      message: 'must be "true" or "false"',
+    })
+    .optional(),
+  CRON_TIMEZONE: z
+    .string()
+    .refine((value) => value.length > 0 && value.trim().length > 0, {
+      message: "must not be empty or whitespace-only",
+    })
+    .optional(),
 });
 
 const CONFIG_PATHS = new Set<ConfigPath>([
@@ -87,6 +157,12 @@ const CONFIG_PATHS = new Set<ConfigPath>([
   "API_TOKEN",
   "LOG_LEVEL",
   "DATABASE_PATH",
+  "PIS_LLM_ENDPOINT",
+  "PIS_LLM_API_KEY",
+  "PIS_LLM_MODEL",
+  "PROMPTS_DIR",
+  "RSS_SSRF_PROTECTION",
+  "CRON_TIMEZONE",
 ]);
 
 function isConfigPath(value: unknown): value is ConfigPath {
@@ -106,6 +182,16 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     throw new ConfigError(path, issue.message);
   }
 
+  if (result.data.PIS_LLM_ENDPOINT === undefined) {
+    throw new ConfigError("PIS_LLM_ENDPOINT", "is required");
+  }
+  if (result.data.PIS_LLM_API_KEY === undefined) {
+    throw new ConfigError("PIS_LLM_API_KEY", "is required");
+  }
+  if (result.data.PIS_LLM_MODEL === undefined) {
+    throw new ConfigError("PIS_LLM_MODEL", "is required");
+  }
+
   return {
     host: result.data.HOST ?? DEFAULT_HOST,
     port:
@@ -113,5 +199,13 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     apiToken: result.data.API_TOKEN,
     logLevel: result.data.LOG_LEVEL ?? DEFAULT_LOG_LEVEL,
     databasePath: resolve(result.data.DATABASE_PATH ?? DEFAULT_DATABASE_PATH),
+    llmEndpoint: result.data.PIS_LLM_ENDPOINT,
+    llmApiKey: result.data.PIS_LLM_API_KEY,
+    llmModel: result.data.PIS_LLM_MODEL,
+    promptsDirectory: resolve(
+      result.data.PROMPTS_DIR ?? DEFAULT_PROMPTS_DIRECTORY,
+    ),
+    rssSsrfProtection: result.data.RSS_SSRF_PROTECTION !== "false",
+    cronTimezone: result.data.CRON_TIMEZONE ?? DEFAULT_CRON_TIMEZONE,
   };
 }

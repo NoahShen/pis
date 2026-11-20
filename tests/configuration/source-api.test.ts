@@ -3,11 +3,11 @@ import type { FastifyInstance } from "fastify";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../../src/app.js";
-import type { AppConfig } from "../../src/config.js";
 import type { ConfigurationRepositories } from "../../src/configuration/app-assembly.js";
 import type { Source } from "../../src/configuration/contracts.js";
 import type { SourceRepository } from "../../src/configuration/source-repository.js";
 import { CapturedLogger } from "../fixtures/captured-logger.js";
+import { appConfig } from "../fixtures/app-config.js";
 import { withDatabasePath } from "../fixtures/database.js";
 
 const API_TOKEN = "source-api-token";
@@ -27,14 +27,8 @@ afterEach(async () => {
   await Promise.all(openApps.splice(0).map(async (app) => app.close()));
 });
 
-function config(databasePath: string): AppConfig {
-  return {
-    host: "127.0.0.1",
-    port: 0,
-    apiToken: API_TOKEN,
-    logLevel: "silent",
-    databasePath,
-  };
+function config(databasePath: string) {
+  return appConfig({ apiToken: API_TOKEN, databasePath });
 }
 
 async function withSourceApp<T>(
