@@ -73,13 +73,13 @@ Source `type/url` PATCH 策略已由负责人明确决定：**创建后不可修
 
 ## 7. 开发推进心跳（负责人持续授权）
 
-- 负责人于 2026-11-17 明确要求：每次进入开发后，由 Architect 自动创建推进心跳，确保任务持续推进。此授权适用于后续各里程碑，不必逐次重新询问。
+- 负责人于 2026-11-17 明确要求，并于 2026-11-21 再次确认：每次进入开发阶段后，由 Architect 自动使用 `create_heartbeat` 创建推进心跳，持续监控任务执行，及时发现并处理审核交付、失败或阻塞，确保项目持续推进；开发任务完成后，由 Architect 自行删除对应心跳。此授权适用于后续各里程碑，不必逐次重新询问。
 - 触发时点：里程碑 Plan 获执行批准、开始正式开发时；默认每 10 分钟（`*/10 * * * *`），时区 `Asia/Shanghai`。同一里程碑只保留一个活动心跳，恢复会话先核对记录，避免重复创建。
 - **必须使用 `create_heartbeat`，不得使用 `create_schedule`**：`create_heartbeat` 向当前主会话 Architect 发送提醒，由主会话 Architect 亲自决策；`create_schedule` 的目标为 `new-agent`，每次新建独立 agent 实例，会自行批准 G3/G4、merge 与归档，形成未经 Architect 审核的隐性审批路径（D11-T01 曾发生）。二者是不同对象类型，不可互换。
 - **心跳只提醒、不代审**：心跳不得批准 G3/G4、不得创建 candidate、不得 merge/push、不得修改源码或 progress.md、不得归档 workspace、不得删除自身、不得代替 Lead 创建 Worker。G4、合并、Gate、归档等一切审核与收尾操作均由主会话 Architect 亲自执行。
 - 每次根据最新 `progress.md`、Plan、Git 和必要 Paseo 状态恢复，识别实际 Lead/Worker；正常工作不打断，及时组织候选复核及阻塞修复，不越过角色或审批门禁。
-- 只在进度变化或实际阻塞时报告；仅等待负责人 push 授权时不反复催问，心跳不构成 push 授权。
-- 在对应里程碑 `progress.md` 记录心跳 ID。最终验收完成或负责人要求停止时，使用 `delete_heartbeat` 删除准确 ID，并核实成功；历史遗留的 `create_schedule` 对象需用 `delete_schedule` 清理（对 `delete_heartbeat` 会报 not found）。推送授权按 §8 持续生效，不因等待 CI 而反复催问。
+- 心跳提醒应依据最新 `progress.md`、Plan、Git 与 Paseo 状态检查任务是否停滞，并提示 Architect 组织下一步审核、修复或派发；只在进度变化或实际阻塞时报告，不反复发送无变化的催办。心跳本身不构成 push 授权。
+- 在对应里程碑 `progress.md` 记录心跳 ID。该里程碑开发任务全部完成、不再需要持续推进时，或负责人要求停止时，Architect 必须使用 `delete_heartbeat` 删除准确 ID 并核实成功，不遗留无实际用途的心跳；历史遗留的 `create_schedule` 对象需用 `delete_schedule` 清理（对 `delete_heartbeat` 会报 not found）。推送授权按 §8 持续生效，不因等待 CI 而反复催问。
 - D04 已创建活动心跳 `b31a1236`；后续实际状态以 D04 Progress 及 Paseo 为准。
 
 ## 8. 里程碑推送、最终收尾与归档（负责人持续授权）
