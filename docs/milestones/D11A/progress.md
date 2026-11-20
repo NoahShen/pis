@@ -5,7 +5,7 @@
 - G1：`APPROVED`（`intent.md`）
 - G2：`APPROVED`（`spec.md`，含 Node 26 单值 zstd 口径）
 - G3：`APPROVED · Architect · 2026-11-21`
-- 当前交付：T01～T04 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；ASM-08 `IN_PROGRESS`
+- 当前交付：T01～T04 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；ASM-08 `PASS`；D11A Local Gate `READY`
 - 当前 Lead：`f2cdf8e5-c3ec-46bb-9bd8-a6e9c58d1d8f` / `wks_1b975dad53475f31`
 - 固定执行 base：T04 `354367a2affc5a6f033a16a9b3dcd413320c57ef`
 - 当前写集：仅 `docs/milestones/D11A/plan.md`、`docs/milestones/D11A/progress.md`
@@ -41,7 +41,11 @@
 - T04 合并后 main 完整 `npm run verify` 通过：111 files/1235 tests，既有+production+database smoke，format 287 files。
 - T04 正式 Runtime/Scheduler 纵向链无手工阶段调用；production smoke 使用真实 dist/server.js；原 69 卡与三份索引一致；package-lock 不变。
 - T04 Worker/Workspace `wks_df025aa7808606c5` 已归档，目录已移除。
-- ASM-08 真实双 RSS/LLM 正在由主 Architect 使用正式生产装配执行；独立临时 DB，Fake-IP 调试显式 SSRF=false，不使用临时 DoH/Transport 适配。
+- ASM-08 真实双 RSS/LLM 已通过：正式 `createProductionAssembly` + Scheduler + Runtime，生产 Restricted RSS Transport，无临时 DoH/Transport 适配；Fake-IP 调试显式 SSRF=false。
+- ASM-08 第二次正式运行：65 次真实模型调用；独立临时库累计 40 Source Items/Contents、12 Events、17 Knowledge、32 Topic Associations、24 Published Items（EVENT/KNOWLEDGE 各 12）。结果 `SUCCESS`，无 blocked_url、unsupported_encoding、模型失败或关闭失败。
+- ASM-08 证据：`/private/tmp/pis-d11a-real-e2e/summary.json`、`/private/tmp/pis-d11a-real-e2e-rerun.log`；未记录密钥、完整私有 URL、正文或 User Context。
+- 首次 harness 在 app.close 后查询 DB 导致汇总 TypeError，已修正为关闭前快照并独立只读复核；不属于生产缺陷，第二次正式运行通过。
+- 下一步：Architect 干净快照最终 Gate、push 精确 main SHA、远程 CI。
 
 ## 关键风险
 
