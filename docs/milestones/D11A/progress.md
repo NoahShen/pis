@@ -20,7 +20,7 @@
 | `D11A-T01` 配置与 smoke 兼容 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `5765bd7a362988e82caf0f506e15446dd4339e85` | G4 APPROVED；定向 9/93；full 107/1198；merge tree `9b02c4911b3841a7291b41354e9c827e2988bbc7` |
 | `D11A-T02` SSRF 与 zstd | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a8f8dcc2cb193ecf0c40d9813cfc34924cf01c47` | G4 APPROVED；定向 4/197；full 108/1220；merge tree `b26eee4c675cc629bcf32791570dea576d72145b` |
 | `D11A-T03` 生产装配与生命周期 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a9ea7aab380d0ef4fb88a8fe2251349b2594f4d9` | G4 APPROVED；定向 15/131；full 110/1233；merge tree `0d19d0a9e3887685abd8e673dabbcbbdfe7cc1f4` |
-| `D11A-T04` 集成、smoke、文档 | `IN_PROGRESS` | `354367a2affc5a6f033a16a9b3dcd413320c57ef` | Runtime/Stub/文档边界核对中 |
+| `D11A-T04` 集成、smoke、文档 | `IN_PROGRESS` | `354367a2affc5a6f033a16a9b3dcd413320c57ef` | deterministic `npm run verify` 通过，最终审计中 |
 
 ## 当前验证
 
@@ -37,7 +37,8 @@
 - T03 合并后独立复验：定向 15 files/131 tests；full 110 files/1233 tests；typecheck/build/全部 smoke/format 284 files 通过。
 - T03 六阶段真实 factory/共享依赖/配置 API/单 Runtime+Scheduler 接线通过；正常与失败路径均按 Scheduler→Runtime→HTTP→DB 清理，listen Promise/callback 兼容，SSRF false 警告恰好一次。
 - T03 Worker/Workspace `wks_1051e6b982b31a7f` 已归档，目录已移除。
-- T04 尚无实现或测试结果。
+- T04 Worker deterministic `npm run verify` 通过：full 111 files/1235 tests；ASM-05 纵向链 2/2；production smoke 通过；format 287 files。8 个允许路径已落地，Lead 冻结与 Architect G4 尚未完成。
+- ASM-08 真实双 RSS/LLM 尚未执行。
 
 ## 关键风险
 
