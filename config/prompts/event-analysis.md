@@ -51,6 +51,8 @@ Event 是围绕一个核心 Entity、特定 Subject 和 Scope，能够持续追�
 
 提供本次合法候选 `event_id`、`title`、突出本次新增事实的 `description`、可确定的 `occurred_at`（否则 `null`）、`confirmed_aliases`。不得生成 Event / Update ID。
 
+`title` 必须是**本条进展自身**的短标题，概括这一次新增了什么事实；**不得复用候选 Event 的 `title` 或整体主线名称**。同一 Event 下的多条 Update 应能通过 `title` 相互区分，`description` 承载具体细节。
+
 ## 四、NO_INCREMENT
 
 **只有当前 Content 中的事件事实能够明确归属于一个已有候选 Event，且相对该 Event 的已知历史没有实质新增信息，才能返回 `NO_INCREMENT`。**
