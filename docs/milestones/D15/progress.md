@@ -323,3 +323,5 @@ D15 交付六阶段编排：任务判别联合与纯结果映射、独立有界�
 **不包含**：Published Item 模板与渲染（D11）、本地/云端 RSS（D12/D13）、查询 API（D14）、PM2 部署、持久化队列/Outbox/任务恢复/Exactly-once、真实模型语义回归（D16）。`PUBLISH_STUB` 已硬断言 `published_items COUNT(*)=0`，未冒充 D11。`RUN-13`/`RUN-14` 以 P1 记录已接受的崩溃漏派窗口与日志边界。
 
 历史保留：T02 `MERGE_TREE_MISMATCH` 的 B 裁决、T04 敌对回滚的 `CHANGES_REQUIRED` 与第 1 轮修复均如实记录，未改写成一次通过。
+
+- 2026-11-21 · D11-T04 事后契约更正：`src/runtime/contracts.ts` 的 `PublishResult.published_item_id` 由 `string` 放宽为 `string | null`，与 PG-01～05 的正常空结果一致；D15 PUBLISH 映射不读取该字段，运行时行为零变化，D11 已附 `StageServices["publish"]` 直接类型兼容测试。
