@@ -104,3 +104,13 @@ Plan `8feb660f83453bfad95c075db8d9e763698eab65`（tree `de992a0a…`，parent �
 4. 除此之外不改任何内容。
 
 v0.2 回传后即签发 `D11_PLAN=G3_APPROVED` 与执行基线；心跳与 Worker 派发在批准后开始。在此之前仍不得开发。
+
+## G3 批准与执行基线（2026-11-21）
+
+Plan v0.2 `a4e6e77dc8e3e186616dad4cca4d3838fd4be65c`（tree `e026b7cd…`）diff 仅 `docs/milestones/D11/plan.md`，全部修订精确落在裁决范围内：T04 写集含 `src/runtime/contracts.ts` 单行例外、`D15_DIRECT_ASSIGNMENT` 类型兼容测试、受保护 diff 断言改为仅允许该行、预期路径数 9→10、G3 待确认项全部标记已裁决。无夹带。
+
+**`D11_PLAN=G3_APPROVED`**。四卡串行开始，T01 base = 本执行基线 commit；后续各卡 base = 前一卡收尾 docs commit。
+
+- 心跳：`d13cf26f`（schedule 类型，Asia/Shanghai */10，目标 Team_Main；清理用 delete_schedule）。
+
+- 用户授权：『D11 全部完成后再向我汇报』，本轮不再逐卡请示，按 G4→candidate→merge→archive 自动推进。
