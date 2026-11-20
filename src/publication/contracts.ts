@@ -66,3 +66,10 @@ export interface PublicationDraft {
 export interface PublicationRenderer {
   render(context: PublicationContext): PublicationDraft;
 }
+
+export interface PublicationSourceLinkRepository {
+  listSourceUrls(
+    targetType: PublicationTargetType,
+    targetId: string,
+  ): readonly string[];
+}
