@@ -1,14 +1,23 @@
 import Database from "better-sqlite3";
+import path from "node:path";
 
+import { openDatabase } from "../../src/database/open-database.js";
 import { initializeDatabase } from "../../src/database/schema.js";
 import type {
   PublicationContext,
+  PublicationFeed,
   PublicationEvent,
   PublicationEventSummary,
   PublicationFinding,
   PublicationKnowledge,
+  PublishedItem,
+  PublishedItemInsert,
+  PublishedItemRepository,
   PublicationUpdate,
 } from "../../src/publication/contracts.js";
+import type { Clock } from "../../src/time/clock.js";
+import type { IdGenerator } from "../../src/id/id-generator.js";
+import { closeDatabase, withDatabasePath } from "./database.js";
 
 export const publicationEventFixture: PublicationEvent = {
   id: "publication-event-synthetic",
@@ -456,5 +465,402 @@ export function createPublicationSourceLinkFixtureDatabase(): Database.Database 
   } catch (error) {
     database.close();
     throw error;
+  }
+}
+
+export const publicationFixtureIds = {
+  source: "publication-target-source",
+  eventContent: "publication-target-content-event",
+  updateContent: "publication-target-content-update",
+  knowledgeContent: "publication-target-content-knowledge",
+  eventSourceItem: "publication-target-source-item-event",
+  updateSourceItem: "publication-target-source-item-update",
+  knowledgeSourceItem: "publication-target-source-item-knowledge",
+  event: "publication-target-event",
+  update: "publication-target-update",
+  knowledge: "publication-target-knowledge",
+  topicAlpha: "publication-target-topic-alpha",
+  topicBeta: "publication-target-topic-beta",
+} as const;
+
+export const publicationFixtureUrls = {
+  event: "https://publication.example.test/event",
+  update: "https://publication.example.test/update",
+  knowledge: "https://publication.example.test/knowledge",
+} as const;
+
+export interface PublicationFixtureSeedOptions {
+  readonly eventAssociations?: 0 | 1 | 2;
+  readonly updateAssociations?: 0 | 1 | 2;
+  readonly knowledgeAssociations?: 0 | 1 | 2;
+  readonly includeEventUrl?: boolean;
+  readonly includeUpdateUrl?: boolean;
+  readonly includeKnowledgeUrl?: boolean;
+  readonly knowledgeCategory?: string | null;
+}
+
+export function seedPublicationFixtureDatabase(
+  database: Database.Database,
+  options: PublicationFixtureSeedOptions = {},
+): void {
+  const seed = database.transaction(() => {
+    database
+      .prepare(
+        `
+          INSERT INTO sources (id, name, type, url, cron, enabled)
+          VALUES (?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        publicationFixtureIds.source,
+        "Synthetic publication target source",
+        "RSS",
+        "https://publication.example.test/feed.xml",
+        "0 * * * *",
+        1,
+      );
+
+    const insertContent = database.prepare(
+      `
+        INSERT INTO contents (
+          id, title, url, author, published_at, created_at, body, summary,
+          language, completeness
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    );
+    const addContent = (id: string, url: string | null): void => {
+      insertContent.run(
+        id,
+        `Synthetic publication content ${id}`,
+        url,
+        null,
+        null,
+        "2026-11-20T08:00:00.000+08:00",
+        `Synthetic publication body for ${id}`,
+        `Synthetic publication summary for ${id}`,
+        "en",
+        "FULL",
+      );
+    };
+    addContent(
+      publicationFixtureIds.eventContent,
+      options.includeEventUrl === true ? publicationFixtureUrls.event : null,
+    );
+    addContent(
+      publicationFixtureIds.updateContent,
+      options.includeUpdateUrl === true ? publicationFixtureUrls.update : null,
+    );
+    addContent(
+      publicationFixtureIds.knowledgeContent,
+      options.includeKnowledgeUrl === true
+        ? publicationFixtureUrls.knowledge
+        : null,
+    );
+
+    const insertSourceItem = database.prepare(
+      `
+        INSERT INTO source_items (
+          id, source_id, external_id, url, title, published_at, discovered_at,
+          content_id, raw_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    );
+    const addSourceItem = (
+      id: string,
+      contentId: string,
+      url: string | null,
+      discoveredAt: string,
+    ): void => {
+      insertSourceItem.run(
+        id,
+        publicationFixtureIds.source,
+        null,
+        url,
+        null,
+        null,
+        discoveredAt,
+        contentId,
+        null,
+      );
+    };
+    addSourceItem(
+      publicationFixtureIds.eventSourceItem,
+      publicationFixtureIds.eventContent,
+      options.includeEventUrl === true ? publicationFixtureUrls.event : null,
+      "2026-11-20T08:00:00.000+08:00",
+    );
+    addSourceItem(
+      publicationFixtureIds.updateSourceItem,
+      publicationFixtureIds.updateContent,
+      options.includeUpdateUrl === true ? publicationFixtureUrls.update : null,
+      "2026-11-20T09:00:00.000+08:00",
+    );
+    addSourceItem(
+      publicationFixtureIds.knowledgeSourceItem,
+      publicationFixtureIds.knowledgeContent,
+      options.includeKnowledgeUrl === true
+        ? publicationFixtureUrls.knowledge
+        : null,
+      "2026-11-20T10:00:00.000+08:00",
+    );
+
+    database
+      .prepare(
+        `
+          INSERT INTO events (
+            id, title, entity_name, subject, scope, description, occurred_at,
+            discovered_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        publicationFixtureIds.event,
+        "Synthetic Gate Event Title",
+        "Synthetic Gate Event Entity",
+        "Synthetic Gate Event Subject",
+        "Synthetic Gate Event Scope",
+        "Synthetic Gate Event Description",
+        "2026-11-20T08:30:00.000+08:00",
+        "2026-11-20T08:00:00.000+08:00",
+      );
+    database
+      .prepare(
+        `
+          INSERT INTO event_updates (
+            id, event_id, title, description, occurred_at, discovered_at
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        publicationFixtureIds.update,
+        publicationFixtureIds.event,
+        "Synthetic Gate Update Title",
+        "Synthetic Gate Update Description",
+        "2026-11-20T09:30:00.000+08:00",
+        "2026-11-20T09:00:00.000+08:00",
+      );
+    database
+      .prepare(
+        `
+          INSERT INTO knowledge (
+            id, content_id, title, summary, category, findings_json, value
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        publicationFixtureIds.knowledge,
+        publicationFixtureIds.knowledgeContent,
+        "Synthetic Gate Knowledge Title",
+        "Synthetic Gate Knowledge Summary",
+        options.knowledgeCategory === undefined
+          ? "Method"
+          : options.knowledgeCategory,
+        JSON.stringify([
+          {
+            title: "Synthetic Gate Finding",
+            description: "Synthetic Gate Finding Description",
+          },
+        ]),
+        "Synthetic Gate Knowledge Value",
+      );
+
+    const insertTopic = database.prepare(
+      `
+        INSERT INTO topics (id, name, description, enabled)
+        VALUES (?, ?, ?, ?)
+      `,
+    );
+    insertTopic.run(
+      publicationFixtureIds.topicAlpha,
+      "Synthetic Gate Alpha Topic",
+      "Synthetic Gate Alpha Topic Description",
+      1,
+    );
+    insertTopic.run(
+      publicationFixtureIds.topicBeta,
+      "Synthetic Gate Beta Topic",
+      "Synthetic Gate Beta Topic Description",
+      1,
+    );
+
+    const insertEvidence = database.prepare(
+      `
+        INSERT INTO event_content_links (target_type, target_id, content_id)
+        VALUES (?, ?, ?)
+      `,
+    );
+    insertEvidence.run(
+      "EVENT",
+      publicationFixtureIds.event,
+      publicationFixtureIds.eventContent,
+    );
+    insertEvidence.run(
+      "EVENT_UPDATE",
+      publicationFixtureIds.update,
+      publicationFixtureIds.updateContent,
+    );
+
+    const insertAssociation = database.prepare(
+      `
+        INSERT INTO topic_associations (
+          topic_id, target_type, target_id, matched_at
+        ) VALUES (?, ?, ?, ?)
+      `,
+    );
+    const addAssociations = (
+      targetType: "EVENT" | "EVENT_UPDATE" | "KNOWLEDGE",
+      targetId: string,
+      count: number,
+    ): void => {
+      for (const topicId of [
+        publicationFixtureIds.topicAlpha,
+        publicationFixtureIds.topicBeta,
+      ].slice(0, count)) {
+        insertAssociation.run(
+          topicId,
+          targetType,
+          targetId,
+          "2026-11-20T11:00:00.000+08:00",
+        );
+      }
+    };
+    addAssociations(
+      "EVENT",
+      publicationFixtureIds.event,
+      options.eventAssociations ?? 1,
+    );
+    addAssociations(
+      "EVENT_UPDATE",
+      publicationFixtureIds.update,
+      options.updateAssociations ?? 1,
+    );
+    addAssociations(
+      "KNOWLEDGE",
+      publicationFixtureIds.knowledge,
+      options.knowledgeAssociations ?? 1,
+    );
+  });
+
+  seed();
+}
+
+export async function withPublicationFixtureDatabase<T>(
+  callback: (database: Database.Database) => T | Promise<T>,
+  options: PublicationFixtureSeedOptions = {},
+): Promise<T> {
+  return withDatabasePath(async (databasePath) => {
+    const database = openDatabase(path.join(databasePath));
+    try {
+      initializeDatabase(database);
+      seedPublicationFixtureDatabase(database, options);
+      return await callback(database);
+    } finally {
+      closeDatabase(database);
+    }
+  });
+}
+
+export function readPublishedItemCount(database: Database.Database): number {
+  const row = database
+    .prepare("SELECT COUNT(*) AS count FROM published_items")
+    .get() as { readonly count: number };
+  return row.count;
+}
+
+export function readPublishedItems(
+  database: Database.Database,
+): readonly PublishedItem[] {
+  return database
+    .prepare<[], PublishedItem>(
+      "SELECT id, target_type, target_id, title, summary, body, published_at FROM published_items",
+    )
+    .all();
+}
+
+export class CountingPublicationClock implements Clock {
+  calls = 0;
+  readonly transactionStates: boolean[] = [];
+  readonly #initialTime: Date;
+  readonly #database: Database.Database;
+
+  constructor(database: Database.Database, initialTime: Date) {
+    this.#database = database;
+    this.#initialTime = initialTime;
+  }
+
+  now(): Date {
+    this.calls += 1;
+    this.transactionStates.push(this.#database.inTransaction);
+    return new Date(this.#initialTime.getTime());
+  }
+}
+
+export class CountingPublicationIdGenerator implements IdGenerator {
+  calls = 0;
+  readonly transactionStates: boolean[] = [];
+  readonly #values: readonly string[];
+  readonly #database: Database.Database;
+
+  constructor(database: Database.Database, values: readonly string[]) {
+    this.#database = database;
+    this.#values = values;
+  }
+
+  next(): string {
+    const value = this.#values[this.calls];
+    this.calls += 1;
+    this.transactionStates.push(this.#database.inTransaction);
+
+    if (value === undefined) {
+      throw new Error("Synthetic publication ID sequence exhausted");
+    }
+
+    return value;
+  }
+}
+
+export class ControllablePublishedItemRepository implements PublishedItemRepository {
+  failNextInsertAfterWrite = false;
+  transactionFindResult: PublishedItem | null | undefined = undefined;
+  findCalls = 0;
+  insertCalls = 0;
+  readonly insertTransactionStates: boolean[] = [];
+  readonly #delegate: PublishedItemRepository;
+  readonly #database: Database.Database;
+
+  constructor(delegate: PublishedItemRepository, database: Database.Database) {
+    this.#delegate = delegate;
+    this.#database = database;
+  }
+
+  findByTarget(
+    targetType: PublishedItem["target_type"],
+    targetId: string,
+  ): PublishedItem | null {
+    this.findCalls += 1;
+    if (
+      this.#database.inTransaction &&
+      this.transactionFindResult !== undefined
+    ) {
+      return this.transactionFindResult;
+    }
+
+    return this.#delegate.findByTarget(targetType, targetId);
+  }
+
+  insert(item: PublishedItemInsert): PublishedItem {
+    this.insertCalls += 1;
+    this.insertTransactionStates.push(this.#database.inTransaction);
+    const inserted = this.#delegate.insert(item);
+    if (this.failNextInsertAfterWrite) {
+      this.failNextInsertAfterWrite = false;
+      throw new Error("Synthetic Published Item insert failure");
+    }
+
+    return inserted;
+  }
+
+  listForFeed(feed: PublicationFeed): readonly PublishedItem[] {
+    return this.#delegate.listForFeed(feed);
   }
 }
