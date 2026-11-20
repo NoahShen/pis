@@ -1,17 +1,17 @@
 # D11A Progress：运行整合与环境适配
 
-- 状态：`G3_APPROVED`
+- 状态：`COMPLETE · PUSHED · CI_SUCCESS · AWAITING_USER_ACCEPTANCE`
 - 计划基线：main `be98bccc68a81a61ebbc2b216c78da8d72aefa7b`
 - G1：`APPROVED`（`intent.md`）
 - G2：`APPROVED`（`spec.md`，含 Node 26 单值 zstd 口径）
 - G3：`APPROVED · Architect · 2026-11-21`
-- 当前交付：T01～T04 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；ASM-08 `PASS`；D11A Local Gate `READY`
-- 当前 Lead：`f2cdf8e5-c3ec-46bb-9bd8-a6e9c58d1d8f` / `wks_1b975dad53475f31`
+- 当前交付：T01～T04 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；ASM-01～ASM-08 `PASS`；Local/Remote Gate `PASS`
+- 当前 Lead：已归档；当前 `NONE`
 - 固定执行 base：T04 `354367a2affc5a6f033a16a9b3dcd413320c57ef`
 - 当前写集：仅 `docs/milestones/D11A/plan.md`、`docs/milestones/D11A/progress.md`
 - Worker：T01～T04 已归档；当前 `NONE`
-- Candidate/Merge/Push：T01 `7ee1c99d9ef3551ff5da72eec20264757227e0d4` / `6f1e4e419c3a66453b1df758df00d01e65f9c858`；T02 `a11774fa0b3d68ef032b6ae9536e7bb34e073e60` / `82a0c97ae9292c0a320097c0c62ac14ea3627635`；T03 `d0da981a340746bd372da87c117053f5fae6987b` / `93da31ceb7201659cfac82cbf832da9a12be5c49`；T04 `9baa315f06b4569981b54b86b2b0e6c8674ba5e0` / `46f572ddb94d1ea784c3c4c4f50610ceb395bd09`；尚未 push
-- 开发心跳：`ca6cd3ae`（active，10 分钟，只提醒主 Architect）
+- Candidate/Merge/Push：T01 `7ee1c99d9ef3551ff5da72eec20264757227e0d4` / `6f1e4e419c3a66453b1df758df00d01e65f9c858`；T02 `a11774fa0b3d68ef032b6ae9536e7bb34e073e60` / `82a0c97ae9292c0a320097c0c62ac14ea3627635`；T03 `d0da981a340746bd372da87c117053f5fae6987b` / `93da31ceb7201659cfac82cbf832da9a12be5c49`；T04 `9baa315f06b4569981b54b86b2b0e6c8674ba5e0` / `46f572ddb94d1ea784c3c4c4f50610ceb395bd09`；main 已 push，CI Success
+- 开发心跳：`ca6cd3ae` 已删除；D11A Lead 与全部 Worker/Workspace 已归档
 
 ## 任务状态
 
@@ -46,6 +46,14 @@
 - ASM-08 证据：`/private/tmp/pis-d11a-real-e2e/summary.json`、`/private/tmp/pis-d11a-real-e2e-rerun.log`；未记录密钥、完整私有 URL、正文或 User Context。
 - 首次 harness 在 app.close 后查询 DB 导致汇总 TypeError，已修正为关闭前快照并独立只读复核；不属于生产缺陷，第二次正式运行通过。
 - 下一步：Architect 干净快照最终 Gate、push 精确 main SHA、远程 CI。
+
+## Final Verification
+
+- Final code SHA：`2dcc73903dff601f921569cc16a1d9143016dc15`；tree：`fed18afa462248d71be31e791e3088a6e429e22f`。
+- Architect 独立干净 `git archive` 快照完整 `npm run verify`：111 files/1235 tests，7 项既有 smoke、production smoke、database smoke，format 287 files，全部通过。
+- main 与 origin/main 同步；GitHub CI run `44737495644` 对该精确 SHA 为 `completed/success`。
+- D11A 四卡及 ASM-01～ASM-08 均完成；真实验证和 CI 不宣称 D12 RSS XML、D13 云端发布或 D16 语义验收。
+- D11A_FINAL_PASS=ISSUED；等待用户验收，不自动开始 D12。
 
 ## 关键风险
 
