@@ -1,17 +1,17 @@
 # D12 Progress：本地静态 RSS 生成与归档
 
-- 状态：`G3_APPROVED · DEVELOPMENT`
+- 状态：`COMPLETE · PUSHED · CI_SUCCESS · AWAITING_USER_ACCEPTANCE`
 - 当前 Plan：v0.3
 - 计划基线：main `d3a86fb8c2ee1571978058d69fe636c13da84796`
 - G1：`APPROVED`（`intent.md`；负责人授权文档完成后直接开发；pending 覆盖修订随 `d3a86fb8` 基线）
 - G2：`APPROVED · Architect`（`spec.md` pending 覆盖修订；依赖 D00～D11、D11A、D15，不依赖 D13）
 - G3：`APPROVED · Architect · Plan v0.3`
-- 当前阶段：T01～T04 已合并归档；D12 Final Gate
+- 当前阶段：D12 完成；等待负责人验收，不自动开始 D13
 - 当前写集：仅 `docs/milestones/D12/plan.md`、`docs/milestones/D12/progress.md`
-- 当前 Lead：`380573ec-d799-42ad-a7fd-2baa83a166f5` / `wks_32173d9a41b654ff`
+- 当前 Lead：已归档；当前 `NONE`
 - Worker：T01～T04 已归档；当前 `NONE`
-- 开发心跳：`4d068a00`（active，10 分钟，只提醒主 Architect）
-- Candidate/Merge/Push：T01 `d50fd08a50a8d9b8ee8074ade9b34870a05e589c` / `e75aea987d9ec70f96626602b9ee4073c4c7b0ca`；T02 `3fac986bc66927801b91eb22465dc1e2d1d408cf` / `547794d6912c9707abad6959f318acde36855086`；T03 `e57e7f926d8bf02ecf3993b529c0416876caa2eb` / `ad939f28b367ccfd324eabb10b72f81f9e32e260`；T04 `4cf385708291b8f37422624580c2265346850066` / `8b98aba618bd65215a209d7ec0616e3c6d20e398`；尚未 push
+- 开发心跳：`4d068a00` 已删除；D12 Lead 与全部 Worker/Workspace 已归档
+- Candidate/Merge/Push：T01 `d50fd08a50a8d9b8ee8074ade9b34870a05e589c` / `e75aea987d9ec70f96626602b9ee4073c4c7b0ca`；T02 `3fac986bc66927801b91eb22465dc1e2d1d408cf` / `547794d6912c9707abad6959f318acde36855086`；T03 `e57e7f926d8bf02ecf3993b529c0416876caa2eb` / `ad939f28b367ccfd324eabb10b72f81f9e32e260`；T04 `4cf385708291b8f37422624580c2265346850066` / `8b98aba618bd65215a209d7ec0616e3c6d20e398`；main 已 push，CI Success
 
 ## 任务状态
 
@@ -57,6 +57,15 @@
 - D11A 真实临时库只读验收通过：EVENT_UPDATES=12、CURATED_CONTENT=12，head/pending/XML/static 均通过；DB main/WAL/SHM pre/post SHA-256 完全一致，临时输出已清理。
 - 真实证据：`/private/tmp/d12-real-readonly-summary.json`；未记录正文、完整 URL、secret 或私有配置。
 - Workspace `wks_3ff9a2d8c071f3f9` 与 Worker 已归档，目录已移除；package-lock 不变。
+
+## Final Verification
+
+- Final code SHA：`139101540db97c4272df8553897490df6780b3f5`；tree：`00726ca5e20b9ba7fd418f25538a14c47f52b2fa`。
+- Architect 独立干净 `git archive` 快照完整 `npm run verify`：121 files/1308 tests，全部既有 smoke、production/database/RSS smoke，format 312 files 通过。
+- 干净快照再次完成 D11A 临时库只读验收；DB main/WAL/SHM hash 不变，XML/static 通过。
+- GitHub CI run `44783312320` 对最终精确代码 SHA 为 `completed/success`。
+- D12 四卡及约定 RSS Case 完成；不宣称 D13 云端发布、RSS-15/16 阅读器/网络验收、D14 或 D16。
+- D12_FINAL_PASS=ISSUED；等待用户验收，不自动开始 D13。
 
 ## G3 复核摘要
 
