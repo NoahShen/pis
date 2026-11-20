@@ -1,4 +1,22 @@
-import type { PublicationLogEntry, PublicationLogger } from "./contracts.js";
+import type {
+  PublicationLogEntry,
+  PublicationLogger,
+  PublicationLogReason,
+  PublicationLogStage,
+} from "./contracts.js";
+
+const PUBLICATION_LOG_STAGES: ReadonlySet<PublicationLogStage> = new Set([
+  "check",
+  "render",
+  "persist",
+  "notify",
+]);
+const PUBLICATION_LOG_REASONS: ReadonlySet<PublicationLogReason> = new Set([
+  "invalid_input",
+  "aborted",
+  "publication_failed",
+  "notify_failed",
+]);
 
 function whitelistLogEntry(entry: PublicationLogEntry): PublicationLogEntry {
   const safeEntry: {
@@ -9,7 +27,9 @@ function whitelistLogEntry(entry: PublicationLogEntry): PublicationLogEntry {
     sourceLinkCount?: number;
     publishedItemId?: string;
     durationMs?: number;
-  } = { stage: entry.stage };
+  } = {
+    stage: PUBLICATION_LOG_STAGES.has(entry.stage) ? entry.stage : "check",
+  };
 
   if (entry.targetType !== undefined) {
     safeEntry.targetType = entry.targetType;
@@ -17,7 +37,7 @@ function whitelistLogEntry(entry: PublicationLogEntry): PublicationLogEntry {
   if (entry.targetId !== undefined) {
     safeEntry.targetId = entry.targetId;
   }
-  if (entry.reason !== undefined) {
+  if (entry.reason !== undefined && PUBLICATION_LOG_REASONS.has(entry.reason)) {
     safeEntry.reason = entry.reason;
   }
   if (entry.sourceLinkCount !== undefined) {

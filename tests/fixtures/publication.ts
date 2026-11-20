@@ -5,16 +5,30 @@ import { openDatabase } from "../../src/database/open-database.js";
 import { initializeDatabase } from "../../src/database/schema.js";
 import type {
   PublicationContext,
+  PublicationDependencies,
+  PublicationDraft,
   PublicationFeed,
   PublicationEvent,
   PublicationEventSummary,
   PublicationFinding,
   PublicationKnowledge,
+  PublicationLogger,
+  PublicationNotifier,
+  PublicationRenderer,
+  PublicationService,
+  PublicationSourceLinkRepository,
+  PublicationTargetRepository,
+  PublicationTargetType,
   PublishedItem,
   PublishedItemInsert,
   PublishedItemRepository,
   PublicationUpdate,
 } from "../../src/publication/contracts.js";
+import { createPublication } from "../../src/publication/publication.js";
+import { SqlitePublicationSourceLinkRepository } from "../../src/publication/source-link-repository.js";
+import { SqlitePublicationTargetRepository } from "../../src/publication/publication-target-repository.js";
+import { SqlitePublishedItemRepository } from "../../src/publication/published-item-repository.js";
+import { TemplatePublicationRenderer } from "../../src/publication/template-renderer.js";
 import type { Clock } from "../../src/time/clock.js";
 import type { IdGenerator } from "../../src/id/id-generator.js";
 import { closeDatabase, withDatabasePath } from "./database.js";
@@ -780,6 +794,7 @@ export function readPublishedItems(
 export class CountingPublicationClock implements Clock {
   calls = 0;
   readonly transactionStates: boolean[] = [];
+  trace: string[] | undefined = undefined;
   readonly #initialTime: Date;
   readonly #database: Database.Database;
 
@@ -791,6 +806,7 @@ export class CountingPublicationClock implements Clock {
   now(): Date {
     this.calls += 1;
     this.transactionStates.push(this.#database.inTransaction);
+    this.trace?.push("clock");
     return new Date(this.#initialTime.getTime());
   }
 }
@@ -798,6 +814,7 @@ export class CountingPublicationClock implements Clock {
 export class CountingPublicationIdGenerator implements IdGenerator {
   calls = 0;
   readonly transactionStates: boolean[] = [];
+  trace: string[] | undefined = undefined;
   readonly #values: readonly string[];
   readonly #database: Database.Database;
 
@@ -810,6 +827,7 @@ export class CountingPublicationIdGenerator implements IdGenerator {
     const value = this.#values[this.calls];
     this.calls += 1;
     this.transactionStates.push(this.#database.inTransaction);
+    this.trace?.push("id");
 
     if (value === undefined) {
       throw new Error("Synthetic publication ID sequence exhausted");
@@ -822,9 +840,11 @@ export class CountingPublicationIdGenerator implements IdGenerator {
 export class ControllablePublishedItemRepository implements PublishedItemRepository {
   failNextInsertAfterWrite = false;
   transactionFindResult: PublishedItem | null | undefined = undefined;
+  externalFindResult: PublishedItem | null | undefined = undefined;
   findCalls = 0;
   insertCalls = 0;
   readonly insertTransactionStates: boolean[] = [];
+  trace: string[] | undefined = undefined;
   readonly #delegate: PublishedItemRepository;
   readonly #database: Database.Database;
 
@@ -838,11 +858,18 @@ export class ControllablePublishedItemRepository implements PublishedItemReposit
     targetId: string,
   ): PublishedItem | null {
     this.findCalls += 1;
+    this.trace?.push("find");
     if (
       this.#database.inTransaction &&
       this.transactionFindResult !== undefined
     ) {
       return this.transactionFindResult;
+    }
+    if (
+      this.#database.inTransaction === false &&
+      this.externalFindResult !== undefined
+    ) {
+      return this.externalFindResult;
     }
 
     return this.#delegate.findByTarget(targetType, targetId);
@@ -850,6 +877,7 @@ export class ControllablePublishedItemRepository implements PublishedItemReposit
 
   insert(item: PublishedItemInsert): PublishedItem {
     this.insertCalls += 1;
+    this.trace?.push("insert");
     this.insertTransactionStates.push(this.#database.inTransaction);
     const inserted = this.#delegate.insert(item);
     if (this.failNextInsertAfterWrite) {
@@ -863,4 +891,273 @@ export class ControllablePublishedItemRepository implements PublishedItemReposit
   listForFeed(feed: PublicationFeed): readonly PublishedItem[] {
     return this.#delegate.listForFeed(feed);
   }
+}
+
+export class ControllablePublicationTargetRepository implements PublicationTargetRepository {
+  contextCalls = 0;
+  associationCalls = 0;
+  readonly contextTransactionStates: boolean[] = [];
+  readonly associationTransactionStates: boolean[] = [];
+  transactionContext: PublicationContext | null | undefined = undefined;
+  transactionAssociation: boolean | undefined = undefined;
+  trace: string[] | undefined = undefined;
+  readonly #delegate: PublicationTargetRepository;
+  readonly #database: Database.Database;
+
+  constructor(
+    delegate: PublicationTargetRepository,
+    database: Database.Database,
+  ) {
+    this.#delegate = delegate;
+    this.#database = database;
+  }
+
+  getContext(
+    targetType: PublicationTargetType,
+    targetId: string,
+  ): PublicationContext | null {
+    this.contextCalls += 1;
+    this.trace?.push("context");
+    this.contextTransactionStates.push(this.#database.inTransaction);
+    if (this.#database.inTransaction && this.transactionContext !== undefined) {
+      return this.transactionContext;
+    }
+
+    return this.#delegate.getContext(targetType, targetId);
+  }
+
+  hasAnyTopicAssociation(
+    targetType: PublicationTargetType,
+    targetId: string,
+  ): boolean {
+    this.associationCalls += 1;
+    this.trace?.push("association");
+    this.associationTransactionStates.push(this.#database.inTransaction);
+    if (
+      this.#database.inTransaction &&
+      this.transactionAssociation !== undefined
+    ) {
+      return this.transactionAssociation;
+    }
+
+    return this.#delegate.hasAnyTopicAssociation(targetType, targetId);
+  }
+}
+
+export class CountingPublicationSourceLinkRepository implements PublicationSourceLinkRepository {
+  calls = 0;
+  readonly transactionStates: boolean[] = [];
+  readonly #delegate: PublicationSourceLinkRepository;
+  readonly #database: Database.Database;
+  readonly #urls: readonly string[] | undefined;
+
+  constructor(
+    delegate: PublicationSourceLinkRepository,
+    database: Database.Database,
+    urls?: readonly string[],
+  ) {
+    this.#delegate = delegate;
+    this.#database = database;
+    this.#urls = urls;
+  }
+
+  listSourceUrls(
+    targetType: PublicationTargetType,
+    targetId: string,
+  ): readonly string[] {
+    this.calls += 1;
+    this.transactionStates.push(this.#database.inTransaction);
+    return this.#urls ?? this.#delegate.listSourceUrls(targetType, targetId);
+  }
+}
+
+export class CountingPublicationRenderer implements PublicationRenderer {
+  calls = 0;
+  readonly transactionStates: boolean[] = [];
+  nextDraft: PublicationDraft | undefined = undefined;
+  readonly #database: Database.Database;
+  readonly #delegate: PublicationRenderer;
+
+  constructor(
+    database: Database.Database,
+    delegate = new TemplatePublicationRenderer(),
+  ) {
+    this.#database = database;
+    this.#delegate = delegate;
+  }
+
+  render(context: PublicationContext): PublicationDraft {
+    this.calls += 1;
+    this.transactionStates.push(this.#database.inTransaction);
+    return this.nextDraft ?? this.#delegate.render(context);
+  }
+}
+
+export type PublicationNotifierMode =
+  "sync" | "async" | "throw" | "reject" | "deferred";
+
+interface NotifierWaiter {
+  readonly target: number;
+  readonly resolve: () => void;
+}
+
+export class ControllablePublicationNotifier implements PublicationNotifier {
+  readonly feeds: PublicationFeed[] = [];
+  readonly transactionStates: boolean[] = [];
+  readonly #database: Database.Database;
+  readonly #mode: PublicationNotifierMode;
+  readonly #waiters: NotifierWaiter[] = [];
+  #deferredPromise: Promise<void> | undefined;
+  #resolveDeferred: (() => void) | undefined;
+
+  constructor(
+    database: Database.Database,
+    mode: PublicationNotifierMode = "sync",
+  ) {
+    this.#database = database;
+    this.#mode = mode;
+  }
+
+  get calls(): number {
+    return this.feeds.length;
+  }
+
+  notify(feed: PublicationFeed): void | Promise<void> {
+    this.feeds.push(feed);
+    this.transactionStates.push(this.#database.inTransaction);
+    for (let index = this.#waiters.length - 1; index >= 0; index -= 1) {
+      const waiter = this.#waiters[index]!;
+      if (this.feeds.length >= waiter.target) {
+        this.#waiters.splice(index, 1);
+        waiter.resolve();
+      }
+    }
+
+    if (this.#mode === "sync" || this.#mode === "async") {
+      return this.#mode === "async" ? Promise.resolve() : undefined;
+    }
+    if (this.#mode === "throw") {
+      throw new Error("Synthetic synchronous notification failure");
+    }
+    if (this.#mode === "reject") {
+      return Promise.reject(
+        new Error("Synthetic asynchronous notification failure"),
+      );
+    }
+
+    this.#deferredPromise ??= new Promise<void>((resolve) => {
+      this.#resolveDeferred = resolve;
+    });
+    return this.#deferredPromise;
+  }
+
+  waitForCalls(target = 1): Promise<void> {
+    if (this.feeds.length >= target) {
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve) => {
+      this.#waiters.push({ target, resolve });
+    });
+  }
+
+  resolveDeferred(): void {
+    this.#resolveDeferred?.();
+  }
+}
+
+export const publicationP0FixtureIds = [
+  "publication-p0-event",
+  "publication-p0-update",
+  "publication-p0-knowledge",
+  "publication-p0-event-repeat",
+  "publication-p0-update-repeat",
+  "publication-p0-knowledge-repeat",
+] as const;
+
+export interface PublicationP0HarnessOptions {
+  readonly sourceUrls?: readonly string[];
+  readonly notifierMode?: PublicationNotifierMode;
+  readonly logger?: PublicationLogger;
+  readonly ids?: readonly string[];
+}
+
+export interface PublicationP0Harness {
+  readonly dependencies: PublicationDependencies;
+  readonly service: PublicationService;
+  readonly target: ControllablePublicationTargetRepository;
+  readonly source: CountingPublicationSourceLinkRepository;
+  readonly renderer: CountingPublicationRenderer;
+  readonly published: ControllablePublishedItemRepository;
+  readonly clock: CountingPublicationClock;
+  readonly ids: CountingPublicationIdGenerator;
+  readonly notifier: ControllablePublicationNotifier;
+  readonly trace: string[];
+}
+
+export function createPublicationP0Harness(
+  database: Database.Database,
+  options: PublicationP0HarnessOptions = {},
+): PublicationP0Harness {
+  const target = new ControllablePublicationTargetRepository(
+    new SqlitePublicationTargetRepository(database),
+    database,
+  );
+  const source = new CountingPublicationSourceLinkRepository(
+    new SqlitePublicationSourceLinkRepository(database),
+    database,
+    options.sourceUrls,
+  );
+  const renderer = new CountingPublicationRenderer(database);
+  const published = new ControllablePublishedItemRepository(
+    new SqlitePublishedItemRepository(database),
+    database,
+  );
+  const clock = new CountingPublicationClock(
+    database,
+    new Date("2026-11-20T12:34:56.789+08:00"),
+  );
+  const ids = new CountingPublicationIdGenerator(
+    database,
+    options.ids ?? publicationP0FixtureIds,
+  );
+  const notifier = new ControllablePublicationNotifier(
+    database,
+    options.notifierMode,
+  );
+  const trace: string[] = [];
+  target.trace = trace;
+  published.trace = trace;
+  clock.trace = trace;
+  ids.trace = trace;
+  const dependencies: PublicationDependencies = {
+    database,
+    targetRepository: target,
+    sourceLinkRepository: source,
+    publishedItemRepository: published,
+    renderer,
+    clock,
+    idGenerator: ids,
+    logger: options.logger,
+    notify: notifier,
+  };
+
+  return {
+    dependencies,
+    service: createPublication(dependencies),
+    target,
+    source,
+    renderer,
+    published,
+    clock,
+    ids,
+    notifier,
+    trace,
+  };
+}
+
+export function flushPublicationTasks(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    setImmediate(resolve);
+  });
 }
