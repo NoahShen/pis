@@ -6,18 +6,18 @@
 - G1：`APPROVED`（`intent.md`；负责人授权文档完成后直接开发；pending 覆盖修订随 `d3a86fb8` 基线）
 - G2：`APPROVED · Architect`（`spec.md` pending 覆盖修订；依赖 D00～D11、D11A、D15，不依赖 D13）
 - G3：`APPROVED · Architect · Plan v0.3`
-- 当前阶段：T01 派发；G3 已批准四卡串行开发，进入开发后创建只提醒心跳
+- 当前阶段：T01 已合并归档；T02 待派发
 - 当前写集：仅 `docs/milestones/D12/plan.md`、`docs/milestones/D12/progress.md`
 - 当前 Lead：`380573ec-d799-42ad-a7fd-2baa83a166f5` / `wks_32173d9a41b654ff`
-- Worker：`NONE`
-- 开发心跳：`NOT_CREATED`；只在 Architect G3 批准并开始正式开发后创建
-- Candidate/Merge/Push：`NONE`
+- Worker：T01 `7891e1c4-0405-477e-87ff-3da2a727f128` 已归档；当前 `NONE`
+- 开发心跳：`4d068a00`（active，10 分钟，只提醒主 Architect）
+- Candidate/Merge/Push：T01 `d50fd08a50a8d9b8ee8074ade9b34870a05e589c` / `e75aea987d9ec70f96626602b9ee4073c4c7b0ca`；尚未 push
 
 ## 任务状态
 
 | 卡片 | 状态 | 前置 base | 定向 Case | 交接/证据 |
 |---|---|---|---|---|
-| `D12-T01` RSS contracts/renderer | `READY` | `C0`（G3 后 plan/progress 文档提交） | `RSS-01`～`RSS-07` | G3 APPROVED；待新 Worker |
+| `D12-T01` RSS contracts/renderer | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `06ac6dafe380939a7da0d1b15b27898ae48384ac` | `RSS-01`～`RSS-07` | G4 APPROVED；定向 3/25；full 114/1260；tree `b623047fb85ed5922a6ecb79d00e541355e7fa78` |
 | `D12-T02` pending/归档规划/RFC 5005 | `NOT_STARTED` | `C1`（T01 PASS closeout） | `RSS-08`～`RSS-10`、`RSS-17` | 待 T01 |
 | `D12-T03` 本地 Store/pending 原子替换 | `NOT_STARTED` | `C2`（T02 PASS closeout） | `RSS-11`、`RSS-24`；原语支撑 12/14 | 待 T02 |
 | `D12-T04` pending 文件集/smoke/只读验收 | `NOT_STARTED` | `C3`（T03 PASS closeout） | `RSS-12`～`RSS-14`、`RSS-18` | 待 T03 |
@@ -29,6 +29,12 @@
 - 现有依赖已包含 `fast-xml-parser 5.12.1`、`linkedom 0.18.15`；D12 Plan 规定新增依赖 `NONE`、`package-lock.json` 不变。
 - 现有 D11 `PublishedItemRepository.listForFeed` 已按 `(published_at DESC,id DESC)` 提供 EVENT+EVENT_UPDATE 与 KNOWLEDGE；D12 只读复用，不新增 SQL 表/Repository 业务语义。
 - 当前默认运行时前置为 Node `v26.13.1`/npm `11.20.0`；所有任务先运行 `npm run verify:toolchain`。
+
+## T01 Closeout
+
+- Architect 独立 G4：frozen patch SHA-256 `83834686f3eb7c15ad20f307eaa02edacb749f2de5463c665dec55f39db9c71e`；tree `b623047fb85ed5922a6ecb79d00e541355e7fa78`；10 paths/blobs 精确。
+- 定向 3 files/25 tests；merge 后 full 114 files/1260 tests；全部 smoke/database/format 297 files 通过。
+- Workspace `wks_e2e03a8daad6f71b` 与 Worker 已归档，目录已移除；无生产 D11/schema/Runtime/package 变更。
 
 ## G3 复核摘要
 
