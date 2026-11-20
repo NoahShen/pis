@@ -6,12 +6,12 @@
 - G1：`APPROVED`（`intent.md`；负责人授权文档完成后直接开发；pending 覆盖修订随 `d3a86fb8` 基线）
 - G2：`APPROVED · Architect`（`spec.md` pending 覆盖修订；依赖 D00～D11、D11A、D15，不依赖 D13）
 - G3：`APPROVED · Architect · Plan v0.3`
-- 当前阶段：T01～T03 已合并归档；T04 待派发
+- 当前阶段：T01～T04 已合并归档；D12 Final Gate
 - 当前写集：仅 `docs/milestones/D12/plan.md`、`docs/milestones/D12/progress.md`
 - 当前 Lead：`380573ec-d799-42ad-a7fd-2baa83a166f5` / `wks_32173d9a41b654ff`
-- Worker：T01～T03 已归档；当前 `NONE`
+- Worker：T01～T04 已归档；当前 `NONE`
 - 开发心跳：`4d068a00`（active，10 分钟，只提醒主 Architect）
-- Candidate/Merge/Push：T01 `d50fd08a50a8d9b8ee8074ade9b34870a05e589c` / `e75aea987d9ec70f96626602b9ee4073c4c7b0ca`；T02 `3fac986bc66927801b91eb22465dc1e2d1d408cf` / `547794d6912c9707abad6959f318acde36855086`；T03 `e57e7f926d8bf02ecf3993b529c0416876caa2eb` / `ad939f28b367ccfd324eabb10b72f81f9e32e260`；尚未 push
+- Candidate/Merge/Push：T01 `d50fd08a50a8d9b8ee8074ade9b34870a05e589c` / `e75aea987d9ec70f96626602b9ee4073c4c7b0ca`；T02 `3fac986bc66927801b91eb22465dc1e2d1d408cf` / `547794d6912c9707abad6959f318acde36855086`；T03 `e57e7f926d8bf02ecf3993b529c0416876caa2eb` / `ad939f28b367ccfd324eabb10b72f81f9e32e260`；T04 `4cf385708291b8f37422624580c2265346850066` / `8b98aba618bd65215a209d7ec0616e3c6d20e398`；尚未 push
 
 ## 任务状态
 
@@ -20,7 +20,7 @@
 | `D12-T01` RSS contracts/renderer | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `06ac6dafe380939a7da0d1b15b27898ae48384ac` | `RSS-01`～`RSS-07` | G4 APPROVED；定向 3/25；full 114/1260；tree `b623047fb85ed5922a6ecb79d00e541355e7fa78` |
 | `D12-T02` pending/归档规划/RFC 5005 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a508e0920a074deae8fecb6ad10fefa29ce78459` | `RSS-08`～`RSS-10`、`RSS-17` | G4 APPROVED；定向 3/27；full 117/1287；tree `4dcad1ef98d37805b09fd92c1f297de8803322c5` |
 | `D12-T03` 本地 Store/pending 原子替换 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `ab82dad56caa3c5acd6ccb748b620f3efa3e4764` | `RSS-11`、`RSS-24`；原语支撑 12/14 | G4 APPROVED；定向 3/31；full 119/1304；tree `d48ae430ddd8aa890fa95921cdf2a60b3aec41a7` |
-| `D12-T04` pending 文件集/smoke/只读验收 | `NOT_STARTED` | `C3`（T03 PASS closeout） | `RSS-12`～`RSS-14`、`RSS-18` | 待 T03 |
+| `D12-T04` pending 文件集/smoke/只读验收 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `f0c7e94045f4858ff879fa1ad772f4c7482fc053` | `RSS-12`～`RSS-14`、`RSS-18` | G4 APPROVED；定向 2/4；full 121/1308；tree `e7a11f5850fb05207a9c1153d5fa705bed849296` |
 
 ## 当前验证与基线核对
 
@@ -49,6 +49,14 @@
 - 定向 3 files/31 tests；merge 后 full 119 files/1304 tests；全部 smoke/database/format 307 files 通过。
 - only-if-absent 使用独占 link；head/pending 原子 rename；路径/symlink containment 与失败清理符合 Plan。
 - Workspace `wks_a216c01a24c6ca91` 与 Worker 已归档，目录已移除。
+
+## T04 Closeout
+
+- Architect 独立 G4：patch SHA-256 `a63d2ce2f65fe2c3589758868c24740e35fe04dbda40524fa68d8bdd52b489f4`；frozen tree `e7a11f5850fb05207a9c1153d5fa705bed849296`；7 paths/blobs 精确。
+- 定向 2 files/4 tests；merge 后 full 121 files/1308 tests；全部 smoke（含 RSS）、database/format 312 files 通过。
+- D11A 真实临时库只读验收通过：EVENT_UPDATES=12、CURATED_CONTENT=12，head/pending/XML/static 均通过；DB main/WAL/SHM pre/post SHA-256 完全一致，临时输出已清理。
+- 真实证据：`/private/tmp/d12-real-readonly-summary.json`；未记录正文、完整 URL、secret 或私有配置。
+- Workspace `wks_3ff9a2d8c071f3f9` 与 Worker 已归档，目录已移除；package-lock 不变。
 
 ## G3 复核摘要
 
