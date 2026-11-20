@@ -130,3 +130,12 @@ Plan v0.2 `a4e6e77dc8e3e186616dad4cca4d3838fd4be65c`（tree `e026b7cd…`）diff
 - Merge 后复验：typecheck PASS；定向 2/2 files、10/10 tests PASS；full `npm run verify` PASS（98/98 files、1136/1136 tests；build、7 项 smoke、database smoke、261 files format PASS）；`git diff --check` PASS。
 - Worker 归档：`archive_workspace(wks_aafda88a9976039e)` 返回 `archivedAgentIds=[0df2d268-6129-48aa-9490-9389a6bcb6bb]`、`removedDirectory=true`；活动 workspace/agent 与 `git worktree list` 均无残留；主工作区与 Lead 工作区未归档。
 - T01 结论：`PASS · LOCAL_MERGE_VERIFIED · ARCHIVED`；T02 尚未启动，以本 T01 收尾 docs record commit 为下一 base。
+
+## 心跳行为更正（2026-11-21 · 用户指令「只提醒不代审」）
+
+- 已删除 `d13cf26f`（`delete_schedule`，schedule 列表现为 `schedules_count=0`）。
+- 新建 **`cb945e27`**，使用 **`create_heartbeat`**（向当前主会话 Architect 发送提醒）而非 `create_schedule`（新建独立 agent）。
+- 此前 `create_schedule` 的目标类型为 `new-agent`：它每次新建独立 agent 实例，实际行使了 G4 批准、merge 与归档职责。D11-T01 的 G4 即由该实例完成，并非主会话 Architect。D15 收尾时 `delete_heartbeat` 报 not found 亦因类型不符。
+- 新心跳 `cb945e27` 明确禁止：G3/G4 批准、candidate/merge/push、修改源码或 progress.md、归档 workspace、删除自身、代替 Lead 创建 agent。所有审核与收尾由主会话 Architect 亲自执行。
+- T01 已按完整证据链合并（tree `877ba3f6`，预演与 merge tree 一致，1136 用例通过），内容经主会话复核无问题，不追溯重审；**自 T02 起 G4 全部由主会话 Architect 执行**。
+- 后续里程碑的心跳统一使用 `create_heartbeat`，清理用 `delete_heartbeat`。
