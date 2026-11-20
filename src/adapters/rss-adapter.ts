@@ -19,6 +19,7 @@ export interface RssHttpPolicy {
 
 export interface RssAdapterOptions {
   httpPolicy?: Partial<RssHttpPolicy>;
+  ssrfProtection?: boolean;
   transport?: RssTransport;
 }
 
@@ -32,7 +33,11 @@ export function createRssAdapter(
     { transport: options.transport, httpPolicy: policy },
     {
       restrictedTransportFactory(signal, requestPolicy) {
-        return createRestrictedRssTransport({ signal, policy: requestPolicy });
+        return createRestrictedRssTransport({
+          signal,
+          policy: requestPolicy,
+          allowPrivateAddresses: options.ssrfProtection === false,
+        });
       },
     },
   );

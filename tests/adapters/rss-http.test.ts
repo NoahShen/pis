@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { zstdCompressSync } from "node:zlib";
 
 import { createRestrictedRssTransport } from "../../src/adapters/http/restricted-client.js";
 import { parseAdapterPolicy } from "../../src/adapters/options.js";
@@ -142,6 +143,64 @@ describe("RSS adapter restricted HTTP integration", () => {
       serverClosed: 0,
       serverCloseFailed: 0,
     });
+  });
+
+  it("fetches native zstd-compressed XML and HTML through the production seam", async () => {
+    const feed = feedXml(`${fixture.origin}/zstd-article`, "zstd");
+    const article =
+      "<!doctype html><html><body><article><p>This zstd-compressed article contains enough readable fixture text to pass extraction while proving the native decompression path.</p></article></body></html>";
+    const compressedFeed = zstdCompressSync(feed);
+    const compressedArticle = zstdCompressSync(article);
+    expect(compressedFeed.byteLength).toBeLessThan(
+      new TextEncoder().encode(feed).byteLength,
+    );
+    expect(compressedArticle.byteLength).toBeLessThan(
+      new TextEncoder().encode(article).byteLength,
+    );
+    await fixture.start();
+    fixture
+      .route("/zstd-feed", ({ response }) => {
+        response.setHeader(
+          "content-type",
+          "application/rss+xml; charset=utf-8",
+        );
+        response.setHeader("content-encoding", "zstd");
+        response.setHeader("content-length", String(compressedFeed.byteLength));
+        response.end(compressedFeed);
+      })
+      .route("/zstd-article", ({ response }) => {
+        response.setHeader("content-type", "text/html; charset=utf-8");
+        response.setHeader("content-encoding", "zstd");
+        response.setHeader(
+          "content-length",
+          String(compressedArticle.byteLength),
+        );
+        response.end(compressedArticle);
+      });
+    const policy = parseAdapterPolicy({
+      requestTimeoutMs: 2_000,
+      articleMinTextChars: 40,
+    });
+    const adapter = adapterForFixture(policy);
+
+    const entries = await adapter.fetchEntries(
+      { id: "zstd", type: "RSS", url: `${fixture.origin}/zstd-feed` },
+      null,
+    );
+    expect(entries).toHaveLength(1);
+    await expect(adapter.fetchContent(entries[0]!)).resolves.toMatchObject({
+      article: {
+        status: "SUCCESS",
+        final_url: `${fixture.origin}/zstd-article`,
+      },
+      acquired_via: "ARTICLE_EXTRACT",
+    });
+    await settle();
+    expect(fixture.requests).toEqual(["/zstd-feed", "/zstd-article"]);
+    expect(fixture.dispatchersClosed).toBe(2);
+    expect(fixture.dispatchersDestroyed).toBe(0);
+    expect(fixture.dispatchers.size).toBe(0);
+    expect(fixture.sockets.size).toBe(0);
   });
 
   it("isolates two sequential canceled hanging feeds while a later feed succeeds", async () => {

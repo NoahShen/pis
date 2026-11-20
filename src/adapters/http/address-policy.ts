@@ -56,6 +56,23 @@ const IPV6_SPECIAL_RANGES = [
 const IPV4_RANGES = IPV4_SPECIAL_RANGES.map((range) => ipaddr.parseCIDR(range));
 const IPV6_RANGES = IPV6_SPECIAL_RANGES.map((range) => ipaddr.parseCIDR(range));
 
+const RELAXABLE_IPV4_RANGES = new Set([
+  "carrierGradeNat",
+  "linkLocal",
+  "loopback",
+  "private",
+  "reserved",
+  "unspecified",
+]);
+
+const RELAXABLE_IPV6_RANGES = new Set([
+  "linkLocal",
+  "loopback",
+  "reserved",
+  "uniqueLocal",
+  "unspecified",
+]);
+
 export const systemDnsResolver: DnsResolver = async (hostname) =>
   lookup(hostname, { all: true, verbatim: true });
 
@@ -120,7 +137,17 @@ export function canonicalizeRestrictedUrl(rawUrl: string): URL {
   return url;
 }
 
-function validateIpv4(address: ipaddr.IPv4): ipaddr.IPv4 {
+function validateIpv4(
+  address: ipaddr.IPv4,
+  allowPrivateAddresses: boolean,
+): ipaddr.IPv4 {
+  if (allowPrivateAddresses) {
+    const range = address.range();
+    if (range !== "unicast" && !RELAXABLE_IPV4_RANGES.has(range)) {
+      throw blocked();
+    }
+    return address;
+  }
   if (
     address.range() !== "unicast" ||
     IPV4_RANGES.some((range) => address.match(range))
@@ -133,6 +160,7 @@ function validateIpv4(address: ipaddr.IPv4): ipaddr.IPv4 {
 export function validateResolvedAddress(
   address: string,
   family?: number,
+  allowPrivateAddresses = false,
 ): DnsAddress {
   const candidate = address.trim();
   let parsed: ipaddr.IPv4 | ipaddr.IPv6;
@@ -145,21 +173,22 @@ export function validateResolvedAddress(
   let normalizedFamily: 4 | 6;
   let normalizedAddress: string;
   if (parsed.kind() === "ipv4") {
-    const ipv4 = validateIpv4(parsed as ipaddr.IPv4);
+    const ipv4 = validateIpv4(parsed as ipaddr.IPv4, allowPrivateAddresses);
     normalizedFamily = 4;
     normalizedAddress = ipv4.toString();
   } else if ((parsed as ipaddr.IPv6).isIPv4MappedAddress()) {
     const ipv6 = parsed as ipaddr.IPv6;
-    const ipv4 = validateIpv4(ipv6.toIPv4Address());
+    const ipv4 = validateIpv4(ipv6.toIPv4Address(), allowPrivateAddresses);
     normalizedFamily = 4;
     normalizedAddress = ipv4.toString();
   } else {
     const ipv6 = parsed as ipaddr.IPv6;
-    if (
+    const relaxedRange = RELAXABLE_IPV6_RANGES.has(ipv6.range());
+    const outsideAllowedUnicast =
       ipv6.range() !== "unicast" ||
       !ipv6.match(ipaddr.parseCIDR("2000::/3")) ||
-      IPV6_RANGES.some((range) => ipv6.match(range))
-    ) {
+      IPV6_RANGES.some((range) => ipv6.match(range));
+    if (outsideAllowedUnicast && !(allowPrivateAddresses && relaxedRange)) {
       throw blocked();
     }
     normalizedFamily = 6;
@@ -183,11 +212,16 @@ export function validateResolvedAddress(
 export async function resolveRestrictedAddress(
   url: URL,
   resolver: DnsResolver = systemDnsResolver,
+  allowPrivateAddresses = false,
 ): Promise<DnsAddress> {
   const hostname = normalizedHostname(url);
   const literalFamily = isIP(hostname);
   if (literalFamily !== 0) {
-    return validateResolvedAddress(hostname, literalFamily);
+    return validateResolvedAddress(
+      hostname,
+      literalFamily,
+      allowPrivateAddresses,
+    );
   }
 
   let addresses: readonly DnsAddress[];
@@ -205,7 +239,7 @@ export async function resolveRestrictedAddress(
   }
 
   const validated = addresses.map((entry) =>
-    validateResolvedAddress(entry.address, entry.family),
+    validateResolvedAddress(entry.address, entry.family, allowPrivateAddresses),
   );
   const first = validated[0];
   if (first === undefined) {
