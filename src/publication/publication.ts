@@ -29,6 +29,9 @@ type PersistOutcome =
   | {
       readonly kind: "created";
       readonly item: PublishedItem;
+    }
+  | {
+      readonly kind: "empty";
     };
 
 function isPublicationTargetType(
@@ -82,6 +85,55 @@ function failureReason(
   signal: AbortSignal | undefined,
 ): PublicationErrorCode {
   return normalizePublicationFailure(error, signal).code;
+}
+
+function publicationFeedFor(
+  targetType: PublicationTargetType,
+): "EVENT" | "KNOWLEDGE" {
+  return targetType === "KNOWLEDGE" ? "KNOWLEDGE" : "EVENT";
+}
+
+function notifyAfterCommit(
+  dependencies: PublicationDependencies,
+  targetType: PublicationTargetType,
+  targetId: string,
+  item: PublishedItem,
+): void {
+  const notifier = dependencies.notify;
+  if (notifier === undefined) {
+    return;
+  }
+
+  const invoke = (): void => {
+    try {
+      const pending = notifier.notify(publicationFeedFor(targetType));
+      if (pending !== undefined) {
+        void Promise.resolve(pending).catch(() => {
+          logPublication(dependencies.logger, {
+            targetType,
+            targetId,
+            stage: "notify",
+            reason: "notify_failed",
+            publishedItemId: item.id,
+          });
+        });
+      }
+    } catch {
+      logPublication(dependencies.logger, {
+        targetType,
+        targetId,
+        stage: "notify",
+        reason: "notify_failed",
+        publishedItemId: item.id,
+      });
+    }
+  };
+
+  // Promise settlement is observed after the caller receives the committed
+  // result. Notification remains detached and its failures stay best effort.
+  queueMicrotask(() => {
+    queueMicrotask(invoke);
+  });
 }
 
 export function createPublication(
@@ -235,8 +287,26 @@ export function createPublication(
             return { kind: "existing", item: concurrent };
           }
 
-          const publishedAt = formatTimestamp(dependencies.clock.now());
+          const transactionContext = dependencies.targetRepository.getContext(
+            targetType,
+            targetId,
+          );
+          if (transactionContext === null) {
+            return { kind: "empty" };
+          }
+
+          const transactionAssociated =
+            dependencies.targetRepository.hasAnyTopicAssociation(
+              targetType,
+              targetId,
+            );
+          if (!transactionAssociated) {
+            return { kind: "empty" };
+          }
+
+          const now = dependencies.clock.now();
           const id = dependencies.idGenerator.next();
+          const publishedAt = formatTimestamp(now);
           const inserted = dependencies.publishedItemRepository.insert({
             ...item,
             id,
@@ -255,6 +325,15 @@ export function createPublication(
         throw normalizePublicationFailure(error, signal);
       }
 
+      if (outcome.kind === "empty") {
+        logPublication(dependencies.logger, {
+          targetType,
+          targetId,
+          stage: "persist",
+        });
+        return emptyResult();
+      }
+
       logPublication(dependencies.logger, {
         targetType,
         targetId,
@@ -262,9 +341,12 @@ export function createPublication(
         publishedItemId: outcome.item.id,
       });
 
-      return outcome.kind === "existing"
-        ? existingResult(outcome.item)
-        : createdResult(outcome.item);
+      if (outcome.kind === "existing") {
+        return existingResult(outcome.item);
+      }
+
+      notifyAfterCommit(dependencies, targetType, targetId, outcome.item);
+      return createdResult(outcome.item);
     },
   };
 }

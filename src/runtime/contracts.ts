@@ -34,7 +34,7 @@ export type RuntimeTask =
 export type RuntimeTaskType = RuntimeTask["type"];
 
 export interface PublishResult {
-  readonly published_item_id: string;
+  readonly published_item_id: string | null;
 }
 
 export interface StageServices {

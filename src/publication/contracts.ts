@@ -132,13 +132,15 @@ export interface PublicationNotifier {
   notify(feed: PublicationFeed): void | Promise<void>;
 }
 
-export type PublicationLogStage = "check" | "render" | "persist";
+export type PublicationLogStage = "check" | "render" | "persist" | "notify";
+
+export type PublicationLogReason = PublicationErrorCode | "notify_failed";
 
 export interface PublicationLogEntry {
   readonly targetType?: PublicationTargetType;
   readonly targetId?: string;
   readonly stage: PublicationLogStage;
-  readonly reason?: PublicationErrorCode;
+  readonly reason?: PublicationLogReason;
   readonly sourceLinkCount?: number;
   readonly publishedItemId?: string;
   readonly durationMs?: number;
