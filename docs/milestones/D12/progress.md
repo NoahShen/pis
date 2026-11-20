@@ -6,19 +6,19 @@
 - G1：`APPROVED`（`intent.md`；负责人授权文档完成后直接开发；pending 覆盖修订随 `d3a86fb8` 基线）
 - G2：`APPROVED · Architect`（`spec.md` pending 覆盖修订；依赖 D00～D11、D11A、D15，不依赖 D13）
 - G3：`APPROVED · Architect · Plan v0.3`
-- 当前阶段：T01 已合并归档；T02 待派发
+- 当前阶段：T01～T02 已合并归档；T03 待派发
 - 当前写集：仅 `docs/milestones/D12/plan.md`、`docs/milestones/D12/progress.md`
 - 当前 Lead：`380573ec-d799-42ad-a7fd-2baa83a166f5` / `wks_32173d9a41b654ff`
-- Worker：T01 `7891e1c4-0405-477e-87ff-3da2a727f128` 已归档；当前 `NONE`
+- Worker：T01～T02 已归档；当前 `NONE`
 - 开发心跳：`4d068a00`（active，10 分钟，只提醒主 Architect）
-- Candidate/Merge/Push：T01 `d50fd08a50a8d9b8ee8074ade9b34870a05e589c` / `e75aea987d9ec70f96626602b9ee4073c4c7b0ca`；尚未 push
+- Candidate/Merge/Push：T01 `d50fd08a50a8d9b8ee8074ade9b34870a05e589c` / `e75aea987d9ec70f96626602b9ee4073c4c7b0ca`；T02 `3fac986bc66927801b91eb22465dc1e2d1d408cf` / `547794d6912c9707abad6959f318acde36855086`；尚未 push
 
 ## 任务状态
 
 | 卡片 | 状态 | 前置 base | 定向 Case | 交接/证据 |
 |---|---|---|---|---|
 | `D12-T01` RSS contracts/renderer | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `06ac6dafe380939a7da0d1b15b27898ae48384ac` | `RSS-01`～`RSS-07` | G4 APPROVED；定向 3/25；full 114/1260；tree `b623047fb85ed5922a6ecb79d00e541355e7fa78` |
-| `D12-T02` pending/归档规划/RFC 5005 | `NOT_STARTED` | `C1`（T01 PASS closeout） | `RSS-08`～`RSS-10`、`RSS-17` | 待 T01 |
+| `D12-T02` pending/归档规划/RFC 5005 | `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` | `a508e0920a074deae8fecb6ad10fefa29ce78459` | `RSS-08`～`RSS-10`、`RSS-17` | G4 APPROVED；定向 3/27；full 117/1287；tree `4dcad1ef98d37805b09fd92c1f297de8803322c5` |
 | `D12-T03` 本地 Store/pending 原子替换 | `NOT_STARTED` | `C2`（T02 PASS closeout） | `RSS-11`、`RSS-24`；原语支撑 12/14 | 待 T02 |
 | `D12-T04` pending 文件集/smoke/只读验收 | `NOT_STARTED` | `C3`（T03 PASS closeout） | `RSS-12`～`RSS-14`、`RSS-18` | 待 T03 |
 
@@ -35,6 +35,13 @@
 - Architect 独立 G4：frozen patch SHA-256 `83834686f3eb7c15ad20f307eaa02edacb749f2de5463c665dec55f39db9c71e`；tree `b623047fb85ed5922a6ecb79d00e541355e7fa78`；10 paths/blobs 精确。
 - 定向 3 files/25 tests；merge 后 full 114 files/1260 tests；全部 smoke/database/format 297 files 通过。
 - Workspace `wks_e2e03a8daad6f71b` 与 Worker 已归档，目录已移除；无生产 D11/schema/Runtime/package 变更。
+
+## T02 Closeout
+
+- Architect 独立 G4：patch SHA-256 `c0333006656bba8d843b01fcdbabd25431c1ff77e84d43f45bf2f17d08b5ec7e`；frozen tree `4dcad1ef98d37805b09fd92c1f297de8803322c5`；8 paths/blobs 精确。
+- 定向 3 files/27 tests；merge 后 full 117 files/1287 tests；全部 smoke/database/format 303 files 通过。
+- Lead 中间发现同名 sealed payload 漂移漏检，已增加写前重建 bytes 比较及回归；冲突 pending/head 零写。
+- Workspace `wks_b63bc3fa2a4e36a0` 与 Worker 已归档，目录已移除。
 
 ## G3 复核摘要
 
