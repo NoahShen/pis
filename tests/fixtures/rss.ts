@@ -6,6 +6,12 @@ import type {
   PublishedItemInsert,
   PublishedItemRepository,
 } from "../../src/publication/contracts.js";
+import type {
+  RssArtifactStore,
+  RssFeedKind,
+  RssPublishedItemReader,
+} from "../../src/rss/index.js";
+import { RssError } from "../../src/rss/index.js";
 
 export const RSS_SOURCE_URLS = {
   first: "https://source.example.test/first?a=1&b=2",
@@ -42,6 +48,126 @@ export function createRssPublishedItem(
     published_at: "2026-11-20T08:00:00.000+08:00",
     ...overrides,
   };
+}
+
+export function createRssItems(
+  count: number,
+  targetType: "EVENT" | "EVENT_UPDATE" | "KNOWLEDGE" = "EVENT",
+): readonly PublishedItem[] {
+  if (!Number.isInteger(count) || count < 0) {
+    throw new Error("RSS fixture count must be a non-negative integer");
+  }
+  return Array.from({ length: count }, (_, offset) => {
+    const sequence = count - offset;
+    const suffix = String(sequence).padStart(4, "0");
+    return createRssPublishedItem({
+      id: `rss-${suffix}`,
+      target_type: targetType,
+      target_id: `rss-target-${suffix}`,
+      title: `RSS item ${suffix}`,
+      summary: `RSS summary ${suffix}`,
+      body: `<p>RSS body ${suffix}</p>`,
+      published_at: new Date(
+        Date.UTC(2026, 0, 1) + sequence * 60_000,
+      ).toISOString(),
+    });
+  });
+}
+
+export class StubRssPublishedItemReader implements RssPublishedItemReader {
+  readonly calls: RssFeedKind[] = [];
+  #rows: Readonly<Record<RssFeedKind, readonly PublishedItem[]>>;
+
+  constructor(
+    rows: Readonly<Record<RssFeedKind, readonly PublishedItem[]>> = {
+      EVENT_UPDATES: [],
+      CURATED_CONTENT: [],
+    },
+  ) {
+    this.#rows = rows;
+  }
+
+  replace(rows: Readonly<Record<RssFeedKind, readonly PublishedItem[]>>): void {
+    this.#rows = rows;
+  }
+
+  async list(feed: RssFeedKind): Promise<readonly PublishedItem[]> {
+    this.calls.push(feed);
+    return this.#rows[feed];
+  }
+}
+
+export interface RssWriteCall {
+  readonly key: string;
+  readonly onlyIfAbsent: boolean;
+}
+
+export class MemoryRssArtifactStore implements RssArtifactStore {
+  readonly #artifacts = new Map<string, Uint8Array>();
+  readonly #hiddenFromList = new Set<string>();
+  readonly #nextWriteFailures = new Map<string, Error>();
+  readonly writeAttempts: RssWriteCall[] = [];
+  readonly writeKeys: string[] = [];
+
+  constructor(initial: Readonly<Record<string, Uint8Array>> = {}) {
+    for (const [key, bytes] of Object.entries(initial)) {
+      this.seed(key, bytes);
+    }
+  }
+
+  seed(key: string, bytes: Uint8Array): void {
+    this.#artifacts.set(key, Uint8Array.from(bytes));
+  }
+
+  hideFromList(key: string): void {
+    if (!this.#artifacts.has(key)) {
+      throw new Error(`Cannot hide missing RSS artifact ${key}`);
+    }
+    this.#hiddenFromList.add(key);
+  }
+
+  failNextWrite(
+    key: string,
+    error = new Error("Injected RSS write failure"),
+  ): void {
+    this.#nextWriteFailures.set(key, error);
+  }
+
+  bytes(key: string): Uint8Array | null {
+    const value = this.#artifacts.get(key);
+    return value === undefined ? null : Uint8Array.from(value);
+  }
+
+  async list(prefix: string): Promise<readonly string[]> {
+    return [...this.#artifacts.keys()]
+      .filter((key) => key.startsWith(prefix) && !this.#hiddenFromList.has(key))
+      .sort();
+  }
+
+  async read(key: string): Promise<Uint8Array | null> {
+    return this.bytes(key);
+  }
+
+  async write(
+    key: string,
+    bytes: Uint8Array,
+    options: { readonly onlyIfAbsent?: boolean } = {},
+  ): Promise<void> {
+    const onlyIfAbsent = options.onlyIfAbsent === true;
+    this.writeAttempts.push({ key, onlyIfAbsent });
+
+    const injected = this.#nextWriteFailures.get(key);
+    if (injected !== undefined) {
+      this.#nextWriteFailures.delete(key);
+      throw injected;
+    }
+    if (onlyIfAbsent && this.#artifacts.has(key)) {
+      throw new RssError("artifact_exists");
+    }
+
+    this.#artifacts.set(key, Uint8Array.from(bytes));
+    this.writeKeys.push(key);
+  }
 }
 
 export const rssFeedItems: Readonly<
