@@ -256,9 +256,12 @@ describe("RSS adapter restricted HTTP integration", () => {
     await waitFor(
       () =>
         cancelledReads === 1 &&
-        fixture.destroyCompletedDispatchers.has(firstDispatcher!) &&
-        fixture.sockets.size === 0,
-      "only the first hanging reader, dispatcher and socket to be cleaned up",
+        fixture.destroyCompletedDispatchers.has(firstDispatcher!),
+      "only the first hanging reader and dispatcher to be cleaned up",
+    );
+    await waitFor(
+      () => fixture.sockets.size === 0,
+      "the first hanging server socket to close",
     );
     expect(cancelledReads).toBe(1);
     expect(fixture.dispatchersCreatedInOrder).toHaveLength(1);
@@ -282,9 +285,12 @@ describe("RSS adapter restricted HTTP integration", () => {
     await waitFor(
       () =>
         cancelledReads === 2 &&
-        fixture.destroyCompletedDispatchers.has(secondDispatcher!) &&
-        fixture.sockets.size === 0,
-      "only the second hanging reader, dispatcher and socket to be cleaned up",
+        fixture.destroyCompletedDispatchers.has(secondDispatcher!),
+      "only the second hanging reader and dispatcher to be cleaned up",
+    );
+    await waitFor(
+      () => fixture.sockets.size === 0,
+      "the second hanging server socket to close",
     );
     expect(cancelledReads).toBe(2);
     expect(fixture.dispatchers.size).toBe(0);
@@ -387,9 +393,12 @@ describe("RSS adapter restricted HTTP integration", () => {
     await waitFor(
       () =>
         cancelledReads === 1 &&
-        fixture.destroyCompletedDispatchers.has(hangingDispatcher!) &&
-        fixture.sockets.size === 1,
-      "only the canceled parallel reader, dispatcher and socket to be cleaned up",
+        fixture.destroyCompletedDispatchers.has(hangingDispatcher!),
+      "only the canceled parallel reader and dispatcher to be cleaned up",
+    );
+    await waitFor(
+      () => fixture.sockets.size === 1,
+      "the canceled parallel server socket to close",
     );
     expect(cancelledReads).toBe(1);
     expect(fixture.closeCompletedDispatchers.has(liveDispatcher!)).toBe(false);
