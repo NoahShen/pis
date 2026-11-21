@@ -159,7 +159,7 @@ describe("retrieval routes", () => {
           expect(response.json()).toEqual({ error: "not_found" });
         }
 
-        for (const url of ["/api/events?limit=50", "/api/contents/%00"]) {
+        for (const url of ["/api/events?limit=0", "/api/contents/%00"]) {
           const response = await app.inject(authorized(url));
           expect(response.statusCode).toBe(400);
           expect(response.json()).toEqual({ error: "invalid_request" });

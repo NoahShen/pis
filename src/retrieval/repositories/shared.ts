@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 
+import { encodeRetrievalCursor } from "../pagination.js";
 import type {
   ContentDto,
   EvidenceContentDto,
@@ -7,6 +8,7 @@ import type {
   EventUpdateDto,
   KnowledgeDto,
   RetrievalList,
+  RetrievalListOptions,
   RetrievalTargetDto,
   RetrievalTargetType,
   SourceDto,
@@ -14,23 +16,35 @@ import type {
   TopicDto,
 } from "../contracts.js";
 
-export const DEFAULT_RETRIEVAL_LIMIT = 50;
-export const MAX_RETRIEVAL_LIMIT = 200;
-
 export interface SqlRow {
   readonly [column: string]: unknown;
 }
 
 export function retrievalLimit(limit: number | undefined): number {
-  if (limit === undefined) return DEFAULT_RETRIEVAL_LIMIT;
-  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_RETRIEVAL_LIMIT) {
-    throw new RangeError("Retrieval limit must be an integer from 1 to 200");
-  }
-  return limit;
+  return limit ?? 50;
 }
 
-export function list<T>(rows: T[]): RetrievalList<T> {
-  return { items: rows, next_cursor: null };
+export function list<T extends SqlRow, D>(
+  rows: T[],
+  options: RetrievalListOptions,
+  map: (row: T) => D,
+  cursorRow: (row: T) => { time: string; id: string },
+): RetrievalList<D> {
+  const limit = retrievalLimit(options.limit);
+  const hasNext = rows.length > limit;
+  const items = rows.slice(0, limit);
+  const last = items.at(-1);
+  return {
+    items: items.map(map),
+    next_cursor:
+      hasNext && last !== undefined
+        ? encodeRetrievalCursor(cursorRow(last), {
+            target_type: options.target_type,
+            published_after: options.published_after,
+            published_before: options.published_before,
+          })
+        : null,
+  };
 }
 
 export function getRow(

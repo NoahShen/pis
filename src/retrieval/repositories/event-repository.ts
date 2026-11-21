@@ -29,22 +29,39 @@ export class SqliteEventRetrievalRepository implements EventRetrievalRepository 
   }
 
   list(options: RetrievalListOptions = {}): RetrievalList<EventListItemDto> {
+    const parameters: Array<string | number> = [];
+    const cursorCondition =
+      options.cursor === undefined
+        ? ""
+        : `WHERE e.discovered_at < ? OR (e.discovered_at = ? AND e.id < ?)`;
+    if (options.cursor !== undefined) {
+      parameters.push(
+        options.cursor.time,
+        options.cursor.time,
+        options.cursor.id,
+      );
+    }
+    parameters.push(retrievalLimit(options.limit) + 1);
     const rows = getRows(
       this.#db,
       `SELECT e.id, e.title, e.entity_name, e.subject, e.scope, e.description,
               e.occurred_at, e.discovered_at, COUNT(u.id) AS update_count
        FROM events AS e
        LEFT JOIN event_updates AS u ON u.event_id = e.id
+       ${cursorCondition}
        GROUP BY e.id
        ORDER BY e.discovered_at DESC, e.id DESC
        LIMIT ?`,
-      retrievalLimit(options.limit),
+      ...parameters,
     );
     return list(
-      rows.map((row) => ({
+      rows,
+      options,
+      (row) => ({
         ...mapEvent(row),
         update_count: Number(row.update_count),
-      })),
+      }),
+      (row) => ({ time: row.discovered_at as string, id: row.id as string }),
     );
   }
 
@@ -72,14 +89,31 @@ export class SqliteEventRetrievalRepository implements EventRetrievalRepository 
     ) {
       return null;
     }
+    const parameters: Array<string | number> = [eventId];
+    let cursorCondition = "";
+    if (options.cursor !== undefined) {
+      cursorCondition =
+        "AND (discovered_at < ? OR (discovered_at = ? AND id < ?))";
+      parameters.push(
+        options.cursor.time,
+        options.cursor.time,
+        options.cursor.id,
+      );
+    }
+    parameters.push(retrievalLimit(options.limit) + 1);
     const rows = getRows(
       this.#db,
       `SELECT ${EVENT_UPDATE_COLUMNS} FROM event_updates
-       WHERE event_id = ? ORDER BY discovered_at DESC, id DESC LIMIT ?`,
-      eventId,
-      retrievalLimit(options.limit),
+       WHERE event_id = ? ${cursorCondition}
+       ORDER BY discovered_at DESC, id DESC LIMIT ?`,
+      ...parameters,
     );
-    return list(rows.map((row) => this.#withEvidence(row)));
+    return list(
+      rows,
+      options,
+      (row) => this.#withEvidence(row),
+      (row) => ({ time: row.discovered_at as string, id: row.id as string }),
+    );
   }
 
   getUpdateById(id: string): EventUpdateDetailDto | null {
