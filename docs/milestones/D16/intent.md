@@ -30,7 +30,7 @@
 ## 最终 Gate
 
 1. D16 对应全部 P0 确定性用例可重复通过；最终 `npm run verify`、干净快照、生产 smoke、精确 main SHA Linux CI 成功。
-2. V1 全部 169 个 P0 有逐项 Case ID → PASS/FAIL/BLOCKED/NOT_RUN + 证据路径；任何 P0 非 PASS 都阻止 V1_FINAL_PASS。
+2. V1 全部 **169 个 P0**（155 个模块 Case + E2E-01～14）有逐项 Case ID → PASS/FAIL/BLOCKED/NOT_RUN + 证据路径；任何 P0 非 PASS 都阻止 V1_FINAL_PASS。
 3. S0/S1 有独立真实模型报告，说明误判、波动、成本/调用次数和人工判读，不混入 P0 计数。
 4. RSS-15/16 记录真实阅读器首次订阅、缓存离线可读、超过 200 条历史/归档跟随、GUID 去重和中国大陆实际网络结果；客户端不支持自动归档必须如实记录，不能误判服务端数据丢失。
 5. PM2 启动、重启、SIGINT/SIGTERM 优雅关闭和迁移校准有证据；默认数据库和正式公开 Feed 不被测试污染。

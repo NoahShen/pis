@@ -76,7 +76,7 @@ Notifier/Publisher 失败不得回滚 Published Item；每例必须 `runtime.dra
 
 ### 覆盖矩阵
 
-`docs/milestones/D16/p0-coverage.md` 逐项列出 169 个 P0：Case ID、状态、测试/证据路径、备注。只能引用当前 main 可重跑测试或已审核真实证据；D11A 不新增 Case ID。任何 P0 FAIL/BLOCKED/NOT_RUN 阻止 V1 完成；不得用 `N/A` 隐去。
+`docs/milestones/D16/p0-coverage.md` 逐项列出全部 **169 个 P0**（155 个模块 Case + E2E-01～14）：Case ID、状态、测试/证据路径、备注。只能引用当前 main 可重跑测试或已审核真实证据；D11A 不新增 Case ID。任何 P0 FAIL/BLOCKED/NOT_RUN 阻止 V1 完成；不得用 `N/A` 隐去。
 
 `docs/milestones/D16/reader-acceptance.md` 接续 D13 清单，记录 RSS-15/16：真实客户端首次订阅、离线缓存、超过 200 历史与归档跟随、GUID 去重、大陆网络、公开仓库树/历史无秘密。缺证据必须 PENDING/BLOCKED；服务端 E2E-12 不替代客户端。
 

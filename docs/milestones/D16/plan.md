@@ -119,7 +119,7 @@ npm run verify
 
 1. PM2 单进程配置、构建/启动/重启/stop/清理/端口释放和秘密负断言；默认 Gate 不启动真实 Pages。
 2. 部署/迁移/备份文档，无秘密、无完整随机目录。
-3. 169 个 P0 全覆盖矩阵，引用精确测试/证据；缺失项如实标 FAIL/BLOCKED/NOT_RUN。
+3. 169 个 P0（155 个模块 Case + E2E-01～14）全覆盖矩阵，引用精确测试/证据；缺失项如实标 FAIL/BLOCKED/NOT_RUN。
 4. 真实阅读器/离线/超200/大陆网络记录；需要用户设备或网络的操作提供可执行清单，未执行保持 BLOCKED。
 5. 全量 `npm run verify`、PM2 smoke、D13 pages acceptance self-test、最终干净快照与 Linux CI。
 
