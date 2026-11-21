@@ -8,10 +8,17 @@ import type {
 } from "../../src/publication/contracts.js";
 import type {
   RssArtifactStore,
+  RssFeedFileSet,
   RssFeedKind,
   RssPublishedItemReader,
+  RssPublicationFile,
 } from "../../src/rss/index.js";
-import { RssError } from "../../src/rss/index.js";
+import {
+  RssError,
+  RSS_NOJEKYLL_KEY,
+  buildRssArchiveKey,
+  getRssFeed,
+} from "../../src/rss/index.js";
 
 export const RSS_SOURCE_URLS = {
   first: "https://source.example.test/first?a=1&b=2",
@@ -72,6 +79,41 @@ export function createRssItems(
       ).toISOString(),
     });
   });
+}
+
+export function rssFile(key: string, contents: string): RssPublicationFile {
+  return { key, bytes: new TextEncoder().encode(contents) };
+}
+
+export interface RssFileSetOptions {
+  readonly headContents?: string;
+  readonly pendingContents?: string;
+  readonly archiveCount?: number;
+  readonly withNojekyll?: boolean;
+}
+
+export function buildRssFileSet(
+  feed: RssFeedKind,
+  options: RssFileSetOptions = {},
+): RssFeedFileSet {
+  const definition = getRssFeed(feed);
+  const { headContents, pendingContents, archiveCount, withNojekyll } = options;
+  const files: RssPublicationFile[] = [];
+  if (withNojekyll !== false) {
+    files.push(rssFile(RSS_NOJEKYLL_KEY, ""));
+  }
+  const archiveSequences = Math.max(0, archiveCount ?? 1);
+  for (let sequence = 1; sequence <= archiveSequences; sequence += 1) {
+    files.push(
+      rssFile(
+        buildRssArchiveKey(definition, sequence),
+        `<archive sequence="${sequence}"/>`,
+      ),
+    );
+  }
+  files.push(rssFile(definition.pendingKey, pendingContents ?? "<pending/>"));
+  files.push(rssFile(definition.headKey, headContents ?? "<head/>"));
+  return { feed, files };
 }
 
 export class StubRssPublishedItemReader implements RssPublishedItemReader {
