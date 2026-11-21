@@ -2,10 +2,10 @@
 
 - 状态：G3_APPROVED · DEVELOPMENT
 - Intent/Spec：负责人平台决策；Architect v1.0 批准
-- Plan：v1.0 待 Architect G3
-- 当前 Lead：待创建
+- Plan：v1.0 G3_APPROVED
+- 当前 Lead：`26151a15-6fa2-4df3-9836-b95e20240d30` / `wks_9dde01ce44376b17`
 - 当前 Worker：NONE
-- 开发心跳：待创建
+- 开发心跳：`bb3265d4`（active，10 分钟，只提醒主 Architect）
 - 基线：D12 main 最终文档提交之后
 - Candidate/Merge/Push：NONE
 
