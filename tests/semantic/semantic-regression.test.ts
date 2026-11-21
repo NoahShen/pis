@@ -2,9 +2,14 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { openDatabase } from "../../src/database/open-database.js";
+import { initializeDatabase } from "../../src/database/schema.js";
+import { EventDecisionPersistence } from "../../src/event-analysis/event-decision-persistence.js";
+import { SqliteEventRepository } from "../../src/event-analysis/event-repository.js";
 import { parseLlmResponse } from "../../src/llm/response-validators.js";
 import { createTypedLlmCalls } from "../../src/llm/llm-calls.js";
 import { PromptRepository } from "../../src/prompt/prompt-repository.js";
+import { withTempDirectory } from "../fixtures/temp-directory.js";
 // @ts-expect-error The executable regression harness is plain ESM, matching existing script-test practice.
 import * as semanticHarness from "../../scripts/semantic-regression.mjs";
 // @ts-expect-error Fixed JavaScript fixtures are outside the production TypeScript graph.
@@ -186,7 +191,108 @@ describe("D16 semantic regression offline harness", () => {
       verdict: "ERROR",
       error: { code: "LLM_HTTP_ERROR" },
     });
-    expect(raw).toEqual([]);
+    expect(raw).toEqual([
+      {
+        caseId: "PMT-01a",
+        round: 1,
+        error: { code: "LLM_HTTP_ERROR", category: "http" },
+      },
+    ]);
     expect(JSON.stringify(outcome)).not.toContain("private endpoint response");
+  });
+
+  it("retains invalid JSON raw text with a safe parser error", async () => {
+    const item = caseById("PMT-04a");
+    const raw: unknown[] = [];
+    const outcome = await executeSemanticCases({
+      calls: {
+        analyzeEvents: async () => {
+          throw Object.assign(new Error("raw private body must not leak"), {
+            code: "LLM_OUTPUT_JSON_INVALID",
+            category: "output_validation",
+          });
+        },
+      },
+      testCases: [item],
+      getRawContent: () => "{invalid synthetic raw response",
+      onRaw: async (entry: unknown) => raw.push(entry),
+    });
+    expect(outcome.results[0]).toMatchObject({
+      verdict: "ERROR",
+      error: { code: "LLM_OUTPUT_JSON_INVALID" },
+    });
+    expect(raw).toEqual([
+      {
+        caseId: "PMT-04a",
+        round: 1,
+        rawContent: "{invalid synthetic raw response",
+        error: {
+          code: "LLM_OUTPUT_JSON_INVALID",
+          category: "output_validation",
+        },
+      },
+    ]);
+    expect(JSON.stringify(outcome)).not.toContain("raw private body");
+  });
+
+  it("seeds the complete Content foreign-key chain for alias storage assertions", async () => {
+    await withTempDirectory(async (directory) => {
+      const database = openDatabase(path.join(directory, "semantic.sqlite"));
+      try {
+        initializeDatabase(database);
+        const item = caseById("PMT-04a");
+        const outcome = await executeSemanticCases({
+          calls: {
+            analyzeEvents: async () => item.selfTestResponse,
+          },
+          testCases: [item],
+          database,
+          components: {
+            EventDecisionPersistence,
+            SqliteEventRepository,
+            parseLlmResponse,
+          },
+          onRaw: async () => {},
+        });
+        expect(outcome.results[0]).toMatchObject({
+          verdict: "PASS",
+          storage: { passed: true, aliasCount: 1 },
+        });
+        expect(
+          database
+            .prepare(
+              `SELECT a.alias, c.id AS content_id, i.id AS source_item_id, s.id AS source_id
+               FROM event_entity_aliases a
+               JOIN contents c ON c.id = a.content_id
+               JOIN source_items i ON i.content_id = c.id
+               JOIN sources s ON s.id = i.source_id`,
+            )
+            .all(),
+        ).toEqual([
+          {
+            alias: "ByteDance",
+            content_id: "semantic-PMT-04a-0",
+            source_item_id: "semantic-source-item-PMT-04a",
+            source_id: "semantic-source-PMT-04a",
+          },
+        ]);
+      } finally {
+        database.close();
+      }
+    });
+  });
+
+  it("uses substantive complete synthetic inputs for fixed valuable=true cases", () => {
+    for (const id of ["PMT-05b", "PMT-05c", "KNO-09", "KNO-10b"]) {
+      const item = caseById(id);
+      const body = item.taskData.content.body as string;
+      expect(item.taskData.content.completeness).toBe("FULL");
+      expect(body.split("\n\n").length).toBeGreaterThanOrEqual(4);
+      expect(body).toMatch(/percent|GB|seconds/u);
+      expect(body).toMatch(/tradeoff/iu);
+      expect(body).toMatch(/review/iu);
+      expect(item.expected).toBe(true);
+      expect(item.judge(item.selfTestResponse)).toBe(true);
+    }
   });
 });

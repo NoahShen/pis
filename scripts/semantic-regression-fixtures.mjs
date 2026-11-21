@@ -479,8 +479,8 @@ export const SEMANTIC_CASES = [
     "analyzeKnowledge",
     knowledgeInput(
       content(
-        "Retry postmortem",
-        "A deep practical review explains retry amplification, measured mitigation and tradeoffs.",
+        "Retry postmortem: stopping amplification without hiding failures",
+        `During a synthetic queue outage, every worker retried immediately. Five attempts per message multiplied traffic exactly when the database had least capacity. The failed alternative was a global retry cap: it reduced traffic but discarded urgent work alongside bulk jobs.\n\nThe revised mechanism combines exponential backoff with jitter, per-queue concurrency limits, and idempotency keys. A full retry queue is a backpressure signal that pauses intake instead of scheduling another immediate attempt. Dead-letter records retain the final error and retry history so operators can distinguish a poison message from a transient dependency failure.\n\nIn a controlled replay of 10,000 synthetic messages, median completion time fell from 84 seconds to 19 seconds and peak database connections fell from 180 to 42. The tradeoff is slower recovery for low-priority messages and additional storage for idempotency records. We preserved a separate urgent queue rather than applying one limit everywhere.\n\nThe follow-up review found that timeouts still needed to include queue wait time; otherwise an item could exceed its deadline before its first attempt. The reusable practice is to measure retry multiplication, bound concurrency at the constrained resource, and review dead-letter outcomes after the fix rather than treating fewer errors alone as success.`,
       ),
     ),
     "knowledge",
@@ -492,8 +492,8 @@ export const SEMANTIC_CASES = [
     "analyzeKnowledge",
     knowledgeInput(
       content(
-        "Ecology field methods",
-        "An excellent cross-domain article explains a rigorous restoration mechanism and transferable measurement method.",
+        "Ecology field methods: separating canopy recovery from planting counts",
+        `A synthetic restoration study initially counted seedlings planted, but that measure rewarded dense planting even where survival was poor. Simply reducing density failed on exposed slopes because wind and evaporation killed young plants. The mechanism was not planting volume alone: nurse shrubs moderated temperature and retained moisture, allowing native seedlings to establish.\n\nThe team compared matched plots with and without nurse shrubs, keeping soil type and planting season balanced. They measured survival after twelve months, canopy shade, soil moisture, and the cost per surviving plant rather than reporting the number planted. In this synthetic dataset, survival rose from 38 percent to 67 percent while cost per survivor fell by 21 percent.\n\nThe tradeoff is slower initial coverage and the need to remove invasive nurse species before they dominate. The method therefore includes species screening and a second-season inspection. A control using irrigation also raised survival but required repeated water transport, so it was not transferable to remote plots.\n\nIn review, the authors separated correlation from mechanism by checking moisture before canopy closure and recording sites where nurse shrubs failed. The transferable lesson is to select an outcome tied to establishment, retain comparison plots, and report intervention costs and limitations instead of presenting a single activity count as recovery.`,
       ),
     ),
     "knowledge",
@@ -533,8 +533,8 @@ export const SEMANTIC_CASES = [
     "analyzeKnowledge",
     knowledgeInput(
       content(
-        "Forest restoration mechanism",
-        "A detailed ecology study explains causal mechanisms, measurements and limitations outside software engineering.",
+        "Forest restoration mechanism: why assisted succession worked",
+        `A synthetic watershed project found that removing invasive grass alone did not restore forest. Exposed soil dried quickly, and native seedlings were repeatedly damaged by late frost. Planting more seedlings increased costs without addressing either constraint, while uniform irrigation encouraged shallow roots.\n\nThe successful intervention used patches of native nurse trees to create shade and wind shelter, followed by mixed-age seedlings planted inside those patches. Mulch reduced evaporation, and temporary guards protected the first two growth seasons. This mechanism changed the establishment environment rather than merely increasing planting effort.\n\nAcross 24 matched synthetic plots, two-year survival averaged 71 percent in assisted patches versus 43 percent in cleared controls. Soil moisture at 20 centimetres remained 18 percent higher during dry weeks. Costs per surviving tree decreased by 16 percent despite higher setup labour. Measurements were repeated by surveyors who did not know the plot assignment.\n\nThe tradeoffs include slower visual canopy gains in year one and a risk that nurse patches spread beyond their intended boundary. Plots with shallow rocky soil did not reproduce the benefit, so the report limits its conclusion to deep-soil sites. A follow-up review schedules nurse thinning and compares species diversity, not just survival, to detect a new monoculture.`,
       ),
     ),
     "knowledge",
@@ -559,8 +559,8 @@ export const SEMANTIC_CASES = [
     "analyzeKnowledge",
     knowledgeInput(
       content(
-        "Queue failure postmortem",
-        "A production postmortem explains a new backpressure mechanism, tradeoffs, measurements and failed alternatives.",
+        "Queue failure postmortem: backpressure at the admission boundary",
+        `A synthetic production incident began when a consumer slowed down while producers continued accepting work. Adding consumers first made the failure worse because every consumer opened more database connections. Dropping the oldest messages protected memory but silently removed billing jobs, so neither alternative was acceptable.\n\nThe postmortem introduced admission control based on the oldest unprocessed message age, not queue length alone. Producers received a retry-after response when that age crossed a fixed threshold. Consumers used leases and idempotent commits, while a bounded local buffer absorbed short bursts without creating an unlimited backlog.\n\nIn a replay of one million synthetic jobs, peak memory fell from 6.2 GB to 1.4 GB and the 99th-percentile processing delay fell from 11 minutes to 74 seconds. During overload, 4 percent of requests were explicitly rejected and retried by clients; no accepted job was dropped. The tradeoff is visible backpressure at the API and extra client logic.\n\nA later review compared age-based and count-based signals. Count-based admission allowed many old small jobs to accumulate, whereas age-based admission reacted earlier but needed a reliable monotonic timestamp. The team retained queue-length alarms as a secondary diagnostic and documented recovery drills, rejected-request behavior, and the cases where urgent traffic requires a separately budgeted queue.`,
       ),
     ),
     "knowledge",
