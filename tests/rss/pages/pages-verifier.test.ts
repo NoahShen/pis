@@ -31,6 +31,19 @@ describe("RSS Pages verifier", () => {
         RSS_PAGES_PUBLIC_ORIGIN: "https://noahshen.github.io/pis_publish/",
       }).rssPages?.publicOrigin,
     ).toBe("https://noahshen.github.io/pis_publish");
+    expect(
+      loadConfig({
+        ...REQUIRED_ENV,
+        RSS_PAGES_REPOSITORY: "git@github.com:NoahShen/pis_publish.git",
+        RSS_PAGES_PUBLIC_DIRECTORY: "example_feed",
+      }).rssPages,
+    ).toMatchObject({ publicDirectory: "example_feed" });
+    expect(
+      loadConfig({
+        ...REQUIRED_ENV,
+        RSS_PAGES_REPOSITORY: "git@github.com:NoahShen/pis_publish.git",
+      }).rssPages?.publicDirectory,
+    ).toBe("");
     for (const publicOrigin of [
       "https://user@example.test/pis_publish",
       "https://example.test/pis_publish?secret",
@@ -45,6 +58,36 @@ describe("RSS Pages verifier", () => {
       ).toThrow();
     }
   });
+  it("accepts only an empty or safe single public directory", () => {
+    const pagesEnvironment = {
+      ...REQUIRED_ENV,
+      RSS_PAGES_REPOSITORY: "git@github.com:NoahShen/pis_publish.git",
+    };
+    for (const publicDirectory of ["", "a", "A_1-test", "a".repeat(128)]) {
+      expect(
+        loadConfig({
+          ...pagesEnvironment,
+          RSS_PAGES_PUBLIC_DIRECTORY: publicDirectory,
+        }).rssPages?.publicDirectory,
+      ).toBe(publicDirectory);
+    }
+    for (const publicDirectory of [
+      "nested/path",
+      "bad.path",
+      "bad path",
+      ".",
+      "..",
+      "a".repeat(129),
+    ]) {
+      expect(() =>
+        loadConfig({
+          ...pagesEnvironment,
+          RSS_PAGES_PUBLIC_DIRECTORY: publicDirectory,
+        }),
+      ).toThrowError(/RSS_PAGES_PUBLIC_DIRECTORY/u);
+    }
+  });
+
   it("matches bounded anonymous origin bytes without secrets", async () => {
     const requests: RequestInit[] = [];
     const verify = createRssPagesVerifier({
@@ -59,6 +102,22 @@ describe("RSS Pages verifier", () => {
     await verify(files);
     expect(requests[0]?.redirect).toBe("error");
     expect(requests[0]?.headers).not.toHaveProperty("authorization");
+  });
+
+  it("uses the same fixed public directory for every URL", async () => {
+    const urls: string[] = [];
+    const verify = createRssPagesVerifier({
+      publicOrigin: "https://example.test/project",
+      publicDirectory: "example_feed",
+      fetch: async (url) => {
+        urls.push(String(url));
+        return new Response("public");
+      },
+    });
+    await verify(files);
+    expect(urls).toEqual([
+      "https://example.test/project/example_feed/event-updates.xml",
+    ]);
   });
 
   it("retries status failures and eventually reports timeout", async () => {

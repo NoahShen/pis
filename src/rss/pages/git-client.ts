@@ -4,6 +4,22 @@ import path from "node:path";
 
 import { RssPublisherError } from "../publisher/contracts.js";
 
+const PUBLIC_DIRECTORY = /^[A-Za-z0-9_-]{0,128}$/u;
+
+export function rssPublicKey(key: string, publicDirectory = ""): string {
+  if (!PUBLIC_DIRECTORY.test(publicDirectory))
+    throw new RssPublisherError("invalid_input");
+  return publicDirectory.length === 0 ? key : `${publicDirectory}/${key}`;
+}
+
+export function rssPublicUrl(
+  publicOrigin: string,
+  key: string,
+  publicDirectory = "",
+): URL {
+  return new URL(rssPublicKey(key, publicDirectory), `${publicOrigin}/`);
+}
+
 export interface RssGitClientOptions {
   readonly repository: string;
   readonly branch: string;

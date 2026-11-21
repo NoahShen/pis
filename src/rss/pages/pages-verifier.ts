@@ -3,9 +3,11 @@ import { RSS_FEEDS } from "../feed.js";
 import type { RssPublicationFile } from "../publisher/contracts.js";
 import { RssPublisherError } from "../publisher/contracts.js";
 import { RSS_NOJEKYLL_KEY } from "../publisher/staging.js";
+import { rssPublicUrl } from "./git-client.js";
 
 export interface RssPagesVerifierOptions {
   readonly publicOrigin: string;
+  readonly publicDirectory?: string;
   readonly timeoutMs?: number;
   readonly pollIntervalMs?: number;
   readonly fetch?: typeof fetch;
@@ -83,6 +85,8 @@ export function createRssPagesVerifier(options: RssPagesVerifierOptions) {
   const pollIntervalMs = options.pollIntervalMs ?? 5_000;
   const maxResponseBytes =
     options.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES;
+  // Validate once before any public request; values are never normalized.
+  rssPublicUrl(options.publicOrigin, RSS_NOJEKYLL_KEY, options.publicDirectory);
 
   return async function verify(
     files: readonly RssPublicationFile[],
@@ -105,7 +109,11 @@ export function createRssPagesVerifier(options: RssPagesVerifierOptions) {
         );
         try {
           const response = await fetchImpl(
-            new URL(file.key, `${options.publicOrigin}/`),
+            rssPublicUrl(
+              options.publicOrigin,
+              file.key,
+              options.publicDirectory,
+            ),
             {
               redirect: "error",
               signal: controller.signal,
