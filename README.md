@@ -116,6 +116,35 @@ Topic 创建字段为 `name`、`description`，可选 `enabled`（缺省 `true`�
 
 默认数据库为 `./data/pis.sqlite`；可用 `DATABASE_PATH` 指向其他 SQLite 文件。服务启动时创建父目录并使用冻结 schema 初始化数据库，重启后保留配置。测试与真实进程 smoke 始终使用独立的临时数据库，不读取或污染默认 `data/` 路径。
 
+### 历史查询 API
+
+D14 提供只读历史查询，所有端点都要求 `Authorization: Bearer <API_TOKEN>`，与配置 API 使用同一 Token。RSS 仍是静态文件，不提供 `/feeds/...` 动态查询或凭据赋权。
+
+| 路由                                                         | 用途                                          |
+| ------------------------------------------------------------ | --------------------------------------------- |
+| `GET /api/topics/:id/items`                                  | Topic 已关联的 Event、Event Update、Knowledge |
+| `GET /api/events` / `GET /api/events/:id`                    | Event 列表、详情及全量 Updates 和证据 Content |
+| `GET /api/events/:id/updates` / `GET /api/event-updates/:id` | 指定 Event 的 Updates、单个 Update            |
+| `GET /api/knowledge` / `GET /api/knowledge/:id`              | Knowledge 列表、详情及 Content                |
+| `GET /api/contents/:id`                                      | Content、Source Item 与 Source 来源链（可空） |
+| `GET /api/published-items` / `GET /api/published-items/:id`  | 不可变发布快照、来源 target 与 Topics         |
+
+列表统一返回 `{"items":[...],"next_cursor":string|null}`。`limit` 为 1～200 的十进制整数，默认 50；翻页时原样传入 `next_cursor`，且必须保留原过滤条件。Topic items 和 Published Items 支持 `target_type=EVENT|EVENT_UPDATE|KNOWLEDGE`；Published Items 还支持带 `Z` 或明确 offset 的 `published_after`、`published_before` 闭区间时间过滤。其他未定义、重复或非法参数均返回 `400`。
+
+例如：
+
+```sh
+curl --fail-with-body \
+  --header 'Authorization: Bearer local-test-token-change-me' \
+  'http://127.0.0.1:3000/api/events?limit=20'
+
+curl --fail-with-body \
+  --header 'Authorization: Bearer local-test-token-change-me' \
+  'http://127.0.0.1:3000/api/published-items?target_type=EVENT&published_after=2026-01-01T00%3A00%3A00Z&limit=20'
+```
+
+查询只读取既有 Content、关联和发布快照，不补抓来源、不现场匹配 Topic、不重渲染 Published Item，也不启动 Collection、分析或发布。非法请求返回 `400 {"error":"invalid_request"}`，对象不存在返回 `404 {"error":"not_found"}`，无/错 Bearer 返回 `401 {"error":"unauthorized"}`。错误响应不包含 SQL、堆栈、Token、配置秘密或内部绝对路径；查询可在 `PRAGMA query_only=ON` 的连接上执行，测试仅使用隔离临时数据库或其副本。
+
 ### Chat Completions 调用配置
 
 `createChatCompletionsClient()` 的 `endpoint`、`apiKey` 和 `model` 由调用方显式提供，不使用环境变量、默认 endpoint、默认密钥或默认模型。endpoint 必须使用 HTTP(S)，生产环境使用 HTTPS；HTTP 仅允许 `localhost`、`127.0.0.1` 或 `[::1]` 测试地址，且所有 endpoint 均禁止 userinfo。
