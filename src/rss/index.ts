@@ -15,6 +15,11 @@ export { createLocalArtifactStore } from "./local-artifact-store.js";
 export { createLocalRssSync } from "./local-sync.js";
 export { createRssSyncService } from "./sync-service.js";
 export { createFakeRssPublisher } from "./publisher/fake-publisher.js";
+export { calibrateRssPublication } from "./publisher/startup-calibration.js";
+export {
+  createRssFeedPublisher,
+  createRssPublicationNotifier,
+} from "./publisher/notifier.js";
 export { RssPublisherError } from "./publisher/contracts.js";
 export { RSS_NOJEKYLL_KEY, stageRssFeedFileSet } from "./publisher/staging.js";
 export { RSS_FEEDS, getRssFeed } from "./feed.js";
@@ -64,6 +69,10 @@ export type {
   FakeRssPublisher,
   FakeRssPublisherOptions,
 } from "./publisher/fake-publisher.js";
+export type {
+  RssFeedPublisherDependencies,
+  RssPublicationNotifier,
+} from "./publisher/notifier.js";
 export type {
   RssCommitIntent,
   RssRemoteVersionReader,
