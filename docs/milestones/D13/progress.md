@@ -5,9 +5,9 @@
 - Plan：v1.1 G3_APPROVED
 - 当前 Lead：NONE（已归档）
 - 当前 Worker：NONE（已归档）
-- 开发心跳：`bb3265d4`（active，10 分钟，只提醒主 Architect）
+- 开发心跳：`bb3265d4`（开发/CI 已完成，收尾时删除）
 - 基线：D12 main 最终文档提交之后
-- Candidate/Merge/Push：T01 `42166bc06cd70c206c4759c032229d336894a34d` / `6daac83bca9401d4c939b5c00298b37f075483e9`；T02 `77ea005bd0d21d8066698b381a978e80249a0e11` / `e8846b956df6fa56b23a2cd96a3401b081d665da`；T04 `9806210b0b070cae70de05393c222662cd931416` / `17ec16271786a4414fe80958c56e6b11e808d287`；T04-R1 `18d4f69352f76be68c429260cd638d67ba907819` / `840a5e7e9f79f5e79bb5f4e6b0ffc1146b7a12a2`；T03 工具 `97293209eb9ee80d9cb282866755c126aa12ccab` / `f2a238da33ad8896ad46d42a6075b7670ee60fd3`；尚未 push
+- Candidate/Merge/Push：T01 `42166bc06cd70c206c4759c032229d336894a34d` / `6daac83bca9401d4c939b5c00298b37f075483e9`；T02 `77ea005bd0d21d8066698b381a978e80249a0e11` / `e8846b956df6fa56b23a2cd96a3401b081d665da`；T04 `9806210b0b070cae70de05393c222662cd931416` / `17ec16271786a4414fe80958c56e6b11e808d287`；T04-R1 `18d4f69352f76be68c429260cd638d67ba907819` / `840a5e7e9f79f5e79bb5f4e6b0ffc1146b7a12a2`；T03 工具 `97293209eb9ee80d9cb282866755c126aa12ccab` / `f2a238da33ad8896ad46d42a6075b7670ee60fd3`；close 修复 `4d20df501b8dacb6fc674ade1b9fbd978f739cb6` / `d536eea1b217475c58a4801bdc2009e91652145e`；main 已 push
 
 | Task | State | 验收 |
 |---|---|---|
@@ -26,3 +26,5 @@ T04 frozen patch SHA-256：`87418ffd16b249596794bcb74fbbb8448377aed370b7ff31dd4f
 T04-R1 frozen patch SHA-256：`65890e3b542c67ec2608da96f648741f74787675e4989aac36dace18ae14676f`；merge 后 full `127 files / 1366 tests`，build、全部 smoke、330 文件格式检查通过。实际随机目录仅存本机私有配置，未进入 Git。真实发布仓库 `main` 为 `c1cc6e6576ec431be8fce471a8a3742ac3877397`；目录内四个 XML 匿名 HTTP 200、bytes/hash 与迁移前一致，旧根 Feed 为 404，Git tree 仅含目录内四个 XML 与 `.nojekyll`。GitHub 不直接公开隐藏文件，因此 `.nojekyll` 以 Git tree 存在性和零字节校验，不要求匿名 200。
 
 T03 验收工具 frozen tree `fcefa9486fee0652b7f6a8c214a6f320905ac943`，patch SHA-256 `95ce13077067a2b5242ce275bab62d4e64b80a0a7ef6a20a4fb9152c748c66f9`；merge `f2a238da33ad8896ad46d42a6075b7670ee60fd3`。self-test、真实公开目录 `automatic_only PASS`、merge 后 full `127 files / 1366 tests`、build、全部 smoke、331 文件格式检查通过；输出仅固定 key/count/hash/status。T03 仍未最终 PASS，详细缺口见 `docs/milestones/D13/pages-acceptance.md`。
+
+首次精确 SHA CI run `44874921540` 在 Linux close 测试失败；修复 frozen tree `4feb0cee377bc29587d39724e9546a97d3b85238`，patch SHA-256 `59d8151ebd7c84df49469e6c551e93e9ea4ffcf06af906a452b7e7b6fe76822f`，merge `d536eea1b217475c58a4801bdc2009e91652145e`。独立 5 次及 Worker/Lead 各 10 次严格定向通过，全量 `127 files / 1366 tests` 通过；最终精确 SHA CI run `44875973038` 为 `completed/success`。全部 Lead/Worker/Workspace 已归档。
