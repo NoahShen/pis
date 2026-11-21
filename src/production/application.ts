@@ -465,12 +465,17 @@ export function createProductionAssembly(
         },
       });
 
-    const app = buildApp(config, logger, {
-      repositories: {
-        source: sourceRepository,
-        topic: topicRepository,
+    const app = buildApp(
+      config,
+      logger,
+      {
+        repositories: {
+          source: sourceRepository,
+          topic: topicRepository,
+        },
       },
-    });
+      0,
+    );
 
     let cleanupFailed = false;
     let databaseClosed = false;

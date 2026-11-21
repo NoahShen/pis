@@ -27,9 +27,11 @@ export function buildApp(
   config: AppConfig,
   logger: Logger,
   dependencies?: AppDependencies,
+  hookTimeout?: number,
 ): FastifyInstance {
   const app = Fastify({
     logger: false,
+    pluginTimeout: hookTimeout,
     logController: new LogController({ disableRequestLogging: true }),
     genReqId: () => randomUUID(),
   });

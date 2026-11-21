@@ -620,6 +620,75 @@ describe("production assembly", () => {
     expect(enabledLogger.errorEntries).toEqual([]);
   });
 
+  it("does not truncate Pages calibration after Fastify's former default hook timeout", async () => {
+    const probes = createProductionDependencyProbes();
+    const events = captureLifecycle(
+      probes.runtime,
+      probes.scheduler,
+      probes.database,
+    );
+    const notify = vi.fn(
+      () => new Promise<void>((resolve) => setTimeout(resolve, 10_001)),
+    );
+    const closePublisher = vi.fn(async () => undefined);
+    const assembly = productionModule.createProductionAssembly(
+      appConfig(),
+      new CapturedLogger(),
+      {
+        ...productionTestDependencies(probes),
+        rssPages: {
+          notifier: { notify },
+          publisher: { publish: vi.fn(), close: closePublisher },
+        },
+      },
+    );
+    openApps.push(assembly.app);
+
+    expect(assembly.app.initialConfig.pluginTimeout).toBe(0);
+    vi.useFakeTimers();
+    try {
+      const ready = assembly.app.ready();
+      await vi.advanceTimersByTimeAsync(20_002);
+      await expect(ready).resolves.toBe(assembly.app);
+      expect(notify).toHaveBeenCalledTimes(2);
+      await assembly.app.close();
+      openApps.splice(openApps.indexOf(assembly.app), 1);
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(events).toEqual([
+      "runtime.start",
+      "scheduler.stop",
+      "runtime.shutdown",
+      "db.close",
+    ]);
+    expect(closePublisher).toHaveBeenCalledOnce();
+  });
+
+  it("cleans up when Pages calibration fails", async () => {
+    const probes = createProductionDependencyProbes();
+    const assembly = productionModule.createProductionAssembly(
+      appConfig(),
+      new CapturedLogger(),
+      {
+        ...productionTestDependencies(probes),
+        rssPages: {
+          notifier: { notify: vi.fn().mockRejectedValue(new Error("private")) },
+          publisher: { publish: vi.fn(), close: vi.fn(async () => undefined) },
+        },
+      },
+    );
+    openApps.push(assembly.app);
+
+    await expect(assembly.app.ready()).rejects.toThrow(RUNTIME_START_ERROR);
+    await expect(assembly.app.close()).rejects.toThrow(CLOSE_ERROR);
+    openApps.splice(openApps.indexOf(assembly.app), 1);
+    expect(probes.scheduler.stopCalls).toBe(1);
+    expect(probes.runtime.shutdownCalls).toBe(1);
+    expect(probes.database.closeCalls).toBe(1);
+  });
+
   it("runs ready/listen/close in the required order and makes close idempotent", async () => {
     const probes = createProductionDependencyProbes();
     const events = captureLifecycle(
