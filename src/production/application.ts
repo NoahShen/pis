@@ -357,6 +357,7 @@ export function createProductionAssembly(
             branch: config.rssPages.branch,
             workDirectory: config.rssPages.workDirectory,
             publicOrigin: config.rssPages.publicOrigin,
+            publicDirectory: config.rssPages.publicDirectory,
             timeoutMs: config.rssPages.publishTimeoutMs,
             pollIntervalMs: config.rssPages.pollIntervalMs,
           }));

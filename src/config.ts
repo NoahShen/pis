@@ -34,6 +34,7 @@ export interface RssPagesConfig {
   branch: string;
   workDirectory: string;
   publicOrigin: string;
+  publicDirectory: string;
   publishTimeoutMs: number;
   pollIntervalMs: number;
 }
@@ -54,6 +55,7 @@ export type ConfigPath =
   | "RSS_PAGES_BRANCH"
   | "RSS_PAGES_WORK_DIRECTORY"
   | "RSS_PAGES_PUBLIC_ORIGIN"
+  | "RSS_PAGES_PUBLIC_DIRECTORY"
   | "RSS_PAGES_PUBLISH_TIMEOUT_MS"
   | "RSS_PAGES_POLL_INTERVAL_MS";
 
@@ -81,6 +83,7 @@ const INVALID_LLM_ENDPOINT =
   "must be an absolute HTTP(S) URL without credentials, query, or fragment";
 const DEFAULT_PAGES_ORIGIN = "https://noahshen.github.io/pis_publish";
 const SAFE_REF = /^(?!.*(?:\.\.|\/\/|@\{|\\))refs\/heads\/[A-Za-z0-9._/-]+$/u;
+const SAFE_PUBLIC_DIRECTORY = /^[A-Za-z0-9_-]{0,128}$/u;
 
 function isRepository(value: string): boolean {
   try {
@@ -242,6 +245,13 @@ const environmentSchema = z.object({
         "must be an absolute HTTPS origin without credentials, path, query, or fragment",
     })
     .optional(),
+  RSS_PAGES_PUBLIC_DIRECTORY: z
+    .string()
+    .regex(SAFE_PUBLIC_DIRECTORY, {
+      message:
+        "must be empty or one directory of 1 to 128 letters, digits, underscores, or hyphens",
+    })
+    .optional(),
   RSS_PAGES_PUBLISH_TIMEOUT_MS: pageTimeout(1_000, 600_000),
   RSS_PAGES_POLL_INTERVAL_MS: pageTimeout(100, 60_000),
 });
@@ -262,6 +272,7 @@ const CONFIG_PATHS = new Set<ConfigPath>([
   "RSS_PAGES_BRANCH",
   "RSS_PAGES_WORK_DIRECTORY",
   "RSS_PAGES_PUBLIC_ORIGIN",
+  "RSS_PAGES_PUBLIC_DIRECTORY",
   "RSS_PAGES_PUBLISH_TIMEOUT_MS",
   "RSS_PAGES_POLL_INTERVAL_MS",
 ]);
@@ -298,6 +309,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     "RSS_PAGES_BRANCH",
     "RSS_PAGES_WORK_DIRECTORY",
     "RSS_PAGES_PUBLIC_ORIGIN",
+    "RSS_PAGES_PUBLIC_DIRECTORY",
     "RSS_PAGES_PUBLISH_TIMEOUT_MS",
     "RSS_PAGES_POLL_INTERVAL_MS",
   ] as const;
@@ -312,6 +324,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
         publicOrigin: (
           result.data.RSS_PAGES_PUBLIC_ORIGIN ?? DEFAULT_PAGES_ORIGIN
         ).replace(/\/+$/u, ""),
+        publicDirectory: result.data.RSS_PAGES_PUBLIC_DIRECTORY ?? "",
         publishTimeoutMs: Number(
           result.data.RSS_PAGES_PUBLISH_TIMEOUT_MS ?? 120_000,
         ),

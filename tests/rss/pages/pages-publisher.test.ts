@@ -22,12 +22,13 @@ afterEach(async () => {
   publisher = undefined;
 });
 
-function makePublisher(autoVerify = false) {
+function makePublisher(autoVerify = false, publicDirectory = "") {
   publisher = createRssPagesPublisher({
     repository: fixture!.repository,
     branch: "main",
     workDirectory: fixture!.workDirectory,
     publicOrigin: fixture!.origin,
+    publicDirectory,
     timeoutMs: 1_000,
     pollIntervalMs: 100,
     verifier: autoVerify
@@ -37,6 +38,7 @@ function makePublisher(autoVerify = false) {
             await import("../../../src/rss/index.js")
           ).createRssPagesVerifier({
             publicOrigin: fixture!.origin,
+            publicDirectory,
             timeoutMs: 1_000,
             pollIntervalMs: 10,
           });
@@ -76,6 +78,70 @@ describe("RSS Pages publisher", () => {
       pagesFileSet("CURATED_CONTENT", "two"),
     );
     expect(repeated.version).toBe(second.version);
+  });
+
+  it("publishes and verifies the same directory prefix without changing D12 keys", async () => {
+    fixture = await createPagesFixture();
+    const seen: string[][] = [];
+    publisher = createRssPagesPublisher({
+      repository: fixture.repository,
+      branch: "main",
+      workDirectory: fixture.workDirectory,
+      publicOrigin: fixture.origin,
+      publicDirectory: "example_feed",
+      verifier: async (files) => {
+        seen.push(files.map((file) => file.key));
+      },
+    });
+    const input = pagesFileSet("EVENT_UPDATES", "relative-link-bytes");
+    const originalKeys = input.files.map((file) => file.key);
+    const originalBytes = input.files.map((file) => [...file.bytes]);
+    await publisher.publish(input);
+    expect(
+      await readFile(
+        path.join(fixture.workDirectory, "example_feed/event-updates.xml"),
+        "utf8",
+      ),
+    ).toBe("relative-link-bytes-head");
+    expect(seen[0]).toEqual(originalKeys);
+    expect(input.files.map((file) => file.key)).toEqual(originalKeys);
+    expect(input.files.map((file) => [...file.bytes])).toEqual(originalBytes);
+  });
+
+  it("migrates root PIS assets while preserving unknown files and another feed", async () => {
+    fixture = await createPagesFixture();
+    await makePublisher().publish(pagesFileSet("EVENT_UPDATES", "legacy"));
+    await makePublisher(false, "example_feed").publish(
+      pagesFileSet("CURATED_CONTENT", "other-feed"),
+    );
+    await makePublisher(false, "example_feed").publish(
+      pagesFileSet("EVENT_UPDATES", "migrated"),
+    );
+    for (const key of [
+      ".nojekyll",
+      "event-updates.xml",
+      "event-updates-pending.xml",
+      "archive/event-updates-0001.xml",
+    ]) {
+      await expect(
+        readFile(path.join(fixture.workDirectory, key)),
+      ).rejects.toThrow();
+    }
+    expect(
+      await readFile(path.join(fixture.workDirectory, "README.md"), "utf8"),
+    ).toBe("not public\n");
+    expect(
+      await readFile(
+        path.join(fixture.workDirectory, "example_feed/curated-content.xml"),
+        "utf8",
+      ),
+    ).toBe("other-feed-head");
+    expect(
+      await readFile(
+        path.join(fixture.workDirectory, "example_feed/event-updates.xml"),
+        "utf8",
+      ),
+    ).toBe("migrated-head");
   });
 
   it("does not verify deleted archives", async () => {
