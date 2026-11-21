@@ -205,6 +205,24 @@ curl --fail-with-body \
 
 在运行 `npm start` 的终端按 Ctrl+C（`SIGINT`），或向进程发送 `SIGTERM`，服务会停止接收新请求，并按 Scheduler stop → Runtime 排空/取消 → HTTP 关闭 → SQLite 关闭的顺序释放资源。单个清理失败不会跳过后续资源关闭；最终 close 以稳定错误反映聚合失败，重复 close 保持幂等。正常关闭最多等待 5 秒；失败或超时会以非零状态退出。
 
+## PM2 部署
+
+生产可使用锁文件固定的 PM2 `7.1.2`。`ecosystem.config.cjs` 只启动一个 fork 进程，执行 `node dist/server.js`，不启用 watch/cluster，也不伪造 ready 协议：`wait_ready=false`。`kill_timeout=6000` ms，为应用 5 秒优雅关闭预算预留退出余量。
+
+```sh
+npm ci
+npm run build
+npx pm2 start ecosystem.config.cjs --only pis
+npx pm2 restart pis --update-env
+npx pm2 logs pis --lines 100
+npx pm2 stop pis
+npx pm2 delete pis
+```
+
+启动前必须由受控 shell/服务管理器提供私有 env；ecosystem 不保存 Token、LLM key 或 Pages 私密配置。restart 使用 `--update-env` 时同样需要加载预期环境。`npm run smoke:pm2` 在 build 后使用临时 DB、端口、env 和独立 `PM2_HOME`，验证健康鉴权、restart/stop、端口释放、日志脱敏及清理，默认清除 Pages env，不接触默认库或正式 Feed。
+
+部署、SQLite 一致性备份、新机器/Pages 目录迁移和 sealed 不改写规则见 [docs/deployment.md](docs/deployment.md)。PM2 自动重启不承诺任务恢复或 Exactly-once。
+
 ## 当前范围与未决项
 
 D00～D11 已提供工程、数据库、Prompt/LLM、配置、RSS Adapter、Collection、Processing、Event、Knowledge、Topic Matching 与 Published Item 基础。D11A 已把真实六阶段 Service、共享依赖、Runtime、Scheduler、配置 API、数据库和启停所有权装配到编译后生产入口；确定性 `ASM-05_INTEGRATION` 使用真实临时 SQLite、本地受限 HTTP Fixture 与 Stub LLM 完成 `COLLECT → PROCESS → KNOWLEDGE_ANALYSIS → TOPIC_MATCHING → PUBLISH`。这些证据只覆盖 ASM-01～ASM-07，不等于 D16、S0/S1 或真实双 RSS + 测试 LLM 的 E2E 通过。
