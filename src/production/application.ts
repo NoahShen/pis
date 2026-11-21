@@ -45,6 +45,7 @@ import type { ProcessingLogger } from "../processing/processing-logger.js";
 import { SqliteContentRepository } from "../processing/content-repository.js";
 import { SqliteProcessingSourceItemRepository } from "../processing/source-item-repository.js";
 import { PromptRepository } from "../prompt/prompt-repository.js";
+import { createRetrievalRepositories } from "../retrieval/index.js";
 import { createPublication } from "../publication/publication.js";
 import type {
   PublishedItemRepository as PublicationPublishedItemRepository,
@@ -259,6 +260,7 @@ export function createProductionAssembly(
     );
     const publicationSourceLinkRepository =
       new SqlitePublicationSourceLinkRepository(database);
+    const retrievalRepositories = createRetrievalRepositories(database);
 
     const sourceAdapter =
       dependencies.sourceAdapter ??
@@ -473,6 +475,7 @@ export function createProductionAssembly(
           source: sourceRepository,
           topic: topicRepository,
         },
+        retrieval: retrievalRepositories,
       },
       0,
     );
