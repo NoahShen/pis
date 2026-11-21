@@ -33,6 +33,13 @@ export function buildApp(
     logger: false,
     pluginTimeout: hookTimeout,
     logController: new LogController({ disableRequestLogging: true }),
+    routerOptions: {
+      maxParamLength: 256,
+      onMaxParamLength: (_path, _request, response) => {
+        response.writeHead(400, { "content-type": "application/json" });
+        response.end('{"error":"invalid_request"}');
+      },
+    },
     genReqId: () => randomUUID(),
   });
   const requestStartedAt = new WeakMap<FastifyRequest, bigint>();
