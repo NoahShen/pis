@@ -176,7 +176,7 @@ describe("RSS Pages publisher", () => {
     ).rejects.toMatchObject({ code: "invalid_input" });
   });
 
-  it("close terminates an active child without starting queued work", async () => {
+  it("close cancels an active operation without starting queued work", async () => {
     fixture = await createPagesFixture();
     const client = new RssGitClient({
       repository: fixture.repository,
@@ -184,18 +184,36 @@ describe("RSS Pages publisher", () => {
       workDirectory: fixture.workDirectory,
       timeoutMs: 60_000,
     });
+    let operationStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      operationStarted = resolve;
+    });
     const active = client.publish(async () => {
+      operationStarted();
       await new Promise((resolve) => setTimeout(resolve, 60_000));
       return { version: "", changed: false };
     });
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await started;
+    const queued = client.publish(async () => ({
+      version: "",
+      changed: false,
+    }));
+    const activeRejection = expect(active).rejects.toMatchObject({
+      code: "invalid_input",
+    });
+    const queuedRejection = expect(queued).rejects.toMatchObject({
+      code: "invalid_input",
+    });
+    const closed = client.close();
     await Promise.race([
-      client.close(),
+      closed,
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("close hung")), 2_000),
+        setTimeout(() => reject(new Error("close hung")), 500),
       ),
     ]);
-    await expect(active).rejects.toThrow();
+    await activeRejection;
+    await queuedRejection;
+    await client.close();
   });
 
   it("verifies all public bytes and rejects invalid assets", async () => {

@@ -43,6 +43,10 @@ export class RssGitClient {
   #tail: Promise<void> = Promise.resolve();
   #remoteVersion = "";
   #closed = false;
+  #closeOperation!: () => void;
+  readonly #closedSignal: Promise<void> = new Promise((resolve) => {
+    this.#closeOperation = resolve;
+  });
 
   constructor(options: RssGitClientOptions) {
     this.#repository = options.repository;
@@ -123,7 +127,15 @@ export class RssGitClient {
   }
 
   #serialize<T>(operation: () => Promise<T>): Promise<T> {
-    const result = this.#tail.then(operation, operation);
+    const result = this.#tail.then(async () => {
+      if (this.#closed) throw new RssPublisherError("invalid_input");
+      return await Promise.race([
+        operation(),
+        this.#closedSignal.then(() => {
+          throw new RssPublisherError("invalid_input");
+        }),
+      ]);
+    });
     this.#tail = result.then(
       () => undefined,
       () => undefined,
@@ -232,6 +244,7 @@ export class RssGitClient {
     }
     this.#closed = true;
     for (const child of this.#children) child.kill("SIGKILL");
+    this.#closeOperation();
     await this.#tail;
     this.#children.clear();
   }
