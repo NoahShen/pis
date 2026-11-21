@@ -1,14 +1,14 @@
 # D13 Plan：GitHub Pages RSS Publisher
 
-> 版本：v1.0
-> 状态：`G3_APPROVED`
-> 计划基线：main `b70dfe762a96086f7c12cf5f666e93935073519b`（D13 Intent/Spec/Progress 提交）
+> 版本：v1.1
+> 状态：`G3_APPROVED`（公开目录增量修订）
+> 计划基线：main `9d29beb`（可配置公开目录 Spec 批准提交）
 > Intent：`docs/milestones/D13/intent.md`（`APPROVED`）
 > Spec：`docs/milestones/D13/spec.md`（`APPROVED · Architect`）
 
-四卡严格串行，顺序固定 **T01 → T02 → T04 → T03**。T03 是 T04 适配器合并后的最终线上验收，**不得在实现前验收**。Plan 已获 Architect G3；Worker 不得自行创建 candidate、merge 或 push。
+严格串行，执行顺序固定 **T01 → T02 → T04 → T04-R1 → T03**。T01/T02/T04 已按 v1.0 合并；T04-R1 增补可配置公开目录，T03 须在 T04-R1 closeout 后重新完成最终线上验收，**不得以原根目录验收代替**。Worker 不得自行创建 candidate、merge 或 push。
 
-固定平台：GitHub Pages，发布仓库 `git@github.com:NoahShen/pis_publish.git`，分支 `main`，站点根目录部署。SSH 凭据由运行环境提供，PIS 不保存私钥。公共订阅 URL = `RSS_PAGES_PUBLIC_ORIGIN` + 固定文件名。
+固定平台：GitHub Pages，发布仓库 `git@github.com:NoahShen/pis_publish.git`，分支 `main`，站点根目录部署。SSH 凭据由运行环境提供，PIS 不保存私钥。公共订阅 URL = `RSS_PAGES_PUBLIC_ORIGIN` + 可选 `RSS_PAGES_PUBLIC_DIRECTORY` 前缀 + 固定文件名；缺省公开目录时保持根目录。
 
 ## 0. 运行时前置与固定约束
 
@@ -57,7 +57,8 @@ export interface RssPublicationPublisher {
 | `D13-T01` Publisher 接口与 Fake | 文件集 staging、单 Feed 单 commit、non-fast-forward 冲突保护、Fake 可注入故障 | `RSS-20/22` |
 | `D13-T02` 通知合并与启动校准 | 同 Feed 串行、合并运行中通知、coalesced caller Promise、失败可重试、启动前全量校准 | `RSS-19`～`RSS-23` |
 | `D13-T04` Pages 适配器与生产装配 | 受控 git/Pages 适配器、配置字段、生产接线、操作文档 | `RSS-23` |
-| `D13-T03` Pages 平台验收 | 真实匿名 XML、完整链、更新延迟、失败重试、阅读器人工验收 | `RSS-15/16` |
+| `D13-T04-R1` 公开目录增量 | Git/URL 同前缀、迁移清理与保留边界、生产配置传递 | `RSS-23` |
+| `D13-T03` Pages 平台验收 | 公开目录下真实匿名 XML、完整链、更新延迟、失败重试、阅读器人工验收 | `RSS-15/16` |
 
 `RSS-20/22` 由 T01 确定性覆盖（上传失败保留数据库、先归档后主文件、无半写 XML、非 fast-forward 不覆盖远端）；`RSS-19～23` 的确定性部分由 T02 覆盖；`RSS-23` 实际迁移/上传由 T04；`RSS-15/16` 仅在 T03。
 
@@ -163,41 +164,70 @@ export interface RssPublicationPublisher {
 - 定向：`npm test -- tests/rss/pages/pages-publisher.test.ts tests/rss/pages/pages-verifier.test.ts`；smoke：`npm run build && npm run smoke:pages`；全量：`npm run verify`。
 - 出口：冻结/G4/candidate/merge-tree/merge/full verify/归档后进入 T03；禁止本卡做真实线上验收。
 
-## 5. D13-T03 · GitHub Pages 平台验收（最终线上）
+## 5. D13-T04-R1 · 可配置公开目录与根目录迁移
 
 ### 5.1 Base、依赖与精确写集
 
-- Base：T04 `PASS` 的精确 closeout 文档提交 `C3`。**T03 只验收，不写生产代码**；未实现 T04 前不得执行。
-- 串行前置：`D13-T04`。外部依赖/包变更：`NONE`。
+- Base：`9d29beb`。串行前置：`D13-T04` 已合并；本卡不依赖原 T03 完成。外部依赖/包变更：`NONE`。
+- 修改：`src/rss/pages/git-client.ts`、`src/rss/pages/pages-verifier.ts`、`src/rss/pages/pages-publisher.ts`、`src/rss/pages/index.ts`。
+- 修改：`src/config.ts`、`src/production/application.ts`、`src/rss/index.ts`、`README.md`。
+- 修改：`tests/fixtures/rss-pages.ts`、`tests/rss/pages/pages-publisher.test.ts`、`tests/rss/pages/pages-verifier.test.ts`、`scripts/pages-smoke.mjs`。
+- 禁止修改：`package-lock.json`、`src/database/schema.sql`、`src/publication/**`、D12 `src/rss/` 核心算法与既有 D12 测试；不得为公开目录改写 D12 文件集。
+
+### 5.2 实现要求
+
+1. 新增可选 `RSS_PAGES_PUBLIC_DIRECTORY`：缺省为空并沿用站点根目录；非空值必须为长度 `1～128` 的单层目录，仅允许 `[A-Za-z0-9_-]`。非法值稳定拒绝，不隐式清洗。
+2. 配置目录后，Git 目标路径与 verifier 匿名 URL 使用**同一目录前缀**；origin 语义不变。D12 文件集 key、XML 内容及其 head/pending/archive 相对链接保持不变，不添加目录、不重写正文。
+3. 从根目录迁移到公开目录时，同一迁移版本清理根目录旧 PIS 固定 head/pending/archive 与根 `.nojekyll`；保留未知文件，并保留另一 Feed 已写入其公开目录的资产。不得清空仓库或以整个目录替换远端 tree。
+4. `src/production/application.ts` 将校验后的公开目录配置传递到实际 Publisher/verifier 装配；缺省配置行为与 v1.0 兼容。
+5. 日志、README、测试名称/断言及验收摘要不得写入实际随机目录值；测试使用固定非生产示例值。
+
+### 5.3 定向测试、smoke 与出口
+
+- 配置边界：缺省根目录、合法单层目录、非法字符/多层/空以外的越界长度均按契约处理；Git key 与公开 URL 前缀一致。
+- 迁移：根旧 PIS 资产清理，未知文件保留，另一 Feed 目录资产保留；D12 文件集与 XML 相对链接逐字节不变。
+- `pages-publisher.test.ts` / `pages-verifier.test.ts` 继续覆盖 non-fast-forward、bytes 校验、超时与安全边界；smoke 覆盖目录发布及迁移。
+- 定向：`npm test -- tests/rss/pages/pages-publisher.test.ts tests/rss/pages/pages-verifier.test.ts`；smoke：`npm run build && npm run smoke:pages`；全量：`npm run verify`。
+- README 写明公开目录配置、URL/迁移/保留边界及“随机路径不是访问控制”。
+- 出口：冻结/G4/candidate/merge-tree/merge/full verify/归档并形成 T04-R1 精确 closeout 文档提交后，方可进入 T03；本卡不做最终真实线上验收。
+
+## 6. D13-T03 · GitHub Pages 平台验收（最终线上）
+
+### 6.1 Base、依赖与精确写集
+
+- Base：T04-R1 `PASS` 的精确 closeout 文档提交 `C3`。**T03 只验收，不写生产代码**；未实现并合并 T04-R1 前不得执行。
+- 串行前置：`D13-T04-R1`。外部依赖/包变更：`NONE`。
 - 新增：`scripts/pages-acceptance.mjs`
 - 新增：`docs/milestones/D13/pages-acceptance.md`（人工阅读器验收清单）
 - 修改：`README.md`（可选，仅记录公开验收状态）
 - 写集不含 `src/**` 生产代码与 `package-lock.json`。
 
-### 5.2 验收要求
+### 6.2 验收要求
 
-1. 对真实 `git@github.com:NoahShen/pis_publish.git` 的 Pages 公共 URL 做**匿名**读取，覆盖两类 Feed 的 head/pending/sealed（存在时），校验内容与本地完全一致，`.nojekyll` 生效。
+1. 对真实 `git@github.com:NoahShen/pis_publish.git` 的 Pages 公共 URL 做**匿名**读取，覆盖两类 Feed 在已配置公开目录下的 head/pending/sealed（存在时），校验内容与本地完全一致，目录内 `.nojekyll` 生效；缺省配置兼容性由 T04-R1 测试覆盖。
 2. 完整链：`head → pending → archive…` 均可匿名访问，head 与归档在同一版本公开；GUID 去重覆盖完整历史。
 3. 更新延迟与失败重试：发布后在 `RSS_PAGES_POLL_INTERVAL_MS`/timeout 内确认 origin bytes；注入 stale remote/缺失文件后启动校准可恢复，封存归档不被重写。
-4. 阅读器人工验收（`RSS-15/16`）：真实阅读器首次订阅、离线、新增超 200 条；核对 XML、云端错误响应、公开仓库文件树/历史与日志无 API Token/SQLite/Prompt/User Context/私钥泄漏；HTTPS；随机路径不作访问控制。
-5. `scripts/pages-acceptance.mjs` 只记录安全计数、key/hash 摘要与 PASS；不记录正文、完整来源 URL、secret。证据在 T04 合并后由 Lead/Architect 执行并写入 `progress.md`。
+4. 阅读器人工验收（`RSS-15/16`）：真实阅读器通过公开目录 URL 首次订阅、离线、新增超 200 条；核对 XML、云端错误响应、公开仓库文件树/历史与日志无 API Token/SQLite/Prompt/User Context/私钥泄漏；HTTPS；随机路径不作访问控制。
+5. 核验迁移后根目录旧 PIS head/pending/archive 与根 `.nojekyll` 不再公开，未知文件和另一 Feed 的新目录资产保留；公开目录变更后重新完成匿名验证。
+6. `scripts/pages-acceptance.mjs` 只记录安全计数、key/hash 摘要与 PASS；不记录正文、完整来源 URL、secret 或实际随机目录值。证据在 T04-R1 合并后由 Lead/Architect 执行并写入 `progress.md`。
 
-### 5.3 验收出口
+### 6.3 验收出口
 
 - 定向：`node scripts/pages-acceptance.mjs --origin <origin>`；全量复验：`npm run verify`。
-- 出口：真实匿名 XML、完整链、更新延迟、失败重试与阅读器人工证据齐全后，四卡方可全部 `PASS`。缺证据即 `BLOCKED`，不得用本地 stub 替代。
+- 出口：公开目录下真实匿名 XML、完整链、更新延迟、失败重试、迁移保留边界与阅读器人工证据齐全后，五卡方可全部 `PASS`。缺证据即 `BLOCKED`，不得用本地 stub 或原根目录证据替代。
 
-## 6. 串行门禁、冻结与收尾
+## 7. 串行门禁、冻结与收尾
 
-1. 串行 base 固定为：T01=`C0`、T02=`C1`、T04=`C2`、T03=`C3`；`C1/C2/C3` 为前一卡 Lead closeout 的精确文档提交，不得用分支头或工作树代替。
+1. 串行 base 固定为：T01=`C0`、T02=`C1`、T04=`C2`、T04-R1=`9d29beb`、T03=`C3`；`C1/C2/C3` 中 `C3` 特指 T04-R1 Lead closeout 的精确文档提交，不得用分支头或工作树代替。
 2. 每卡：Lead 核对 diff 与写集 → 冻结 canonical patch/tree/全部 blob（`/private/tmp/d13-tNN-freeze.*/`）→ Architect G4 → candidate → `git merge-tree --write-tree <base> <candidate>` 预演 → 授权 merge → 记录 candidate/merge SHA → merge 后定向 + `npm run verify` + `git diff --check` → Worker/Workspace 归档。
 3. 受保护路径 diff=0：`src/database/schema.sql`、`src/publication/**`、`package-lock.json`，D12 `src/rss/` 核心算法与既有 `tests/rss/`。
 4. 任一阻塞回到对应卡写集修复；后续卡不得越权修改前卡生产代码。Worker 不 commit/stage/amend/merge/push，不改 `progress.md`。
-5. 四卡全部 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` 后，Architect 干净快照最终 Gate、push 已批准 main SHA、核验远程 SHA 与精确 SHA 的 CI Success；删除心跳、归档 Worker/Workspace，交负责人验收，不自动进入 D14。
+5. 五卡全部 `PASS · LOCAL_MERGE_VERIFIED · ARCHIVED` 后，Architect 干净快照最终 Gate、push 已批准 main SHA、核验远程 SHA 与精确 SHA 的 CI Success；删除心跳、归档 Worker/Workspace，交负责人验收，不自动进入 D14。
 
-## 7. G3 复核点
+## 8. G3 复核点
 
-- 四卡顺序 `T01→T02→T04→T03` 是否成立，T03 是否严格在 T04 实现合并之后，无“未实现先验收”。
+- 顺序 `T01→T02→T04→T04-R1→T03` 是否成立，T03 是否严格以 T04-R1 closeout 为 base，无“未实现先验收”。
 - Publisher 是否直接接收完整文件集并返回 verified version，未过度建模 outcome 状态机；T02 是否明确 coalesced caller Promise 语义与失败后可重试。
 - 是否覆盖 staging 单 Feed 单 commit、non-fast-forward、Pages bytes 确认、启动校准与 close cleanup、全部配置字段。
-- 新增依赖 `NONE`、`package-lock.json` 不变、精确写集/base/冻结/candidate 门禁是否完整。
+- T04-R1 是否保证 Git/URL 同前缀、D12 文件集/XML 相对链接不变、根旧 PIS 资产清理且未知文件与另一 Feed 保留，并由生产装配传递配置。
+- 新增依赖 `NONE`、`package-lock.json` 不变、精确写集/base/冻结/candidate 门禁是否完整，实际随机目录值是否未进入文档。
