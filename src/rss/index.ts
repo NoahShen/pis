@@ -14,6 +14,9 @@ export { planAndRenderSync } from "./archive-planner.js";
 export { createLocalArtifactStore } from "./local-artifact-store.js";
 export { createLocalRssSync } from "./local-sync.js";
 export { createRssSyncService } from "./sync-service.js";
+export { createFakeRssPublisher } from "./publisher/fake-publisher.js";
+export { RssPublisherError } from "./publisher/contracts.js";
+export { RSS_NOJEKYLL_KEY, stageRssFeedFileSet } from "./publisher/staging.js";
 export { RSS_FEEDS, getRssFeed } from "./feed.js";
 export { createPublishedItemSource } from "./published-item-source.js";
 export { extractPublishedItemSourceLink } from "./source-link.js";
@@ -55,3 +58,22 @@ export type {
   LocalRssSyncDependencies,
   LocalRssSyncService,
 } from "./local-sync.js";
+export type {
+  FakePublisherFault,
+  FakeRssCommitRecord,
+  FakeRssPublisher,
+  FakeRssPublisherOptions,
+} from "./publisher/fake-publisher.js";
+export type {
+  RssCommitIntent,
+  RssRemoteVersionReader,
+  RssStagedFile,
+  RssStagingRequest,
+} from "./publisher/staging.js";
+export type {
+  RssFeedFileSet,
+  RssPublishResult,
+  RssPublisherErrorCode,
+  RssPublicationFile,
+  RssPublicationPublisher,
+} from "./publisher/contracts.js";
