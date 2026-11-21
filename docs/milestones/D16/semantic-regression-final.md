@@ -3,7 +3,18 @@
 - 状态：**PENDING / NOT_RUN**
 - 执行基线：`38bb2fe`（D16-T04 Worker 固定 base）
 - 真实模型执行：未由 Worker 执行；须由 Architect 使用显式私有凭证单独运行
-- 第一轮报告：仅为历史参考，不复制为正式结果
+- 首轮执行：36 次调用，29 PASS / 7 ERROR；定位为回归工具与合成 fixture 问题，不作为模型语义结论
+- 首轮报告：仅为历史参考，不读取或修改首轮私有报告，不复制为正式结果
+
+## 首轮工具与 Fixture 问题（待二次执行）
+
+| 范围 | 首轮问题 | 修复 | 当前状态 |
+|---|---|---|---|
+| PMT-04b 存储断言 | 缺少被 Evidence/Alias 外键引用的 Content | 在同一断言事务内插入合法最小 Source、SourceItem、Content；保留真实外键与持久化路径 | 离线测试通过 |
+| PMT-04a、EVT-19 原始输出 | typed parser 失败前已获取 raw text，但失败分支未记录 | completion wrapper 在解析前保存 rawText；失败分支写入 rawContent 与安全错误，stdout 不输出正文 | 离线测试通过 |
+| PMT-05b、PMT-05c、KNO-09、KNO-10b | 一句式样本没有提供足够机制、权衡、测量和复盘信息 | 改为完整多段合成文本；固定 valuable=true 预期，不按模型输出修改判读 | 离线测试通过 |
+
+上述 7 个 ERROR 均保留为首轮 harness/fixture 问题记录，不宣告真实语义通过。完成修复后的二次真实执行仍须由 Architect 使用显式私有凭证单独进行；本文件不记录或推断二次结果。
 
 ## 执行配置
 

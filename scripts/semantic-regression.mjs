@@ -223,7 +223,44 @@ async function verifyStorage(calls, testCase, output, database, components) {
     idGenerator,
     clock,
   });
-  database.transaction(() => persistence.apply(contentId, result))();
+  database.transaction(() => {
+    // Evidence and aliases reference a real Content; keep the complete minimal
+    // Source -> SourceItem -> Content chain in the same assertion transaction.
+    database
+      .prepare(
+        "INSERT INTO sources (id, name, type, url, cron, enabled) VALUES (?, ?, ?, ?, ?, ?)",
+      )
+      .run(
+        `semantic-source-${testCase.id}`,
+        "Synthetic semantic source",
+        "RSS",
+        `https://semantic.invalid/${testCase.id}/feed.xml`,
+        "0 * * * *",
+        1,
+      );
+    database
+      .prepare(
+        "INSERT INTO contents (id, title, created_at, body, completeness) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(
+        contentId,
+        "Synthetic semantic content",
+        "2026-11-21T00:00:00.000+08:00",
+        "Synthetic content used only for storage assertions.",
+        "FULL",
+      );
+    database
+      .prepare(
+        "INSERT INTO source_items (id, source_id, discovered_at, content_id) VALUES (?, ?, ?, ?)",
+      )
+      .run(
+        `semantic-source-item-${testCase.id}`,
+        `semantic-source-${testCase.id}`,
+        "2026-11-21T00:00:00.000+08:00",
+        contentId,
+      );
+    persistence.apply(contentId, result);
+  })();
   const stored = database
     .prepare(
       "SELECT alias FROM event_entity_aliases WHERE content_id = ? ORDER BY alias",
@@ -324,6 +361,12 @@ export async function executeSemanticCases({
           ...(storage ? { storage } : {}),
         });
       } catch (error) {
+        await onRaw({
+          caseId: testCase.id,
+          round,
+          ...(getRawContent ? { rawContent: getRawContent() } : {}),
+          error: safeError(error),
+        });
         results.push({
           caseId: testCase.id,
           round,
@@ -467,8 +510,14 @@ async function main() {
       prompts: new promptsModule.PromptRepository(prompts),
       completionClient: {
         complete: async (request) => {
-          rawContent = await client.complete(request);
-          return rawContent;
+          try {
+            const rawText = await client.complete(request);
+            rawContent = rawText;
+            return rawText;
+          } catch (error) {
+            rawContent = undefined;
+            throw error;
+          }
         },
       },
     });
