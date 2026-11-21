@@ -95,17 +95,39 @@ export interface PublishedVersion {
 
 export class RecordingPublisher implements RssPublicationPublisher {
   readonly versions: PublishedVersion[] = [];
+  private readonly pending = new Set<Promise<void>>();
 
-  async publish(files: RssFeedFileSet) {
-    const snapshot = Object.fromEntries(
-      files.files.map(({ key, bytes }) => [key, new Uint8Array(bytes)]),
-    );
-    this.versions.push({ feed: files.feed, files: snapshot });
-    return {
+  publish(files: RssFeedFileSet) {
+    const pending = Promise.resolve().then(() => {
+      const snapshot = Object.fromEntries(
+        files.files.map(({ key, bytes }) => [key, new Uint8Array(bytes)]),
+      );
+      this.versions.push({ feed: files.feed, files: snapshot });
+    });
+    this.pending.add(pending);
+    void pending.finally(() => this.pending.delete(pending));
+    return pending.then(() => ({
       feed: files.feed,
       version: `e2e-version-${this.versions.length}`,
       verified: true,
-    };
+    }));
+  }
+
+  async drain(): Promise<void> {
+    while (this.pending.size > 0) {
+      await Promise.all(this.pending);
+    }
+  }
+
+  async waitForVersions(count: number): Promise<void> {
+    const deadline = Date.now() + 5_000;
+    while (this.versions.length < count && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    await this.drain();
+    if (this.versions.length < count) {
+      throw new Error(`Publisher did not reach ${count} versions`);
+    }
   }
 }
 
@@ -310,10 +332,7 @@ export async function createKnowledgeE2eHarness(
         !options.disabledTopic &&
         !options.noEnabledTopic
       ) {
-        const deadline = Date.now() + 5_000;
-        while (publisher.versions.length < 3 && Date.now() < deadline) {
-          await new Promise((resolve) => setTimeout(resolve, 10));
-        }
+        await publisher.waitForVersions(3);
         expect(publisher.versions).toHaveLength(3);
       }
     },
