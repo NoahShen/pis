@@ -26,6 +26,16 @@ export interface AppConfig {
   promptsDirectory: string;
   rssSsrfProtection: boolean;
   cronTimezone: string;
+  rssPages?: RssPagesConfig;
+}
+
+export interface RssPagesConfig {
+  repository: string;
+  branch: string;
+  workDirectory: string;
+  publicOrigin: string;
+  publishTimeoutMs: number;
+  pollIntervalMs: number;
 }
 
 export type ConfigPath =
@@ -39,7 +49,13 @@ export type ConfigPath =
   | "PIS_LLM_MODEL"
   | "PROMPTS_DIR"
   | "RSS_SSRF_PROTECTION"
-  | "CRON_TIMEZONE";
+  | "CRON_TIMEZONE"
+  | "RSS_PAGES_REPOSITORY"
+  | "RSS_PAGES_BRANCH"
+  | "RSS_PAGES_WORK_DIRECTORY"
+  | "RSS_PAGES_PUBLIC_ORIGIN"
+  | "RSS_PAGES_PUBLISH_TIMEOUT_MS"
+  | "RSS_PAGES_POLL_INTERVAL_MS";
 
 export class ConfigError extends Error {
   readonly path: ConfigPath;
@@ -63,6 +79,52 @@ const DECIMAL_PORT = /^[0-9]+$/;
 const WHITESPACE = /\s/u;
 const INVALID_LLM_ENDPOINT =
   "must be an absolute HTTP(S) URL without credentials, query, or fragment";
+const DEFAULT_PAGES_ORIGIN = "https://noahshen.github.io/pis_publish";
+const SAFE_REF = /^(?!.*(?:\.\.|\/\/|@\{|\\))refs\/heads\/[A-Za-z0-9._/-]+$/u;
+
+function isRepository(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "ssh:" &&
+      url.username.length === 0 &&
+      url.password.length === 0 &&
+      url.search.length === 0 &&
+      url.hash.length === 0
+    );
+  } catch {
+    return (
+      /^(?:[^@\s/:]+@)?[^@\s/:]+:[^\s?#]+$/u.test(value) &&
+      !value.includes("\\")
+    );
+  }
+}
+
+function isPublicOrigin(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.username.length === 0 &&
+      url.password.length === 0 &&
+      url.search.length === 0 &&
+      url.hash.length === 0 &&
+      url.pathname.length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+function pageTimeout(minimum: number, maximum: number) {
+  return z
+    .string()
+    .regex(DECIMAL_PORT)
+    .refine((value) => Number(value) >= minimum && Number(value) <= maximum, {
+      message: `must be a decimal integer from ${minimum} to ${maximum}`,
+    })
+    .optional();
+}
 
 function isLlmEndpoint(value: string): boolean {
   try {
@@ -149,6 +211,39 @@ const environmentSchema = z.object({
       message: "must not be empty or whitespace-only",
     })
     .optional(),
+  RSS_PAGES_REPOSITORY: z
+    .string()
+    .refine(isRepository, {
+      message: "must be an SSH URL without credentials, query, or fragment",
+    })
+    .optional(),
+  RSS_PAGES_BRANCH: z
+    .string()
+    .refine(
+      (value) =>
+        SAFE_REF.test(`refs/heads/${value}`) &&
+        !/[\s~^:?*\[]/u.test(value) &&
+        !value.startsWith("/") &&
+        !value.endsWith("/") &&
+        !value.endsWith("."),
+      { message: "must be a safe branch name" },
+    )
+    .optional(),
+  RSS_PAGES_WORK_DIRECTORY: z
+    .string()
+    .refine((value) => value.trim().length > 0, {
+      message: "must not be empty or whitespace-only",
+    })
+    .optional(),
+  RSS_PAGES_PUBLIC_ORIGIN: z
+    .string()
+    .refine(isPublicOrigin, {
+      message:
+        "must be an absolute HTTPS origin without credentials, path, query, or fragment",
+    })
+    .optional(),
+  RSS_PAGES_PUBLISH_TIMEOUT_MS: pageTimeout(1_000, 600_000),
+  RSS_PAGES_POLL_INTERVAL_MS: pageTimeout(100, 60_000),
 });
 
 const CONFIG_PATHS = new Set<ConfigPath>([
@@ -163,6 +258,12 @@ const CONFIG_PATHS = new Set<ConfigPath>([
   "PROMPTS_DIR",
   "RSS_SSRF_PROTECTION",
   "CRON_TIMEZONE",
+  "RSS_PAGES_REPOSITORY",
+  "RSS_PAGES_BRANCH",
+  "RSS_PAGES_WORK_DIRECTORY",
+  "RSS_PAGES_PUBLIC_ORIGIN",
+  "RSS_PAGES_PUBLISH_TIMEOUT_MS",
+  "RSS_PAGES_POLL_INTERVAL_MS",
 ]);
 
 function isConfigPath(value: unknown): value is ConfigPath {
@@ -192,6 +293,38 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     throw new ConfigError("PIS_LLM_MODEL", "is required");
   }
 
+  const pagesKeys = [
+    "RSS_PAGES_REPOSITORY",
+    "RSS_PAGES_BRANCH",
+    "RSS_PAGES_WORK_DIRECTORY",
+    "RSS_PAGES_PUBLIC_ORIGIN",
+    "RSS_PAGES_PUBLISH_TIMEOUT_MS",
+    "RSS_PAGES_POLL_INTERVAL_MS",
+  ] as const;
+  const pagesEnabled = pagesKeys.some((key) => result.data[key] !== undefined);
+  const rssPages = pagesEnabled
+    ? {
+        repository: result.data.RSS_PAGES_REPOSITORY!,
+        branch: result.data.RSS_PAGES_BRANCH ?? "main",
+        workDirectory: resolve(
+          result.data.RSS_PAGES_WORK_DIRECTORY ?? "data/rss-pages",
+        ),
+        publicOrigin: (
+          result.data.RSS_PAGES_PUBLIC_ORIGIN ?? DEFAULT_PAGES_ORIGIN
+        ).replace(/\/+$/u, ""),
+        publishTimeoutMs: Number(
+          result.data.RSS_PAGES_PUBLISH_TIMEOUT_MS ?? 120_000,
+        ),
+        pollIntervalMs: Number(result.data.RSS_PAGES_POLL_INTERVAL_MS ?? 5_000),
+      }
+    : undefined;
+  if (pagesEnabled && rssPages?.repository === undefined) {
+    throw new ConfigError(
+      "RSS_PAGES_REPOSITORY",
+      "is required when Pages publishing is enabled",
+    );
+  }
+
   return {
     host: result.data.HOST ?? DEFAULT_HOST,
     port:
@@ -207,5 +340,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     ),
     rssSsrfProtection: result.data.RSS_SSRF_PROTECTION !== "false",
     cronTimezone: result.data.CRON_TIMEZONE ?? DEFAULT_CRON_TIMEZONE,
+    rssPages,
   };
 }

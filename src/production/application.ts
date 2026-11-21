@@ -69,16 +69,44 @@ import { SqlitePublishedItemRepository as SqliteTopicPublishedItemRepository } f
 import { SqliteTopicMatchingTargetRepository } from "../topic-matching/topic-matching-target-repository.js";
 import { SystemClock } from "../time/system-clock.js";
 import type { Clock } from "../time/clock.js";
+import {
+  calibrateRssPublication,
+  createLocalArtifactStore,
+  createLocalRssSync,
+  createPublishedItemSource,
+  createRssFeedPublisher,
+  createRssPublicationNotifier,
+  createRssPagesPublisher,
+  type LocalRssSyncService,
+  type RssArtifactStore,
+  type RssPublicationNotifier,
+  type RssPublicationPublisher,
+} from "../rss/index.js";
 
-export interface ProductionAssemblyDependencies {
-  readonly database?: Database.Database;
-  readonly clock?: Clock;
-  readonly idGenerator?: IdGenerator;
-  readonly textCompletionClient?: TextCompletionClient;
-  readonly sourceAdapter?: SourceAdapter;
-  readonly runtime?: Runtime;
-  readonly scheduler?: CronScheduler;
-}
+export type ClosableRssPublisher = RssPublicationPublisher & {
+  close?: () => Promise<void>;
+};
+
+export type ProductionAssemblyDependencies<WithPages extends boolean = false> =
+  {
+    readonly database?: Database.Database;
+    readonly clock?: Clock;
+    readonly idGenerator?: IdGenerator;
+    readonly textCompletionClient?: TextCompletionClient;
+    readonly sourceAdapter?: SourceAdapter;
+    readonly runtime?: Runtime;
+    readonly scheduler?: CronScheduler;
+  } & (WithPages extends true
+    ? {
+        readonly rssPages?: {
+          readonly publisher?: ClosableRssPublisher;
+          readonly notifier?: RssPublicationNotifier;
+          readonly localSync?: LocalRssSyncService;
+          readonly artifactStore?: RssArtifactStore;
+          readonly drain?: () => Promise<void>;
+        };
+      }
+    : Record<never, never>);
 
 export interface ProductionAssembly {
   readonly app: FastifyInstance;
@@ -165,7 +193,7 @@ function closeDatabase(database: Database.Database): void {
 export function createProductionAssembly(
   config: AppConfig,
   logger: Logger,
-  dependencies: ProductionAssemblyDependencies = {},
+  dependencies: ProductionAssemblyDependencies<true> = {},
 ): ProductionAssembly {
   if (config.rssSsrfProtection === false) {
     logger.error({
@@ -320,6 +348,66 @@ export function createProductionAssembly(
       clock,
       logger: topicMatchingLogger,
     });
+    const pagesPublisher =
+      config.rssPages === undefined
+        ? dependencies.rssPages?.publisher
+        : (dependencies.rssPages?.publisher ??
+          createRssPagesPublisher({
+            repository: config.rssPages.repository,
+            branch: config.rssPages.branch,
+            workDirectory: config.rssPages.workDirectory,
+            publicOrigin: config.rssPages.publicOrigin,
+            timeoutMs: config.rssPages.publishTimeoutMs,
+            pollIntervalMs: config.rssPages.pollIntervalMs,
+          }));
+    const rssStore =
+      dependencies.rssPages?.artifactStore ??
+      (config.rssPages === undefined
+        ? undefined
+        : createLocalArtifactStore(
+            resolve(config.rssPages.workDirectory, "staging"),
+          ));
+    const rssSync =
+      dependencies.rssPages?.localSync ??
+      (config.rssPages === undefined
+        ? undefined
+        : createLocalRssSync({
+            reader: createPublishedItemSource(
+              publicationPublishedItemRepository,
+            ),
+            outputDirectory: resolve(config.rssPages.workDirectory, "staging"),
+          }));
+    const rssNotifier =
+      dependencies.rssPages?.notifier ??
+      (pagesPublisher !== undefined &&
+      rssStore !== undefined &&
+      rssSync !== undefined
+        ? createRssPublicationNotifier(
+            createRssFeedPublisher({
+              sync: rssSync,
+              store: rssStore,
+              publisher: pagesPublisher,
+            }),
+          )
+        : undefined);
+    const pendingRssNotifications = new Set<Promise<void>>();
+    const trackedRssNotifier: RssPublicationNotifier | undefined =
+      rssNotifier === undefined
+        ? undefined
+        : {
+            notify(feed) {
+              const pending = rssNotifier.notify(feed);
+              pendingRssNotifications.add(pending);
+              void pending
+                .finally(() => pendingRssNotifications.delete(pending))
+                .catch(() => undefined);
+              return pending;
+            },
+          };
+    const drainRssNotifications = async (): Promise<void> => {
+      while (pendingRssNotifications.size > 0)
+        await Promise.allSettled([...pendingRssNotifications]);
+    };
     const publication = createPublication({
       database,
       targetRepository: publicationTargetRepository,
@@ -328,6 +416,15 @@ export function createProductionAssembly(
       clock,
       idGenerator,
       logger: publicationLogger,
+      notify:
+        trackedRssNotifier === undefined
+          ? undefined
+          : {
+              notify: (feed) =>
+                trackedRssNotifier.notify(
+                  feed === "EVENT" ? "EVENT_UPDATES" : "CURATED_CONTENT",
+                ),
+            },
     });
 
     const services: StageServices = {
@@ -391,6 +488,8 @@ export function createProductionAssembly(
       runtimeStarted ??= (async () => {
         try {
           await runtime.start();
+          if (trackedRssNotifier !== undefined)
+            await calibrateRssPublication(trackedRssNotifier);
         } catch {
           noteFailure("runtime", "start_error");
           throw new ProductionStartupError(RUNTIME_START_ERROR_MESSAGE);
@@ -462,6 +561,8 @@ export function createProductionAssembly(
 
         try {
           await runtime.shutdown();
+          await (dependencies.rssPages?.drain?.() ?? drainRssNotifications());
+          await pagesPublisher?.close?.();
         } catch {
           noteFailure("runtime", "shutdown_error");
         }

@@ -1,0 +1,205 @@
+import { chmod, readFile, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  createRssPagesPublisher,
+  RssGitClient,
+  type RssPagesPublisher,
+} from "../../../src/rss/index.js";
+import {
+  createPagesFixture,
+  pagesFileSet,
+  type PagesFixture,
+} from "../../fixtures/rss-pages.js";
+
+let fixture: PagesFixture | undefined;
+let publisher: RssPagesPublisher | undefined;
+afterEach(async () => {
+  await publisher?.close();
+  await fixture?.close();
+  fixture = undefined;
+  publisher = undefined;
+});
+
+function makePublisher(autoVerify = false) {
+  publisher = createRssPagesPublisher({
+    repository: fixture!.repository,
+    branch: "main",
+    workDirectory: fixture!.workDirectory,
+    publicOrigin: fixture!.origin,
+    timeoutMs: 1_000,
+    pollIntervalMs: 100,
+    verifier: autoVerify
+      ? async (files) => {
+          await fixture!.publishPublic();
+          const verify = (
+            await import("../../../src/rss/index.js")
+          ).createRssPagesVerifier({
+            publicOrigin: fixture!.origin,
+            timeoutMs: 1_000,
+            pollIntervalMs: 10,
+          });
+          await verify(files);
+        }
+      : async () => undefined,
+  });
+  return publisher;
+}
+
+describe("RSS Pages publisher", () => {
+  it("commits a whole feed, preserves the other feed, and is idempotent", async () => {
+    fixture = await createPagesFixture();
+    const first = await makePublisher().publish(
+      pagesFileSet("EVENT_UPDATES", "one"),
+    );
+    const second = await makePublisher().publish(
+      pagesFileSet("CURATED_CONTENT", "two"),
+    );
+    expect(second.version).not.toBe(first.version);
+    expect(
+      await readFile(
+        path.join(fixture.workDirectory, "event-updates.xml"),
+        "utf8",
+      ),
+    ).toBe("one-head");
+    expect(
+      await readFile(
+        path.join(fixture.workDirectory, "curated-content.xml"),
+        "utf8",
+      ),
+    ).toBe("two-head");
+    expect(
+      await readFile(path.join(fixture.workDirectory, "README.md"), "utf8"),
+    ).toBe("not public\n");
+    const repeated = await makePublisher().publish(
+      pagesFileSet("CURATED_CONTENT", "two"),
+    );
+    expect(repeated.version).toBe(second.version);
+  });
+
+  it("does not verify deleted archives", async () => {
+    fixture = await createPagesFixture();
+    const seen: string[][] = [];
+    publisher = createRssPagesPublisher({
+      repository: fixture.repository,
+      branch: "main",
+      workDirectory: fixture.workDirectory,
+      publicOrigin: fixture.origin,
+      verifier: async (files) => {
+        seen.push(files.map((file) => file.key));
+      },
+    });
+    await publisher.publish(pagesFileSet("EVENT_UPDATES", "before"));
+    await publisher.publish(pagesFileSet("EVENT_UPDATES", "after", false));
+    expect(seen[1]).not.toContain("archive/event-updates-0001.xml");
+    await expect(
+      readFile(
+        path.join(fixture.workDirectory, "archive/event-updates-0001.xml"),
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("close is bounded, idempotent, and rejects later operations", async () => {
+    fixture = await createPagesFixture();
+    const current = makePublisher();
+    await current.close();
+    await current.close();
+    await expect(
+      current.publish(pagesFileSet("EVENT_UPDATES", "closed")),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+  });
+
+  it("close terminates an active child without starting queued work", async () => {
+    fixture = await createPagesFixture();
+    const client = new RssGitClient({
+      repository: fixture.repository,
+      branch: "main",
+      workDirectory: fixture.workDirectory,
+      timeoutMs: 60_000,
+    });
+    const active = client.publish(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60_000));
+      return { version: "", changed: false };
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await Promise.race([
+      client.close(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("close hung")), 2_000),
+      ),
+    ]);
+    await expect(active).rejects.toThrow();
+  });
+
+  it("verifies all public bytes and rejects invalid assets", async () => {
+    fixture = await createPagesFixture();
+    const verified = createRssPagesPublisher({
+      repository: fixture.repository,
+      branch: "main",
+      workDirectory: fixture.workDirectory,
+      publicOrigin: fixture.origin,
+      timeoutMs: 2_000,
+      pollIntervalMs: 10,
+      verifier: async (files) => {
+        await fixture!.publishPublic();
+        await (
+          await import("../../../src/rss/index.js")
+        ).createRssPagesVerifier({
+          publicOrigin: fixture!.origin,
+          timeoutMs: 2_000,
+          pollIntervalMs: 10,
+        })(files);
+      },
+    });
+    publisher = verified;
+    const result = await verified.publish(
+      pagesFileSet("EVENT_UPDATES", "bytes"),
+    );
+    expect(result.verified).toBe(true);
+    await expect(
+      verified.publish({
+        ...pagesFileSet("EVENT_UPDATES", "bad"),
+        files: [{ key: "database.sqlite", bytes: new Uint8Array() }],
+      }),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+  });
+
+  it("reports non-fast-forward without force pushing", async () => {
+    fixture = await createPagesFixture();
+    const current = createRssPagesPublisher({
+      repository: fixture.repository,
+      branch: "main",
+      workDirectory: fixture.workDirectory,
+      publicOrigin: fixture.origin,
+      timeoutMs: 10_000,
+      verifier: async () => undefined,
+    });
+    publisher = current;
+    await current.publish(pagesFileSet("EVENT_UPDATES", "first"));
+    const competing = createRssPagesPublisher({
+      repository: fixture.repository,
+      branch: "main",
+      workDirectory: path.join(fixture.directory, "competing"),
+      publicOrigin: fixture.origin,
+      verifier: async () => undefined,
+    });
+    await competing.publish(pagesFileSet("CURATED_CONTENT", "other"));
+    const hook = path.join(fixture.workDirectory, ".git/hooks/pre-push");
+    await writeFile(hook, "#!/bin/sh\nsleep 1\n");
+    await chmod(hook, 0o700);
+    const pending = current.publish(pagesFileSet("EVENT_UPDATES", "retry"));
+    await competing.publish(pagesFileSet("CURATED_CONTENT", "competing"));
+    await expect(pending).rejects.toMatchObject({ code: "non_fast_forward" });
+    const competingVersion = spawnSync("git", ["rev-parse", "HEAD"], {
+      cwd: fixture.directory + "/competing",
+      encoding: "utf8",
+    }).stdout.trim();
+    const remoteVersion = spawnSync("git", ["rev-parse", "HEAD"], {
+      cwd: fixture.repository,
+      encoding: "utf8",
+    }).stdout.trim();
+    expect(remoteVersion).toBe(competingVersion);
+    await competing.close();
+  });
+});
