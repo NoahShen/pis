@@ -103,9 +103,59 @@ describe("RSS Pages publisher", () => {
         "utf8",
       ),
     ).toBe("relative-link-bytes-head");
-    expect(seen[0]).toEqual(originalKeys);
+    expect(seen[0]).toEqual(originalKeys.filter((key) => key !== ".nojekyll"));
     expect(input.files.map((file) => file.key)).toEqual(originalKeys);
     expect(input.files.map((file) => [...file.bytes])).toEqual(originalBytes);
+  });
+
+  it("verifies XML without waiting for an anonymous empty .nojekyll", async () => {
+    fixture = await createPagesFixture();
+    const current = makePublisher(true);
+    await fixture.publishPublic();
+    const { rm } = await import("node:fs/promises");
+    await rm(path.join(fixture.publicDirectory, ".nojekyll"), { force: true });
+    const result = await current.publish(pagesFileSet("EVENT_UPDATES", "live"));
+    expect(result.verified).toBe(true);
+  });
+
+  it("keeps XML verification when .nojekyll is unavailable", async () => {
+    fixture = await createPagesFixture();
+    publisher = createRssPagesPublisher({
+      repository: fixture.repository,
+      branch: "main",
+      workDirectory: fixture.workDirectory,
+      publicOrigin: fixture.origin,
+      timeoutMs: 100,
+      pollIntervalMs: 10,
+      verifier: async (files) => {
+        expect(files.some((file) => file.key === ".nojekyll")).toBe(false);
+        await (
+          await import("../../../src/rss/index.js")
+        ).createRssPagesVerifier({
+          publicOrigin: fixture!.origin,
+          timeoutMs: 100,
+          pollIntervalMs: 10,
+        })(files);
+      },
+    });
+    await expect(
+      publisher.publish(pagesFileSet("EVENT_UPDATES", "unavailable")),
+    ).rejects.toMatchObject({ code: "timeout" });
+  });
+
+  it("rejects a non-empty .nojekyll", async () => {
+    fixture = await createPagesFixture();
+    const input = pagesFileSet("EVENT_UPDATES", "invalid");
+    await expect(
+      makePublisher().publish({
+        ...input,
+        files: input.files.map((file) =>
+          file.key === ".nojekyll"
+            ? { ...file, bytes: new Uint8Array([1]) }
+            : file,
+        ),
+      }),
+    ).rejects.toMatchObject({ code: "invalid_input" });
   });
 
   it("migrates root PIS assets while preserving unknown files and another feed", async () => {

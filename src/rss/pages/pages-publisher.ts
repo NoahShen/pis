@@ -74,6 +74,9 @@ export class RssPagesPublisher implements RssPublicationPublisher {
             publicKeys.has(file.key) ? "artifact_conflict" : "invalid_input",
           );
         }
+        if (file.key === ".nojekyll" && file.bytes.byteLength !== 0) {
+          throw new RssPublisherError("invalid_input");
+        }
         publicKeys.add(file.key);
       }
       // Keep the D12 keys unchanged; only the Git destination is prefixed.
@@ -178,7 +181,11 @@ export class RssPagesPublisher implements RssPublicationPublisher {
         if (!allowedKey(key) || (own && !publicKeys.has(key)))
           published.delete(key);
       }
-      await this.#verify([...published.values()]);
+      await this.#verify(
+        [...published.values()].filter(
+          (file) => file.key !== ".nojekyll" || file.bytes.byteLength !== 0,
+        ),
+      );
       return result;
     });
     return { feed: fileSet.feed, version: files.version, verified: true };
