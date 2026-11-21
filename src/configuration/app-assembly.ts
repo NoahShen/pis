@@ -18,6 +18,10 @@ import { openDatabase } from "../database/open-database.js";
 import { initializeDatabase } from "../database/schema.js";
 import { CryptoIdGenerator } from "../id/crypto-id-generator.js";
 import { registerRoutes } from "./route-registry.js";
+import {
+  createRetrievalRepositories,
+  type RetrievalRepositories,
+} from "../retrieval/index.js";
 
 export interface ConfigurationRepositories {
   source: SourceRepository;
@@ -26,10 +30,12 @@ export interface ConfigurationRepositories {
 
 export interface AppDependencies {
   repositories?: ConfigurationRepositories;
+  retrieval?: RetrievalRepositories;
 }
 
 interface AssembledDependencies {
   repositories: ConfigurationRepositories;
+  retrieval?: RetrievalRepositories;
   database?: Database.Database;
 }
 
@@ -49,7 +55,11 @@ function openOwnedDependencies(config: AppConfig): AssembledDependencies {
     mkdirSync(dirname(databasePath), { recursive: true });
     database = openDatabase(databasePath);
     initializeDatabase(database);
-    return { repositories: createRepositories(database), database };
+    return {
+      repositories: createRepositories(database),
+      retrieval: createRetrievalRepositories(database),
+      database,
+    };
   } catch (error) {
     try {
       if (database?.open === true) {
@@ -71,10 +81,13 @@ export function assembleApp(
   const assembled =
     dependencies?.repositories === undefined
       ? openOwnedDependencies(config)
-      : { repositories: dependencies.repositories };
+      : {
+          repositories: dependencies.repositories,
+          retrieval: dependencies.retrieval,
+        };
 
   try {
-    registerRoutes(app, config, assembled.repositories);
+    registerRoutes(app, config, assembled.repositories, assembled.retrieval);
 
     if (assembled.database !== undefined) {
       const database = assembled.database;
