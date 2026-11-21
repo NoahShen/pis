@@ -12,14 +12,14 @@
 - 平台：GitHub Pages；发布仓库：`git@github.com:NoahShen/pis_publish.git`。
 - 目标空仓库已确认；分支 `main`，站点根目录部署。
 - Git 推送凭据由运行环境的 SSH agent/key 提供；PIS 不保存或记录私钥。
-- 公共订阅 URL 由仓库 Pages origin 加固定文件名构成；随机路径不是访问控制。
+- 公共订阅 URL 由仓库 Pages origin、可配置的单层随机公开目录和固定文件名构成；随机路径不是访问控制。负责人已批准新增 `RSS_PAGES_PUBLIC_DIRECTORY`，实际随机值只存在运行配置，不进入 Git 或验收摘要。
 
 ## 范围
 
 1. Publisher/staging/原子版本意图与冲突保护。
 2. 同 Feed 串行、通知合并、启动全量校准与失败重试。
 3. GitHub Git/Pages 适配器、生产装配和配置。
-4. 实际匿名 XML、完整链、更新延迟、失败重试与阅读器人工验收。
+4. 实际匿名 XML、完整链、更新延迟、失败重试与阅读器人工验收；公开目录配置后的 URL、迁移和旧 PIS 根资产清理。
 
 ## 非目标
 
@@ -27,4 +27,4 @@
 
 ## 验收
 
-真实仓库的 Pages URL 可匿名读取两类 head/pending/sealed（存在时），内容和本地完全一致；head 与归档在同一版本公开；故障和 stale remote 可恢复；全量 Gate 和真实阅读路径证据完成。
+真实仓库的 Pages URL 可匿名读取配置公开目录下两类 head/pending/sealed（存在时），内容和本地完全一致；head 与归档在同一版本公开；故障和 stale remote 可恢复；全量 Gate 和真实阅读路径证据完成。

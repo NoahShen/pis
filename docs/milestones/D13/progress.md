@@ -1,6 +1,6 @@
 # D13 Progress
 
-- 状态：G3_APPROVED · DEVELOPMENT
+- 状态：G3_APPROVED · DEVELOPMENT（负责人已批准公开目录变更，Spec/Plan 修订门禁中）
 - Intent/Spec：负责人平台决策；Architect v1.0 批准
 - Plan：v1.0 G3_APPROVED
 - 当前 Lead：`26151a15-6fa2-4df3-9836-b95e20240d30` / `wks_9dde01ce44376b17`
@@ -18,6 +18,6 @@
 
 执行顺序 T01 → T02 → T04 → T03。T03 的实际线上验收在 T04 适配器合并后完成。
 
-T01 前两次 Codex Worker 空转已中止归档，无文件；Pi Worker 完成实际交付。
+T01 前两次 Codex Worker 空转已中止归档，无文件；Pi Worker 完成实际交付。负责人随后批准可配置随机公开目录，原 T03 暂停；T04-R1 与 T03 重验须按修订 Spec/Plan 执行，既有根目录匿名通过只作为迁移前证据。
 
 T04 frozen patch SHA-256：`87418ffd16b249596794bcb74fbbb8448377aed370b7ff31dd4f03eefec205b9`；merge 后 full `127 files / 1362 tests`，build、全部 smoke、330 文件格式检查通过。真实发布仓库 `main` 为 `85ac6dc8f66d8cfa74963da7cea7d62d5ef02fcf`，tree 仅含四个 XML 与 `.nojekyll`。Pages 启用前双 Feed 均按预期 timeout；启用后正式 Publisher 双 Feed verified，约 9.5s/7.7s，匿名 head/pending 均 HTTP 200、XML 合法、bytes 一致，Event 9 条、Curated 6 条，当前无 sealed archive；源数据库 hash 未变。T03 尚未最终 PASS。

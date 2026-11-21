@@ -19,7 +19,8 @@ D12 本地 Store 仍是完整文件集 planner/staging；D13 Publisher 在一个
 - `RSS_PAGES_REPOSITORY`：启用后固定 Git SSH URL，禁止 credential/query/fragment。
 - `RSS_PAGES_BRANCH`：默认 `main`，仅安全 ref 名。
 - `RSS_PAGES_WORK_DIRECTORY`：默认 `data/rss-pages`，单独 Git worktree/clone。
-- `RSS_PAGES_PUBLIC_ORIGIN`：绝对 HTTPS origin，无 credential/query/fragment/path；默认 `https://noahshen.github.io/pis_publish`。
+- `RSS_PAGES_PUBLIC_ORIGIN`：绝对 HTTPS origin，允许 GitHub 项目 Pages 路径（例如默认值的 `/pis_publish`），无 credential/query/fragment；默认 `https://noahshen.github.io/pis_publish`。
+- `RSS_PAGES_PUBLIC_DIRECTORY`：可选的单层公开目录，只允许字母、数字、`_`、`-`，长度 1～128；缺省为空，保持根目录兼容。配置后公开 URL 为 `origin/<directory>/<固定文件名>`，Git 目标 tree 同步使用该前缀。实际随机值不得进入 Git、日志或公开验收摘要。
 - `RSS_PAGES_PUBLISH_TIMEOUT_MS`：默认 120000，范围 1000～600000。
 - `RSS_PAGES_POLL_INTERVAL_MS`：默认 5000，范围 100～60000。
 
@@ -35,12 +36,13 @@ D12 本地 Store 仍是完整文件集 planner/staging；D13 Publisher 在一个
 
 通过受控 `git` 子进程使用系统 SSH，不引入 npm 依赖。工作目录独立于业务 DB，固定 env 禁止交互凭据提示；所有路径/分支参数分离，超时/退出有界。公开资产只允许固定 head/pending、严格 archive key 和 `.nojekyll`；不复制数据库、WAL、日志、配置、node_modules 或隐藏文件。
 
-Pages 通过公开 origin 条件轮询/读取校验部署。可使用 GitHub public deployments API 获取状态；无需 token 的公开 endpoint 失败时可由 origin bytes 校验补足。HTTP 响应 bounded、redirect policy 明确、不读取 secret。
+Pages 通过公开 origin 条件轮询/读取校验部署。可使用 GitHub public deployments API 获取状态；无需 token 的公开 endpoint 失败时可由 origin bytes 校验补足。HTTP 响应 bounded、redirect policy 明确、不读取 secret。公开目录只改变 Git 路径和 URL 前缀；D12 XML 内部的相对 head/pending/archive 链接不添加目录、不重写正文。
 
 ## 5. 安全与边界
 
 - 远端已有非公开/未知文件不删除；迁移先审计空仓库，当前已确认空。
 - 同名 archive 冲突继续由 D12 planner 拒绝；Git 远端冲突不覆盖。
+- 启用公开目录后，旧根目录的 PIS 固定 head/pending/archive 与根 `.nojekyll` 在同次迁移版本清理，避免旧入口继续公开；未知文件和另一 Feed 的新目录资产保留。目录变更必须重新匿名验证。
 - 本地 staging 原子性不是跨文件承诺；Git commit 是云端原子版本。
 - GitHub Pages 公共 URL 无访问控制；禁止以随机路径保护秘密。
 - D13 不重新调用 LLM、不修改业务正文/Prompt/schema。
