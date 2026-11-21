@@ -31,17 +31,33 @@ export class SqliteKnowledgeContentRetrievalRepository implements KnowledgeConte
   listKnowledge(
     options: RetrievalListOptions = {},
   ): RetrievalList<KnowledgeDto> {
+    const parameters: Array<string | number> = [];
+    let cursorCondition = "";
+    if (options.cursor !== undefined) {
+      cursorCondition =
+        "WHERE c.created_at < ? OR (c.created_at = ? AND k.id < ?)";
+      parameters.push(
+        options.cursor.time,
+        options.cursor.time,
+        options.cursor.id,
+      );
+    }
+    parameters.push(retrievalLimit(options.limit) + 1);
     const rows = getRows(
       this.#db,
       `SELECT k.id, k.content_id, k.title, k.summary, k.category,
-              k.findings_json, k.value
+              k.findings_json, k.value, c.created_at
        FROM knowledge AS k
        JOIN contents AS c ON c.id = k.content_id
+       ${cursorCondition}
        ORDER BY c.created_at DESC, k.id DESC
        LIMIT ?`,
-      retrievalLimit(options.limit),
+      ...parameters,
     );
-    return list(rows.map(mapKnowledge));
+    return list(rows, options, mapKnowledge, (row) => ({
+      time: row.created_at as string,
+      id: row.id as string,
+    }));
   }
 
   getKnowledgeById(id: string): KnowledgeDetailDto | null {

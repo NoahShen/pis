@@ -4,13 +4,19 @@ import { createBearerPreHandler } from "../auth.js";
 import {
   InvalidRequestError,
   registerScopedErrorHandler,
-  requireNoQuery,
 } from "../configuration/http-errors.js";
 import type { RetrievalRepositories } from "./index.js";
+import { parseRetrievalQuery } from "./pagination.js";
 
 export interface RetrievalRouteDependencies {
   readonly apiToken: string;
   readonly repositories: RetrievalRepositories;
+}
+
+declare module "fastify" {
+  interface FastifyRequest {
+    retrievalQuery?: import("./contracts.js").RetrievalListOptions;
+  }
 }
 
 interface IdParams {
@@ -34,7 +40,32 @@ export function registerRetrievalRoutes(
   void app.register(async (scope) => {
     scope.addHook("onRequest", createBearerPreHandler(dependencies.apiToken));
     scope.addHook("preValidation", async (request) => {
-      requireNoQuery(request);
+      const pathname = request.raw.url?.split("?", 1)[0] ?? "";
+      if (
+        pathname === "/api/topics" ||
+        pathname.endsWith("/items") ||
+        pathname === "/api/events" ||
+        pathname.endsWith("/updates") ||
+        pathname === "/api/knowledge" ||
+        pathname === "/api/published-items"
+      ) {
+        const rawQuery = request.raw.url?.split("?", 2)[1];
+        if (pathname === "/api/published-items") {
+          request.retrievalQuery = parseRetrievalQuery(rawQuery, [
+            "target_type",
+            "published_after",
+            "published_before",
+          ]);
+        } else if (pathname.endsWith("/items")) {
+          request.retrievalQuery = parseRetrievalQuery(rawQuery, [
+            "target_type",
+          ]);
+        } else {
+          request.retrievalQuery = parseRetrievalQuery(rawQuery);
+        }
+      } else if (request.raw.url?.includes("?") === true) {
+        throw new InvalidRequestError();
+      }
     });
     registerScopedErrorHandler(scope);
 
@@ -43,7 +74,10 @@ export function registerRetrievalRoutes(
     scope.get<{ Params: IdParams }>(
       "/api/topics/:id/items",
       async (request, reply) => {
-        const result = repositories.topics.listItems(id(request));
+        const result = repositories.topics.listItems(
+          id(request),
+          request.retrievalQuery,
+        );
         if (result === null) {
           return reply.code(404).send({ error: "not_found" });
         }
@@ -51,7 +85,9 @@ export function registerRetrievalRoutes(
       },
     );
 
-    scope.get("/api/events", async () => repositories.events.list());
+    scope.get("/api/events", async (request) =>
+      repositories.events.list(request.retrievalQuery),
+    );
 
     scope.get<{ Params: IdParams }>(
       "/api/events/:id",
@@ -67,7 +103,10 @@ export function registerRetrievalRoutes(
     scope.get<{ Params: IdParams }>(
       "/api/events/:id/updates",
       async (request, reply) => {
-        const result = repositories.events.listUpdates(id(request));
+        const result = repositories.events.listUpdates(
+          id(request),
+          request.retrievalQuery,
+        );
         if (result === null) {
           return reply.code(404).send({ error: "not_found" });
         }
@@ -86,8 +125,8 @@ export function registerRetrievalRoutes(
       },
     );
 
-    scope.get("/api/knowledge", async () =>
-      repositories.knowledgeContent.listKnowledge(),
+    scope.get("/api/knowledge", async (request) =>
+      repositories.knowledgeContent.listKnowledge(request.retrievalQuery),
     );
 
     scope.get<{ Params: IdParams }>(
@@ -116,8 +155,8 @@ export function registerRetrievalRoutes(
       },
     );
 
-    scope.get("/api/published-items", async () =>
-      repositories.publishedItems.list(),
+    scope.get("/api/published-items", async (request) =>
+      repositories.publishedItems.list(request.retrievalQuery),
     );
 
     scope.get<{ Params: IdParams }>(

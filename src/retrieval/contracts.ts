@@ -9,8 +9,17 @@ export interface KnowledgeFinding {
   readonly [key: string]: unknown;
 }
 
+export interface RetrievalCursor {
+  readonly time: string;
+  readonly id: string;
+}
+
 export interface RetrievalListOptions {
   readonly limit?: number;
+  readonly cursor?: RetrievalCursor;
+  readonly target_type?: RetrievalTargetType;
+  readonly published_after?: string;
+  readonly published_before?: string;
 }
 
 export interface RetrievalList<T> {

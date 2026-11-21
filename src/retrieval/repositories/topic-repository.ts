@@ -27,18 +27,34 @@ export class SqliteTopicRetrievalRepository implements TopicRetrievalRepository 
       return null;
     }
     const limit = retrievalLimit(options.limit);
+    const parameters: Array<string | number> = [topicId];
+    const conditions = ["topic_id = ?"];
+    if (options.target_type !== undefined) {
+      conditions.push("target_type = ?");
+      parameters.push(options.target_type);
+    }
+    if (options.cursor !== undefined) {
+      conditions.push("(matched_at < ? OR (matched_at = ? AND target_id < ?))");
+      parameters.push(
+        options.cursor.time,
+        options.cursor.time,
+        options.cursor.id,
+      );
+    }
+    parameters.push(limit + 1);
     const rows = getRows(
       this.#db,
       `SELECT topic_id, target_type, target_id, matched_at
        FROM topic_associations
-       WHERE topic_id = ?
+       WHERE ${conditions.join(" AND ")}
        ORDER BY matched_at DESC, target_id DESC
        LIMIT ?`,
-      topicId,
-      limit,
+      ...parameters,
     );
     return list(
-      rows.map((row) => {
+      rows,
+      options,
+      (row) => {
         const targetType = row.target_type as RetrievalTargetType;
         const targetId = row.target_id as string;
         return {
@@ -48,6 +64,10 @@ export class SqliteTopicRetrievalRepository implements TopicRetrievalRepository 
           matched_at: row.matched_at as string,
           target: readTarget(this.#db, targetType, targetId),
         };
+      },
+      (row) => ({
+        time: row.matched_at as string,
+        id: row.target_id as string,
       }),
     );
   }
