@@ -13,7 +13,7 @@
 - 四个 XML（两类 Feed 的 head/pending）匿名 HTTP 200，且 bytes/hash 与本地一致。
 - 发布远端 `main`：`c1cc6e6576ec431be8fce471a8a3742ac3877397`。
 - 公开目录 tree 仅有 5 个允许对象：四份 XML 与目录内 `.nojekyll`。
-- Event 9 条、Curated 6 条；当前无 sealed archive。
+- Event 9 条、Curated 初始 6 条；生产通知验收后 Curated 7 条；当前无 sealed archive。
 - 目录迁移后旧根 URL 404。
 
 ## 自动检查
@@ -41,8 +41,8 @@ node scripts/pages-acceptance.mjs --origin <origin>
 | 目录内 `.nojekyll` 为 remote Git tree 中零字节对象（匿名 200/404 均可） | 已有上述 tree 证据 |  |
 | 当前公开 head/pending 链与 GUID 合并关系 | 已有上述匿名 XML/hash 证据 |  |
 | sealed archive 存在后的内容、200 条批及完整历史链 | PENDING（当前无 sealed） |  |
-| 发布后 poll/timeout 内 origin bytes 更新延迟 | PENDING（既有事实未覆盖） |  |
-| stale remote / 缺失文件启动校准恢复、失败重试 | PENDING |  |
+| 发布后 poll/timeout 内 origin bytes 更新延迟 | PASS（生产 Runtime 通知链） | 2026-11-21；新增一条后 Curated 6→7，约 48.5 秒公开可见；origin/local bytes 一致 |
+| stale remote / 缺失文件启动校准恢复、失败重试 | PARTIAL | 2026-11-21；正式生产装配双 Feed 启动校准约 15.9 秒，Scheduler 后启动，正常关闭；non-fast-forward 与真实故障重试仍未复验 |
 | sealed archive 跨发布 bytes/hash 不变、拒绝同名覆盖 | PENDING |  |
 | 旧 PIS 根资产及根 `.nojekyll` 全部不公开；未知文件和另一 Feed 新目录资产保留 | PENDING（旧根 URL 404 事实不足以覆盖完整保留边界） |  |
 | 公开目录再次变更后的匿名复验 | PENDING |  |
