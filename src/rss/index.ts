@@ -24,6 +24,12 @@ export { RssPublisherError } from "./publisher/contracts.js";
 export { RSS_NOJEKYLL_KEY, stageRssFeedFileSet } from "./publisher/staging.js";
 export { RSS_FEEDS, getRssFeed } from "./feed.js";
 export { createPublishedItemSource } from "./published-item-source.js";
+export { RssGitClient } from "./pages/git-client.js";
+export { createRssPagesVerifier } from "./pages/pages-verifier.js";
+export {
+  RssPagesPublisher,
+  createRssPagesPublisher,
+} from "./pages/pages-publisher.js";
 export { extractPublishedItemSourceLink } from "./source-link.js";
 export {
   renderRssArchive,
@@ -79,6 +85,9 @@ export type {
   RssStagedFile,
   RssStagingRequest,
 } from "./publisher/staging.js";
+export type { RssGitClientOptions, RssGitCommit } from "./pages/git-client.js";
+export type { RssPagesVerifierOptions } from "./pages/pages-verifier.js";
+export type { RssPagesPublisherOptions } from "./pages/pages-publisher.js";
 export type {
   RssFeedFileSet,
   RssPublishResult,
