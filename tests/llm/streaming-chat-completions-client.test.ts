@@ -267,7 +267,67 @@ describe("streaming Chat Completions protocol", () => {
     });
   });
 
-  it("rejects data after DONE including events flushed at EOF", async () => {
+  it("accepts usage-only events before and after stop without changing content", async () => {
+    const states: LlmStreamState[] = [];
+    const client = createStreamingChatCompletionsClient(config(), {
+      fetch: async () =>
+        responseFromText(
+          completion(
+            { choices: [], usage: { prompt_tokens: 2 } },
+            delta("answer"),
+            finish(),
+            { choices: [], usage: { prompt_tokens: 2, completion_tokens: 1 } },
+          ),
+        ),
+      onStateChange: (observation) => states.push(observation.streamState),
+    });
+    await expect(
+      client.complete({ systemContent: "s", userContent: "u" }),
+    ).resolves.toBe("answer");
+    expect(states).toEqual([
+      "request_started",
+      "first_chunk_received",
+      "content_started",
+      "upstream_closed",
+      "stream_done",
+    ]);
+  });
+
+  it("accepts a usage-only event after DONE but rejects other data after DONE", async () => {
+    const usageOnly = createStreamingChatCompletionsClient(config(), {
+      fetch: async () =>
+        responseFromText(
+          completion(delta("answer"), finish()) +
+            event({ choices: [], usage: { total_tokens: 3 } }),
+        ),
+    });
+    await expect(
+      usageOnly.complete({ systemContent: "s", userContent: "u" }),
+    ).resolves.toBe("answer");
+
+    const lateData = createStreamingChatCompletionsClient(config(), {
+      fetch: async () =>
+        responseFromText(
+          completion(delta("answer"), finish()) +
+            event({ choices: [{ delta: { content: SECRET } }] }),
+        ),
+    });
+    expect((await failure(lateData)).reason).toBe("LLM_RESPONSE_MALFORMED");
+  });
+
+  it.each([
+    ["without usage", { choices: [] }],
+    ["with null usage", { choices: [], usage: null }],
+    ["with array usage", { choices: [], usage: [] }],
+  ])("rejects an empty choices event %s", async (_name, payload) => {
+    const client = createStreamingChatCompletionsClient(config(), {
+      fetch: async () =>
+        responseFromText(completion(delta("answer"), payload, finish())),
+    });
+    expect((await failure(client)).reason).toBe("LLM_RESPONSE_MALFORMED");
+  });
+
+  it("rejects non-usage data after DONE including events flushed at EOF", async () => {
     const client = createStreamingChatCompletionsClient(config(), {
       fetch: async () =>
         responseFromText(
