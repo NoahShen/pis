@@ -106,6 +106,33 @@ export CRON_TIMEZONE=Asia/Shanghai
 
 显式空字符串不会使用可选字段的默认值。`API_TOKEN` 与三项 `PIS_LLM_*` 缺失或非法时，进程在创建 app 前以非零状态退出；错误信息只包含字段路径和安全 reason，不回显 endpoint query、API key、model、Prompt 目录或输入原值。启动成功时日志只记录实际监听地址与端口；使用 `PORT=0` 时请以 ready 日志中的端口为准。
 
+### 五类流式 LLM operation 配置
+
+生产按 `processing-route`、`event-search`、`event-analysis`、`knowledge-analysis`、`topic-matching` 分别使用流式 Client。每类对应的环境变量前缀依次为 `PIS_LLM_PROCESSING_ROUTE`、`PIS_LLM_EVENT_SEARCH`、`PIS_LLM_EVENT_ANALYSIS`、`PIS_LLM_KNOWLEDGE_ANALYSIS`、`PIS_LLM_TOPIC_MATCHING`。在每个前缀后可配置：
+
+| 后缀                              | 缺省值                 | 含义与边界                                                |
+| --------------------------------- | ---------------------- | --------------------------------------------------------- |
+| `_ENDPOINT`、`_API_KEY`、`_MODEL` | 对应的全局 `PIS_LLM_*` | 只覆盖本 operation；日志与验收报告仍不得记录这些值        |
+| `_FIRST_BYTE_TIMEOUT_MS`          | `60000`                | 首个有效 SSE 数据包的等待上限，范围 `1`–`600000` ms       |
+| `_IDLE_TIMEOUT_MS`                | `60000`                | 相邻有效数据包的等待上限，范围 `1`–`600000` ms            |
+| `_TOTAL_TIMEOUT_MS`               | `60000`                | 单次请求的绝对上限，范围 `1`–`600000` ms                  |
+| `_MAX_RESPONSE_BYTES`             | `2097152`              | SSE 响应字节上限，范围 `1`–`16777216` bytes               |
+| `_MAX_ATTEMPTS`                   | `2`                    | Runtime 最多一次或两次调用，Client 自身不重试             |
+| `_RETRY_DELAY_MS`                 | `0`                    | 可取消退避，范围 `0`–`60000` ms                           |
+| `_RETRY_TOTAL_BUDGET_MS`          | `60000`                | 首次调用、退避及第二次共用的总预算，范围 `1`–`1200000` ms |
+
+例如，只调整 Event Analysis 的预算，不影响其他 operation：
+
+```sh
+export PIS_LLM_EVENT_ANALYSIS_FIRST_BYTE_TIMEOUT_MS=60000
+export PIS_LLM_EVENT_ANALYSIS_IDLE_TIMEOUT_MS=60000
+export PIS_LLM_EVENT_ANALYSIS_TOTAL_TIMEOUT_MS=120000
+export PIS_LLM_EVENT_ANALYSIS_RETRY_TOTAL_BUDGET_MS=240000
+export PIS_LLM_EVENT_ANALYSIS_RETRY_DELAY_MS=1000
+```
+
+首包、空闲和单次总预算同时生效，最先到期者取消本次流；reasoning 不代表业务 Content 已开始。重试总预算不是单次超时的简单相加，剩余预算不足时不得启动第二次，取消或关闭不等待退避。超时、网络、429/5xx、流不完整及输出校验失败可按策略重试；content filter、确定性 4xx、响应超限和调用方取消不重试。流式只聚合完整 Content，之后仍执行原有 JSON/Zod/引用校验，不接受部分 JSON，也不静默退回非流式。
+
 ### 配置 API
 
 `GET /api/sources`、`GET /api/topics` 返回 `{"items":[...]}`，包含停用配置并按 ID 升序排列。`GET /api/sources/:id`、`GET /api/topics/:id` 返回完整配置；`POST` 创建并返回 `201`；`PATCH` 更新并返回 `200`。所有配置端点都要求与 `/health` 相同的 `Authorization: Bearer <API_TOKEN>`，且不接受任何查询参数。
@@ -151,9 +178,9 @@ curl --fail-with-body \
 
 ### Chat Completions 调用配置
 
-`createChatCompletionsClient()` 的 `endpoint`、`apiKey` 和 `model` 由调用方显式提供，不使用环境变量、默认 endpoint、默认密钥或默认模型。endpoint 必须使用 HTTP(S)，生产环境使用 HTTPS；HTTP 仅允许 `localhost`、`127.0.0.1` 或 `[::1]` 测试地址，且所有 endpoint 均禁止 userinfo。
+Client 的 `endpoint`、`apiKey` 和 `model` 由调用方显式提供，不自行读取环境变量、默认 endpoint、默认密钥或默认模型。endpoint 必须使用 HTTP(S)，生产环境使用 HTTPS；HTTP 仅允许 `localhost`、`127.0.0.1` 或 `[::1]` 测试地址，且所有 endpoint 均禁止 userinfo。
 
-客户端只发送一次非流式请求，不重试。默认总超时为 60 秒、响应上限为 2 MiB；错误和安全日志不包含 endpoint query、apiKey、model、Prompt、响应正文或底层 cause。
+生产使用 `createStreamingChatCompletionsClient()` 按 operation 发送 `stream:true` 请求，Client 只执行单次流式请求，Runtime 负责策略重试。默认首包、空闲、单次总超时均为 60 秒、响应上限为 2 MiB；安全状态和日志不包含 endpoint query、apiKey、model、Prompt、reasoning、SSE 或响应正文。保留的 `createChatCompletionsClient()` 用于非流式调用方，不是生产流式失败时的静默 fallback。
 
 ### Typed LLM calls
 

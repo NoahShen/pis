@@ -63,3 +63,10 @@
 - 499、上游断开、本地取消、HTTP 错误、空 Content、截断、JSON/Schema、非法 ID 和 content_filter 分开统计。
 - 重试和补跑不重复业务资产；Pages 公开与业务目标完成分别验收。
 - 所有日志/指标不泄漏秘密、Prompt、正文或私有配置。
+
+## 6. OPS-02 对应交付状态（2026-11-23）
+
+- OPS-02-T01～T03 已完成本地 G4/merge：生产按五类 operation 使用流式 SSE Client，支持独立首包、空闲、单次总预算、响应上限和 Runtime 总重试预算/可取消退避；完整 Content 仍执行既有 JSON/Zod/引用校验。
+- OPS-02-T04 已交付离线确定性验收脚本与测试：五类合成 DTO/reference、SSE fixture、首包/空闲/总超时、取消和不完整流第二次成功；正常五类各一次成功，不以内置重试或 Stub 冒充真实模型。
+- T04 真实五类合成流式复验仍须 Architect 从私有 `group/pis` env 显式执行。当前 Worker 未读取 env、未执行真实外部调用，故不签发 OPS-02 最终 PASS。
+- 生产 6 Source 的延迟、499、完成度和幂等复验仍由负责人另行执行；本卡文档不宣称这些运行指标已恢复，也不替代 OPS-03～OPS-05。

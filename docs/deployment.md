@@ -82,6 +82,22 @@ set +a
 
 不要把真实 env、数据库、Prompt/User Context、日志或完整随机订阅 URL 提交到 Git。`PIS_LLM_ENDPOINT`、Token 和 key 不出现在验收报告中。
 
+五类 LLM operation 可独立覆盖配置，前缀分别为 `PIS_LLM_PROCESSING_ROUTE`、`PIS_LLM_EVENT_SEARCH`、`PIS_LLM_EVENT_ANALYSIS`、`PIS_LLM_KNOWLEDGE_ANALYSIS`、`PIS_LLM_TOPIC_MATCHING`。每类支持 `_ENDPOINT`、`_API_KEY`、`_MODEL`，缺省继承全局三项；也支持 `_FIRST_BYTE_TIMEOUT_MS`、`_IDLE_TIMEOUT_MS`、`_TOTAL_TIMEOUT_MS`、`_MAX_RESPONSE_BYTES`、`_MAX_ATTEMPTS`、`_RETRY_DELAY_MS`、`_RETRY_TOTAL_BUDGET_MS`。完整默认值、范围和合成示例见 [README 的五类流式 LLM operation 配置](../README.md#五类流式-llm-operation-配置)。只配置需要独立调整的 operation，不要在文档或 PM2 日志中复制真实密钥、endpoint 或 model。
+
+生产请求使用流式 SSE。首包预算只计算到首个有效数据包，空闲预算约束有效数据包之间的间隔，单次总预算是绝对上限；重试总预算覆盖首次、退避与第二次，不能靠设置更大的单次超时绕过。重试延迟可取消并计入 drain/shutdown。上线调参先按 operation 观察安全首包/Content/总耗时，逐类调整；不要把五类同时盲目加时，不要提高 Runtime 并发，也不要把 HTTP 200 当作 Schema/引用成功。Client 不会在流式失败后静默改用非流式。
+
+自主验收脚本只支持离线自测或显式真实模式：
+
+```sh
+npm run build
+node scripts/llm-streaming-acceptance.mjs --self-test
+node scripts/llm-streaming-acceptance.mjs \
+  --env-file /absolute/private/llm.env \
+  --output /absolute/private/ops-02-streaming-report.json
+```
+
+真实模式必须由有授权的审核者在独立私有环境执行；本示例不会自动执行，也不读取应用 `.env`。脚本使用自主合成输入，不读取真实 Source 或 User Context。安全报告与同目录 `.raw.sse.jsonl` 均写入仓库外并设为 600，raw 包含原始 SSE，严禁提交、转发或贴入报告。stdout 与公开验收记录只允许 operation、计数、耗时和安全分类，不包含 model、endpoint、Prompt、正文或秘密。生产 6 Source 部署复验是负责人另行执行的独立步骤，不能由离线自测或五类合成真实调用替代。
+
 ## 4. 可选 GitHub Pages 配置
 
 不配 `RSS_PAGES_*` 时服务只运行业务与 JSON API，不启用云发布。启用时至少配置 `RSS_PAGES_REPOSITORY`，其余按需覆盖：
