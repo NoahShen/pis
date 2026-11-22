@@ -30,6 +30,14 @@ export type ChatCompletionsProtocolReason =
   | "LLM_CONTENT_EMPTY"
   | "LLM_FINISH_REASON_INVALID"
   | "LLM_OUTPUT_TRUNCATED"
+  | "LLM_FIRST_BYTE_TIMEOUT"
+  | "LLM_STREAM_IDLE_TIMEOUT"
+  | "LLM_TIMEOUT_LOCAL"
+  | "LLM_STREAM_ABORTED"
+  | "LLM_STREAM_INCOMPLETE"
+  | "LLM_REASONING_ONLY"
+  | "LLM_CONTENT_FILTERED"
+  | "LLM_UPSTREAM_CANCELED"
   | "LLM_REFUSAL"
   | "LLM_TOOL_CALL_UNEXPECTED";
 
@@ -57,7 +65,9 @@ const ERROR_CATEGORIES = {
 
 function isRetryableHttpStatus(status: number | undefined): boolean {
   return (
-    status === 429 || (status !== undefined && status >= 500 && status <= 599)
+    status === 429 ||
+    status === 499 ||
+    (status !== undefined && status >= 500 && status <= 599)
   );
 }
 

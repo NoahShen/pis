@@ -95,11 +95,43 @@ export function summarizeLlmFailure(
 
       if (code === "LLM_RESPONSE_PROTOCOL_ERROR") {
         const reason = error.reason;
+        if (reason === "LLM_UPSTREAM_CANCELED" && error.status === 499) {
+          return {
+            operation: requestedOperation,
+            category: "http",
+            reason,
+            retryable: true,
+            httpStatus: 499,
+          };
+        }
+        if (
+          reason === "LLM_FIRST_BYTE_TIMEOUT" ||
+          reason === "LLM_STREAM_IDLE_TIMEOUT" ||
+          reason === "LLM_TIMEOUT_LOCAL"
+        ) {
+          return {
+            operation: requestedOperation,
+            category: "timeout",
+            reason,
+            retryable: true,
+          };
+        }
+        if (reason === "LLM_STREAM_ABORTED") {
+          return {
+            operation: requestedOperation,
+            category: "network",
+            reason,
+            retryable: true,
+          };
+        }
         if (
           reason === "LLM_RESPONSE_MALFORMED" ||
           reason === "LLM_CONTENT_EMPTY" ||
           reason === "LLM_FINISH_REASON_INVALID" ||
           reason === "LLM_OUTPUT_TRUNCATED" ||
+          reason === "LLM_STREAM_INCOMPLETE" ||
+          reason === "LLM_REASONING_ONLY" ||
+          reason === "LLM_CONTENT_FILTERED" ||
           reason === "LLM_REFUSAL" ||
           reason === "LLM_TOOL_CALL_UNEXPECTED"
         ) {
@@ -108,7 +140,9 @@ export function summarizeLlmFailure(
             category: "response_protocol",
             reason,
             retryable:
-              reason !== "LLM_REFUSAL" && reason !== "LLM_TOOL_CALL_UNEXPECTED",
+              reason !== "LLM_REFUSAL" &&
+              reason !== "LLM_CONTENT_FILTERED" &&
+              reason !== "LLM_TOOL_CALL_UNEXPECTED",
           };
         }
       }
