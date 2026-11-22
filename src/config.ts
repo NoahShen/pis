@@ -2,6 +2,14 @@ import { resolve } from "node:path";
 
 import { z } from "zod";
 
+import {
+  LLM_OPERATION_ENV_PREFIXES,
+  LlmOperationPolicyConfigError,
+  resolveLlmOperationPolicies,
+  type LlmOperationEnvironmentKey,
+  type LlmOperationPolicies,
+} from "./llm/operation-policy.js";
+
 export const LOG_LEVELS = [
   "fatal",
   "error",
@@ -23,6 +31,7 @@ export interface AppConfig {
   llmEndpoint: string;
   llmApiKey: string;
   llmModel: string;
+  llmOperationPolicies: LlmOperationPolicies;
   promptsDirectory: string;
   rssSsrfProtection: boolean;
   cronTimezone: string;
@@ -40,6 +49,7 @@ export interface RssPagesConfig {
 }
 
 export type ConfigPath =
+  | LlmOperationEnvironmentKey
   | "HOST"
   | "PORT"
   | "API_TOKEN"
@@ -257,6 +267,21 @@ const environmentSchema = z.object({
 });
 
 const CONFIG_PATHS = new Set<ConfigPath>([
+  ...Object.values(LLM_OPERATION_ENV_PREFIXES).flatMap(
+    (prefix) =>
+      [
+        `${prefix}_ENDPOINT`,
+        `${prefix}_API_KEY`,
+        `${prefix}_MODEL`,
+        `${prefix}_FIRST_BYTE_TIMEOUT_MS`,
+        `${prefix}_IDLE_TIMEOUT_MS`,
+        `${prefix}_TOTAL_TIMEOUT_MS`,
+        `${prefix}_MAX_RESPONSE_BYTES`,
+        `${prefix}_MAX_ATTEMPTS`,
+        `${prefix}_RETRY_DELAY_MS`,
+        `${prefix}_RETRY_TOTAL_BUDGET_MS`,
+      ] as const,
+  ),
   "HOST",
   "PORT",
   "API_TOKEN",
@@ -304,6 +329,23 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     throw new ConfigError("PIS_LLM_MODEL", "is required");
   }
 
+  let llmOperationPolicies: LlmOperationPolicies;
+  try {
+    llmOperationPolicies = resolveLlmOperationPolicies(
+      {
+        endpoint: result.data.PIS_LLM_ENDPOINT,
+        apiKey: result.data.PIS_LLM_API_KEY,
+        model: result.data.PIS_LLM_MODEL,
+      },
+      env,
+    );
+  } catch (error) {
+    if (error instanceof LlmOperationPolicyConfigError) {
+      throw new ConfigError(error.path, error.reason);
+    }
+    throw error;
+  }
+
   const pagesKeys = [
     "RSS_PAGES_REPOSITORY",
     "RSS_PAGES_BRANCH",
@@ -348,6 +390,7 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     llmEndpoint: result.data.PIS_LLM_ENDPOINT,
     llmApiKey: result.data.PIS_LLM_API_KEY,
     llmModel: result.data.PIS_LLM_MODEL,
+    llmOperationPolicies,
     promptsDirectory: resolve(
       result.data.PROMPTS_DIR ?? DEFAULT_PROMPTS_DIRECTORY,
     ),

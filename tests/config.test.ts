@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { ConfigError, loadConfig } from "../src/config.js";
+import { resolveLlmOperationPolicies } from "../src/llm/operation-policy.js";
 import {
   TEST_LLM_API_KEY,
   TEST_LLM_ENDPOINT,
@@ -16,6 +17,12 @@ const REQUIRED_ENV = {
   PIS_LLM_API_KEY: TEST_LLM_API_KEY,
   PIS_LLM_MODEL: TEST_LLM_MODEL,
 } as const;
+
+const DEFAULT_OPERATION_POLICIES = resolveLlmOperationPolicies({
+  endpoint: TEST_LLM_ENDPOINT,
+  apiKey: TEST_LLM_API_KEY,
+  model: TEST_LLM_MODEL,
+});
 
 function expectConfigError(
   env: NodeJS.ProcessEnv,
@@ -38,6 +45,7 @@ function expectConfigError(
 describe("loadConfig", () => {
   it("loadConfig resolves required LLM fields and applies only unset defaults", () => {
     expect(loadConfig(REQUIRED_ENV)).toEqual({
+      llmOperationPolicies: DEFAULT_OPERATION_POLICIES,
       host: "127.0.0.1",
       port: 3000,
       apiToken: "secret",
@@ -76,6 +84,11 @@ describe("loadConfig", () => {
       llmEndpoint: "http://llm.example.test:8080/v1/chat/completions",
       llmApiKey: "configured-key",
       llmModel: "configured-model",
+      llmOperationPolicies: resolveLlmOperationPolicies({
+        endpoint: "http://llm.example.test:8080/v1/chat/completions",
+        apiKey: "configured-key",
+        model: "configured-model",
+      }),
       promptsDirectory: resolve("custom/prompts"),
       rssSsrfProtection: false,
       cronTimezone: "Not/A/RealZone",
@@ -100,6 +113,7 @@ describe("loadConfig", () => {
         NODE_ENV: "test",
       }),
     ).toEqual({
+      llmOperationPolicies: DEFAULT_OPERATION_POLICIES,
       host: "127.0.0.1",
       port: 3000,
       apiToken: "secret",
@@ -112,6 +126,50 @@ describe("loadConfig", () => {
       rssSsrfProtection: true,
       cronTimezone: "Asia/Shanghai",
     });
+  });
+
+  it("loadConfig resolves operation-specific streaming and retry policies", () => {
+    const config = loadConfig({
+      ...REQUIRED_ENV,
+      PIS_LLM_PROCESSING_ROUTE_ENDPOINT:
+        "https://route.example.test/v1/chat/completions",
+      PIS_LLM_PROCESSING_ROUTE_API_KEY: "route-key",
+      PIS_LLM_PROCESSING_ROUTE_MODEL: "route-model",
+      PIS_LLM_PROCESSING_ROUTE_FIRST_BYTE_TIMEOUT_MS: "1000",
+      PIS_LLM_PROCESSING_ROUTE_IDLE_TIMEOUT_MS: "2000",
+      PIS_LLM_PROCESSING_ROUTE_TOTAL_TIMEOUT_MS: "3000",
+      PIS_LLM_PROCESSING_ROUTE_MAX_RESPONSE_BYTES: "4096",
+      PIS_LLM_PROCESSING_ROUTE_MAX_ATTEMPTS: "1",
+      PIS_LLM_PROCESSING_ROUTE_RETRY_DELAY_MS: "10",
+      PIS_LLM_PROCESSING_ROUTE_RETRY_TOTAL_BUDGET_MS: "5000",
+    });
+
+    expect(config.llmOperationPolicies["processing-route"]).toEqual({
+      endpoint: "https://route.example.test/v1/chat/completions",
+      apiKey: "route-key",
+      model: "route-model",
+      stream: true,
+      firstByteTimeoutMs: 1000,
+      idleTimeoutMs: 2000,
+      totalTimeoutMs: 3000,
+      maxResponseBytes: 4096,
+      maxAttempts: 1,
+      retryDelayMs: 10,
+      retryTotalBudgetMs: 5000,
+    });
+    expect(config.llmOperationPolicies["event-search"]).toEqual(
+      DEFAULT_OPERATION_POLICIES["event-search"],
+    );
+    expectConfigError(
+      { ...REQUIRED_ENV, PIS_LLM_EVENT_SEARCH_TOTAL_TIMEOUT_MS: "0" },
+      "PIS_LLM_EVENT_SEARCH_TOTAL_TIMEOUT_MS",
+      "must be a decimal integer from 1 to 600000",
+    );
+    expectConfigError(
+      { ...REQUIRED_ENV, PIS_LLM_TOPIC_MATCHING_MAX_ATTEMPTS: "3" },
+      "PIS_LLM_TOPIC_MATCHING_MAX_ATTEMPTS",
+      "must be 1 or 2",
+    );
   });
 
   it("loadConfig rejects missing required LLM fields with stable paths and reasons", () => {

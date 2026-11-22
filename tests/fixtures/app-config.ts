@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 
 import type { AppConfig } from "../../src/config.js";
+import { resolveLlmOperationPolicies } from "../../src/llm/operation-policy.js";
 
 export const TEST_API_TOKEN = "test-api-token";
 export const TEST_LLM_ENDPOINT =
@@ -19,6 +20,11 @@ export function appConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     llmEndpoint: TEST_LLM_ENDPOINT,
     llmApiKey: TEST_LLM_API_KEY,
     llmModel: TEST_LLM_MODEL,
+    llmOperationPolicies: resolveLlmOperationPolicies({
+      endpoint: TEST_LLM_ENDPOINT,
+      apiKey: TEST_LLM_API_KEY,
+      model: TEST_LLM_MODEL,
+    }),
     promptsDirectory: TEST_PROMPTS_DIR,
     rssSsrfProtection: true,
     cronTimezone: "Asia/Shanghai",

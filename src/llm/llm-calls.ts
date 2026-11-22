@@ -1,7 +1,10 @@
 import type { LlmOperation } from "../prompt/prompt-repository.js";
 import type { PromptRepository } from "../prompt/prompt-repository.js";
 
-import type { TextCompletionClient } from "./chat-completions-client.js";
+import {
+  ChatCompletionsError,
+  type TextCompletionClient,
+} from "./chat-completions-client.js";
 import {
   getOutputJsonSchema,
   parseLlmResponse,
@@ -57,10 +60,22 @@ export interface TypedLlmCalls {
   ): Promise<TopicMatchingResponse>;
 }
 
-export interface TypedLlmCallDependencies {
+export type LlmOperationCompletionClients = Readonly<
+  Partial<Record<LlmOperation, TextCompletionClient>>
+>;
+
+export type TypedLlmCallDependencies = {
   readonly prompts: Pick<PromptRepository, "load">;
-  readonly completionClient: TextCompletionClient;
-}
+} & (
+  | {
+      readonly completionClient: TextCompletionClient;
+      readonly completionClients?: LlmOperationCompletionClients;
+    }
+  | {
+      readonly completionClient?: TextCompletionClient;
+      readonly completionClients: LlmOperationCompletionClients;
+    }
+);
 
 const INSTRUCTIONS_LABEL = "## Function Instructions";
 const OUTPUT_SCHEMA_LABEL = "## Output JSON Schema";
@@ -110,7 +125,13 @@ export function createTypedLlmCalls(
       operation === "knowledge-analysis"
         ? composeKnowledgeData(taskDataSnapshot, prompt.userContext)
         : composeTaskData(taskDataSnapshot);
-    const content = await dependencies.completionClient.complete({
+    const completionClient =
+      dependencies.completionClients?.[operation] ??
+      dependencies.completionClient;
+    if (completionClient === undefined) {
+      throw new ChatCompletionsError("LLM_CONFIG_INVALID");
+    }
+    const content = await completionClient.complete({
       systemContent,
       userContent,
       ...(signal === undefined ? {} : { signal }),
