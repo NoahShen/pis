@@ -446,9 +446,6 @@ export function createStreamingChatCompletionsClient(
         const parser = new ServerSentEventParser({
           maxEvents: validated.maxEvents,
           onEvent({ data }) {
-            if (doneReceived) {
-              throw protocolError();
-            }
             if (firstByteTimer !== undefined) {
               clearTimeout(firstByteTimer);
               firstByteTimer = undefined;
@@ -466,6 +463,9 @@ export function createStreamingChatCompletionsClient(
               observe("first_chunk_received");
             }
             if (data.trim() === "[DONE]") {
+              if (doneReceived) {
+                throw protocolError();
+              }
               clearTimeout(idleTimer);
               idleTimer = undefined;
               doneReceived = true;
@@ -479,6 +479,15 @@ export function createStreamingChatCompletionsClient(
               throw protocolError();
             }
             if (!isRecord(payload) || !Array.isArray(payload.choices)) {
+              throw protocolError();
+            }
+            if (payload.choices.length === 0) {
+              if (!isRecord(payload.usage)) {
+                throw protocolError();
+              }
+              return;
+            }
+            if (doneReceived) {
               throw protocolError();
             }
             const choice = payload.choices[0];
