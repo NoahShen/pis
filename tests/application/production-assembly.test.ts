@@ -19,6 +19,9 @@ import * as eventCandidateRepositoryModule from "../../src/event-search/event-ca
 import * as knowledgeModule from "../../src/knowledge/knowledge.js";
 import * as knowledgeRepositoryModule from "../../src/knowledge/knowledge-repository.js";
 import * as chatClientModule from "../../src/llm/chat-completions-client.js";
+import * as streamingClientModule from "../../src/llm/streaming-chat-completions-client.js";
+import { streamingConfigForOperation } from "../../src/llm/operation-policy.js";
+import { LLM_OPERATIONS } from "../../src/prompt/prompt-repository.js";
 import * as llmCallsModule from "../../src/llm/llm-calls.js";
 import { startServer } from "../../src/lifecycle.js";
 import * as contentRepositoryModule from "../../src/processing/content-repository.js";
@@ -154,6 +157,10 @@ describe("production assembly", () => {
       const chatClientSpy = vi.spyOn(
         chatClientModule,
         "createChatCompletionsClient",
+      );
+      const streamingClientSpy = vi.spyOn(
+        streamingClientModule,
+        "createStreamingChatCompletionsClient",
       );
       const typedCallsSpy = vi.spyOn(llmCallsModule, "createTypedLlmCalls");
       const rssAdapterSpy = vi.spyOn(sourceAdapterModule, "createRssAdapter");
@@ -299,19 +306,28 @@ describe("production assembly", () => {
       expect(existsSync(config.databasePath as string)).toBe(true);
 
       const promptRepository = promptSpy.mock.instances[0];
-      const completionClient = chatClientSpy.mock.results[0]?.value;
       const typedLlmCalls = typedCallsSpy.mock.results[0]?.value;
       expect(promptSpy).toHaveBeenCalledExactlyOnceWith(
         config.promptsDirectory,
       );
-      expect(chatClientSpy).toHaveBeenCalledExactlyOnceWith({
-        endpoint: config.llmEndpoint,
-        apiKey: config.llmApiKey,
-        model: config.llmModel,
-      });
+      expect(chatClientSpy).not.toHaveBeenCalled();
+      expect(streamingClientSpy).toHaveBeenCalledTimes(LLM_OPERATIONS.length);
+      expect(
+        streamingClientSpy.mock.calls.map(([clientConfig]) => clientConfig),
+      ).toEqual(
+        LLM_OPERATIONS.map((operation) =>
+          streamingConfigForOperation(config.llmOperationPolicies[operation]),
+        ),
+      );
+      const completionClients = Object.fromEntries(
+        LLM_OPERATIONS.map((operation, index) => [
+          operation,
+          streamingClientSpy.mock.results[index]?.value,
+        ]),
+      );
       expect(typedCallsSpy).toHaveBeenCalledExactlyOnceWith({
         prompts: promptRepository,
-        completionClient,
+        completionClients,
       });
       expect(typedLlmCalls).toMatchObject({
         routeProcessing: expect.any(Function),
@@ -548,6 +564,30 @@ describe("production assembly", () => {
       await assembly.app.close();
       openApps.splice(openApps.indexOf(assembly.app), 1);
     });
+  });
+
+  it("keeps injected completion behavior for all five operations", () => {
+    const probes = createProductionDependencyProbes();
+    const dependencies = productionTestDependencies(probes);
+    const completionClient = dependencies.textCompletionClient;
+    const streamingClientSpy = vi.spyOn(
+      streamingClientModule,
+      "createStreamingChatCompletionsClient",
+    );
+    const typedCallsSpy = vi.spyOn(llmCallsModule, "createTypedLlmCalls");
+    const assembly = productionModule.createProductionAssembly(
+      appConfig(),
+      new CapturedLogger(),
+      dependencies,
+    );
+    openApps.push(assembly.app);
+
+    expect(streamingClientSpy).not.toHaveBeenCalled();
+    expect(typedCallsSpy.mock.calls[0]?.[0].completionClients).toEqual(
+      Object.fromEntries(
+        LLM_OPERATIONS.map((operation) => [operation, completionClient]),
+      ),
+    );
   });
 
   it("does not create a second runtime when all six services are assembled", async () => {
@@ -884,9 +924,9 @@ describe("production assembly", () => {
 
   it("keeps the lightweight buildApp path free of LLM and Runtime construction", async () => {
     const runtimeSpy = vi.spyOn(runtimeModule, "createRuntime");
-    const chatClientSpy = vi.spyOn(
-      chatClientModule,
-      "createChatCompletionsClient",
+    const streamingClientSpy = vi.spyOn(
+      streamingClientModule,
+      "createStreamingChatCompletionsClient",
     );
     const { buildApp } = await import("../../src/app.js");
     const lightweight = buildApp(appConfig(), new CapturedLogger(), {
@@ -904,7 +944,7 @@ describe("production assembly", () => {
 
     expect(lightweight).toBeDefined();
     expect(runtimeSpy).not.toHaveBeenCalled();
-    expect(chatClientSpy).not.toHaveBeenCalled();
+    expect(streamingClientSpy).not.toHaveBeenCalled();
     await lightweight.close();
   });
 });

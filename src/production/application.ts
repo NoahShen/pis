@@ -33,11 +33,11 @@ import { createKnowledgeAnalysis } from "../knowledge/knowledge.js";
 import type { KnowledgeLogger } from "../knowledge/knowledge-logger.js";
 import { SqliteKnowledgeRepository } from "../knowledge/knowledge-repository.js";
 import { createTypedLlmCalls, type TypedLlmCalls } from "../llm/llm-calls.js";
-import {
-  createChatCompletionsClient,
-  type TextCompletionClient,
-} from "../llm/chat-completions-client.js";
+import type { TextCompletionClient } from "../llm/chat-completions-client.js";
+import { streamingConfigForOperation } from "../llm/operation-policy.js";
+import { createStreamingChatCompletionsClient } from "../llm/streaming-chat-completions-client.js";
 import type { Logger } from "../logger.js";
+import { LLM_OPERATIONS } from "../prompt/prompt-repository.js";
 import { CryptoIdGenerator } from "../id/crypto-id-generator.js";
 import type { IdGenerator } from "../id/id-generator.js";
 import { createProcessing } from "../processing/processing.js";
@@ -212,16 +212,18 @@ export function createProductionAssembly(
     const clock = dependencies.clock ?? new SystemClock();
     const idGenerator = dependencies.idGenerator ?? new CryptoIdGenerator();
     const promptRepository = new PromptRepository(config.promptsDirectory);
-    const completionClient =
-      dependencies.textCompletionClient ??
-      createChatCompletionsClient({
-        endpoint: config.llmEndpoint,
-        apiKey: config.llmApiKey,
-        model: config.llmModel,
-      });
+    const completionClients = Object.fromEntries(
+      LLM_OPERATIONS.map((operation) => [
+        operation,
+        dependencies.textCompletionClient ??
+          createStreamingChatCompletionsClient(
+            streamingConfigForOperation(config.llmOperationPolicies[operation]),
+          ),
+      ]),
+    ) as Record<(typeof LLM_OPERATIONS)[number], TextCompletionClient>;
     const typedLlmCalls: TypedLlmCalls = createTypedLlmCalls({
       prompts: promptRepository,
-      completionClient,
+      completionClients,
     });
 
     const sourceRepository: SourceRepository = new SqliteSourceRepository(
