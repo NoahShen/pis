@@ -34,7 +34,10 @@ import type { KnowledgeLogger } from "../knowledge/knowledge-logger.js";
 import { SqliteKnowledgeRepository } from "../knowledge/knowledge-repository.js";
 import { createTypedLlmCalls, type TypedLlmCalls } from "../llm/llm-calls.js";
 import type { TextCompletionClient } from "../llm/chat-completions-client.js";
-import { streamingConfigForOperation } from "../llm/operation-policy.js";
+import {
+  retryPolicyForOperation,
+  streamingConfigForOperation,
+} from "../llm/operation-policy.js";
 import { createStreamingChatCompletionsClient } from "../llm/streaming-chat-completions-client.js";
 import type { Logger } from "../logger.js";
 import { LLM_OPERATIONS } from "../prompt/prompt-repository.js";
@@ -458,6 +461,20 @@ export function createProductionAssembly(
       createRuntime({
         services,
         logger: runtimeLogger,
+        operationRetryPolicies: {
+          "processing-route": retryPolicyForOperation(
+            config.llmOperationPolicies["processing-route"],
+          ),
+          "event-analysis": retryPolicyForOperation(
+            config.llmOperationPolicies["event-analysis"],
+          ),
+          "knowledge-analysis": retryPolicyForOperation(
+            config.llmOperationPolicies["knowledge-analysis"],
+          ),
+          "topic-matching": retryPolicyForOperation(
+            config.llmOperationPolicies["topic-matching"],
+          ),
+        },
       });
     const scheduler =
       dependencies.scheduler ??

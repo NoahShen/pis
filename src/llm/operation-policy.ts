@@ -25,6 +25,22 @@ export type LlmOperationPolicies = Readonly<
   Record<LlmOperation, LlmOperationPolicy>
 >;
 
+export type LlmOperationRetryPolicy = Pick<
+  LlmOperationPolicy,
+  "maxAttempts" | "retryDelayMs" | "retryTotalBudgetMs" | "totalTimeoutMs"
+>;
+
+export function retryPolicyForOperation(
+  policy: LlmOperationPolicy,
+): LlmOperationRetryPolicy {
+  return {
+    maxAttempts: policy.maxAttempts,
+    retryDelayMs: policy.retryDelayMs,
+    retryTotalBudgetMs: policy.retryTotalBudgetMs,
+    totalTimeoutMs: policy.totalTimeoutMs,
+  };
+}
+
 export interface LlmOperationPolicyDefaults {
   readonly endpoint: string;
   readonly apiKey: string;
@@ -259,6 +275,30 @@ export function resolveLlmOperationPolicies(
   }
 
   return policies;
+}
+
+/** Resolves false when cancellation interrupts the bounded retry delay. */
+export function waitForRetryDelay(
+  delayMs: number,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (signal.aborted) {
+    return Promise.resolve(false);
+  }
+  if (delayMs === 0) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise<boolean>((resolve) => {
+    const finish = (completed: boolean): void => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", onAbort);
+      resolve(completed);
+    };
+    const onAbort = (): void => finish(false);
+    const timer = setTimeout(() => finish(true), delayMs);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
 }
 
 export function streamingConfigForOperation(
