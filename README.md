@@ -112,6 +112,8 @@ export CRON_TIMEZONE=Asia/Shanghai
 
 Source 创建字段为 `name`、`type`、`url`、`cron`，可选 `enabled`（缺省 `true`）和 `description`（缺省 `null`）；V1 的 `type` 只接受 `RSS`。Source 更新只接受 `name`、`cron`、`enabled`、`description`，至少一项；`type`、`url`、`id`、`last_collected_at` 不可修改，即使 PATCH 提交相同值也返回 `400`。`name` 和 Source 的 URL 不静默改写；`url` 只接受可解析的绝对 HTTP(S) URL，`cron` 只做五或六字段语法校验，不创建调度任务，也不执行抓取。
 
+**采集检查点与去重边界**：`last_collected_at` 会在一次 Collection 成功持久化后写为本次采集开始时间，并在下一次调用 `fetchEntries(source, lastCollectedAt)` 时传给 Adapter，供运维观察和未来的增量协议使用。**当前 RSS Adapter 明确不使用它过滤 Feed 条目**，仍读取并返回 Feed 中的候选条目；最终去重由 Source Item 身份保证：优先 `source_id + external_id`，无 external ID 时使用 `source_id + url + published_at`。因此当前不存在“只抓取检查点之后文章”的时间增量语义，也不能用该字段代替 GUID/URL 去重；文章缺少时间、时间回拨或同 GUID 修改正文时，仍须依靠持久化身份边界。
+
 Topic 创建字段为 `name`、`description`，可选 `enabled`（缺省 `true`）；更新只接受 `name`、`description`、`enabled`，至少一项。名称与 Topic 描述必须包含非空白字符，服务保存原始字符串；Topic 更新及启停只写入 `topics`，不回溯、重算或发布历史关联。API 不提供删除。
 
 非法 body、未知字段、空 PATCH、查询参数均返回 `400 {"error":"invalid_request"}`；不存在返回 `404 {"error":"not_found"}`；超过 1 MiB 返回 `413`，非 JSON 写入返回 `415`；SQLite busy/locked 返回 `503`，其他内部错误返回 `500`。无授权请求不会解析或写入配置。

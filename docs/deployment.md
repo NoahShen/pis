@@ -153,6 +153,13 @@ curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/health
 2. `DATABASE_PATH` 指向预期持久库；未误用仓库默认/临时数据库。
 3. 按 README 创建/检查 Source 与 Topic；Source URL 创建后不可修改，Cron 只调度 enabled Source。
 4. 查询 `GET /api/events`、`GET /api/knowledge`、`GET /api/published-items` 验证只读 API。
+
+### 采集检查点的当前语义
+
+`sources.last_collected_at` 是成功采集后的检查点，由 Collection 在 Source Item 持久化的同一事务中写入本次采集开始时间；下一次采集会把它传给 `fetchEntries(source, lastCollectedAt)`。**当前 RSS Adapter 不使用该值过滤条目**，不要根据这个字段推断“只下载了增量文章”或用它做采集完整性校验。
+
+当前正确性由数据库中的 Source Item 身份去重保证：优先 `source_id + external_id`，无 external ID 时使用 `source_id + url + published_at`。检查点主要用于运维观察和 Adapter 将来的增量协议扩展；缺发布时间、时钟回拨、同 GUID 修改正文等场景仍必须保留身份去重。
+
 5. 如启用 Pages，检查双 Feed 匿名 XML 与本地文件 bytes；必要时运行：
    `node scripts/pages-acceptance.mjs --origin <公开origin> --directory <公开目录>`，输出只能进入脱敏报告。
 6. `npx pm2 restart pis --update-env` 后健康检查恢复；`npx pm2 stop pis` 后端口释放。
