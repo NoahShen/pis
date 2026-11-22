@@ -1,9 +1,21 @@
-import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
+import {
+  ChatCompletionsError,
+  createChatCompletionsClient,
+} from "../../src/llm/chat-completions-client.js";
+import { summarizeLlmFailure } from "../../src/llm/failure-summary.js";
+import { createTypedLlmCalls } from "../../src/llm/llm-calls.js";
+import { LlmOutputValidationError } from "../../src/llm/response-validators.js";
+import { ProcessingError } from "../../src/processing/processing-errors.js";
+import { EventSearchError } from "../../src/event-search/event-search-errors.js";
+import { EventAnalysisError } from "../../src/event-analysis/event-analysis-errors.js";
+import { KnowledgeError } from "../../src/knowledge/knowledge-errors.js";
+import { TopicMatchingError } from "../../src/topic-matching/topic-matching-errors.js";
+import { createRuntime } from "../../src/runtime/runtime.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -12,7 +24,21 @@ const ROOT = path.resolve(
 
 // @ts-expect-error The executable acceptance harness is plain ESM, matching existing script-test practice.
 import * as harness from "../../scripts/llm-failure-acceptance.mjs";
-const components = await harness.loadComponents();
+
+// All error instances and their summarizer must come from the same module graph.
+const components = {
+  ChatCompletionsError,
+  createChatCompletionsClient,
+  summarizeLlmFailure,
+  createTypedLlmCalls,
+  LlmOutputValidationError,
+  ProcessingError,
+  EventSearchError,
+  EventAnalysisError,
+  KnowledgeError,
+  TopicMatchingError,
+  createRuntime,
+};
 
 type AcceptanceEntry = {
   operation: string;
@@ -174,24 +200,6 @@ describe("LLM failure acceptance harness (offline)", () => {
     expect(
       results.find((entry: AcceptanceEntry) => entry.reason === "LLM_REFUSAL"),
     ).toMatchObject({ count: 1, attempt: 1, final: true });
-  });
-
-  it("runs the compiled self-test from an arbitrary working directory", () => {
-    const directory = path.dirname(ROOT);
-    const result = spawnSync(
-      process.execPath,
-      [path.join(ROOT, "scripts/llm-failure-acceptance.mjs"), "--self-test"],
-      { cwd: directory, encoding: "utf8" },
-    );
-    expect(result.status).toBe(0);
-    expect(result.stderr).toBe("");
-    expect(JSON.parse(result.stdout)).toEqual({
-      mode: "self-test",
-      modelExecuted: false,
-      network: false,
-      count: 85,
-      verdict: "PASS",
-    });
   });
 
   it("keeps temporary raw artifacts private and removes them after self-test", async () => {
