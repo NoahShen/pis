@@ -39,6 +39,7 @@ const allowedLogFields = new Set([
   "category",
   "httpStatus",
   "retryable",
+  "retryDelayMs",
   "final",
 ]);
 
@@ -341,6 +342,38 @@ describe("Runtime shutdown boundaries", () => {
         reason: "cancelled",
       }),
     );
+  });
+
+  it("drain includes retry backoff and shutdown aborts it without another attempt", async () => {
+    const services = createEmptyStageServices();
+    let calls = 0;
+    services.process = async () => {
+      calls += 1;
+      throw createRuntimeError("processing_failed");
+    };
+    const runtime = createRuntime({
+      services,
+      operationRetryPolicies: {
+        "processing-route": {
+          maxAttempts: 2,
+          retryDelayMs: 60_000,
+          retryTotalBudgetMs: 120_000,
+          totalTimeoutMs: 60_000,
+        },
+      },
+    });
+    await runtime.submit(createProcessTask("process-in-backoff"));
+    await runtime.start();
+    await vi.waitFor(() => expect(calls).toBe(1));
+    let drained = false;
+    const drain = runtime.drain().then(() => {
+      drained = true;
+    });
+    await Promise.resolve();
+    expect(drained).toBe(false);
+    await runtime.shutdown({ timeoutMs: 10 });
+    await drain;
+    expect(calls).toBe(1);
   });
 
   it("ABORT_NO_RETRY never retries cancellation or dispatches downstream after abort", async () => {

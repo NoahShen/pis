@@ -1,4 +1,7 @@
 import type { LlmFailureSummary } from "../llm/failure-summary.js";
+import { waitForRetryDelay } from "../llm/operation-policy.js";
+import type { LlmOperationRetryPolicy } from "../llm/operation-policy.js";
+import type { LlmOperation } from "../prompt/prompt-repository.js";
 import { BoundedTaskQueue, QueueClosedError } from "./bounded-task-queue.js";
 import type {
   CollectResult,
@@ -263,6 +266,92 @@ function executeStage(
   }
 }
 
+type AttemptOutcome =
+  | { readonly result: StageResult; readonly error?: never }
+  | { readonly result?: never; readonly error: unknown };
+
+function operationForTask(task: RuntimeTask): LlmOperation | undefined {
+  switch (task.type) {
+    case "PROCESS":
+      return "processing-route";
+    case "EVENT_ANALYSIS":
+      // Search and analysis share this task and its conservative retry budget.
+      return "event-analysis";
+    case "KNOWLEDGE_ANALYSIS":
+      return "knowledge-analysis";
+    case "TOPIC_MATCHING":
+      return "topic-matching";
+    case "COLLECT":
+    case "PUBLISH":
+      return undefined;
+  }
+}
+
+function localTimeoutError(operation: LlmOperation): Error {
+  return Object.assign(new Error("LLM attempt deadline"), {
+    code: "llm_failed",
+    llmFailure: {
+      operation,
+      category: "timeout",
+      reason: "LLM_TIMEOUT_LOCAL",
+      retryable: true,
+    } satisfies LlmFailureSummary,
+  });
+}
+
+async function executeAttempt(
+  services: StageServices,
+  task: RuntimeTask,
+  operation: LlmOperation | undefined,
+  policy: LlmOperationRetryPolicy | undefined,
+  parentSignal: AbortSignal,
+  remainingBudgetMs: number,
+): Promise<AttemptOutcome> {
+  if (operation === undefined || policy === undefined) {
+    try {
+      return { result: await executeStage(services, task, parentSignal) };
+    } catch (error) {
+      return { error };
+    }
+  }
+
+  const controller = new AbortController();
+  const abort = (): void => controller.abort();
+  parentSignal.addEventListener("abort", abort, { once: true });
+  const attemptTimeoutMs = Math.max(
+    0,
+    Math.min(policy.totalTimeoutMs, Math.floor(remainingBudgetMs)),
+  );
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<AttemptOutcome>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve({ error: localTimeoutError(operation) });
+    }, attemptTimeoutMs);
+  });
+  const stage = executeStage(services, task, controller.signal).then(
+    (result): AttemptOutcome => ({ result }),
+    (error: unknown): AttemptOutcome => ({ error }),
+  );
+
+  try {
+    const outcome = await Promise.race([stage, timeout]);
+    if (parentSignal.aborted) {
+      return { error: localCancellationError() };
+    }
+    return outcome;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+    parentSignal.removeEventListener("abort", abort);
+  }
+}
+
+function localCancellationError(): Error {
+  return Object.assign(new Error("Runtime attempt cancelled"), {
+    code: "LLM_CANCELLED",
+  });
+}
+
 function failureLogEntry(
   task: RuntimeTask,
   attempt: number,
@@ -272,6 +361,7 @@ function failureLogEntry(
   final: boolean,
   retryable: boolean,
   llmFailure?: LlmFailureSummary,
+  retryDelayMs?: number,
 ): RuntimeLogEntry {
   return {
     taskType: task.type,
@@ -282,6 +372,7 @@ function failureLogEntry(
     reason,
     durationMs,
     retryable,
+    ...(retryDelayMs === undefined ? {} : { retryDelayMs }),
     final,
     ...(llmFailure === undefined
       ? {}
@@ -307,6 +398,7 @@ function shutdownTimeout(
 
 export function createRuntime(dependencies: RuntimeDependencies): Runtime {
   const configuration = validateConfiguration(dependencies);
+  const policyClock = dependencies.policyClock ?? (() => performance.now());
   const abortController = new AbortController();
   const drainWaiters: Array<() => void> = [];
   let accepting = true;
@@ -368,74 +460,107 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
     try {
       let result: StageResult | undefined;
       const signal = abortController.signal;
+      const operation = operationForTask(task);
+      const retryPolicy =
+        operation === undefined
+          ? undefined
+          : dependencies.operationRetryPolicies?.[operation];
+      const maxAttempts = retryPolicy?.maxAttempts ?? configuration.maxAttempts;
+      const taskStartedAt = policyClock();
 
       if (signal.aborted) {
         logRuntime(
           dependencies.logger,
-          failureLogEntry(
-            task,
-            1,
-            configuration.maxAttempts,
-            "cancelled",
-            0,
-            true,
-            false,
-          ),
+          failureLogEntry(task, 1, maxAttempts, "cancelled", 0, true, false),
         );
         return;
       }
 
-      for (
-        let attempt = 1;
-        attempt <= configuration.maxAttempts;
-        attempt += 1
-      ) {
-        const startedAt = Date.now();
-        try {
-          result = await executeStage(dependencies.services, task, signal);
-          if (signal.aborted) {
-            result = undefined;
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const attemptStartedAt = policyClock();
+        const elapsedBeforeAttempt = Math.max(
+          0,
+          attemptStartedAt - taskStartedAt,
+        );
+        const outcome = await executeAttempt(
+          dependencies.services,
+          task,
+          operation,
+          retryPolicy,
+          signal,
+          retryPolicy === undefined
+            ? Number.POSITIVE_INFINITY
+            : retryPolicy.retryTotalBudgetMs - elapsedBeforeAttempt,
+        );
+
+        if (outcome.error === undefined) {
+          if (!signal.aborted) {
+            result = outcome.result;
+          } else {
             logRuntime(
               dependencies.logger,
               failureLogEntry(
                 task,
                 attempt,
-                configuration.maxAttempts,
+                maxAttempts,
                 "cancelled",
-                Math.max(0, Date.now() - startedAt),
+                Math.max(0, policyClock() - attemptStartedAt),
                 true,
                 false,
               ),
             );
           }
           break;
-        } catch (error) {
-          const classification = classifyTaskError(error);
-          const cancelled =
-            signal.aborted || classification.category === "cancelled";
-          const durationMs = Math.max(0, Date.now() - startedAt);
-          const terminal =
-            cancelled ||
-            classification.category !== "retryable" ||
-            attempt >= configuration.maxAttempts;
+        }
 
+        const classification = classifyTaskError(outcome.error);
+        const cancelled =
+          signal.aborted || classification.category === "cancelled";
+        const durationMs = Math.max(0, policyClock() - attemptStartedAt);
+        const totalElapsedMs = Math.max(0, policyClock() - taskStartedAt);
+        const retryDelayMs = retryPolicy?.retryDelayMs ?? 0;
+        const budgetExhausted =
+          retryPolicy !== undefined &&
+          totalElapsedMs + retryDelayMs >= retryPolicy.retryTotalBudgetMs;
+        const terminal =
+          cancelled ||
+          classification.category !== "retryable" ||
+          attempt >= maxAttempts ||
+          budgetExhausted;
+
+        logRuntime(
+          dependencies.logger,
+          failureLogEntry(
+            task,
+            attempt,
+            maxAttempts,
+            signal.aborted ? "cancelled" : classification.reason,
+            durationMs,
+            terminal,
+            cancelled ? false : classification.category === "retryable",
+            classification.llmFailure,
+            terminal || retryPolicy === undefined ? undefined : retryDelayMs,
+          ),
+        );
+
+        if (terminal) return;
+        if (
+          !(await waitForRetryDelay(retryDelayMs, signal)) ||
+          signal.aborted
+        ) {
           logRuntime(
             dependencies.logger,
             failureLogEntry(
               task,
               attempt,
-              configuration.maxAttempts,
-              signal.aborted ? "cancelled" : classification.reason,
-              durationMs,
-              terminal,
-              cancelled ? false : classification.category === "retryable",
-              classification.llmFailure,
+              maxAttempts,
+              "cancelled",
+              Math.max(0, policyClock() - attemptStartedAt),
+              true,
+              false,
             ),
           );
-
-          if (terminal) {
-            return;
-          }
+          return;
         }
       }
 

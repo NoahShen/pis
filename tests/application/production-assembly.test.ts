@@ -20,7 +20,10 @@ import * as knowledgeModule from "../../src/knowledge/knowledge.js";
 import * as knowledgeRepositoryModule from "../../src/knowledge/knowledge-repository.js";
 import * as chatClientModule from "../../src/llm/chat-completions-client.js";
 import * as streamingClientModule from "../../src/llm/streaming-chat-completions-client.js";
-import { streamingConfigForOperation } from "../../src/llm/operation-policy.js";
+import {
+  retryPolicyForOperation,
+  streamingConfigForOperation,
+} from "../../src/llm/operation-policy.js";
 import { LLM_OPERATIONS } from "../../src/prompt/prompt-repository.js";
 import * as llmCallsModule from "../../src/llm/llm-calls.js";
 import { startServer } from "../../src/lifecycle.js";
@@ -471,6 +474,23 @@ describe("production assembly", () => {
       expect(runtimeDependencies).not.toHaveProperty("dispatchAttempts");
       expect(runtimeDependencies).not.toHaveProperty("shutdownTimeoutMs");
       expect(runtimeDependencies).not.toHaveProperty("shutdownGraceMs");
+      expect(runtimeDependencies.operationRetryPolicies).toEqual({
+        "processing-route": retryPolicyForOperation(
+          config.llmOperationPolicies["processing-route"],
+        ),
+        "event-analysis": retryPolicyForOperation(
+          config.llmOperationPolicies["event-analysis"],
+        ),
+        "knowledge-analysis": retryPolicyForOperation(
+          config.llmOperationPolicies["knowledge-analysis"],
+        ),
+        "topic-matching": retryPolicyForOperation(
+          config.llmOperationPolicies["topic-matching"],
+        ),
+      });
+      expect(runtimeDependencies.operationRetryPolicies).not.toHaveProperty(
+        "event-search",
+      );
 
       const schedulerOptions = schedulerSpy.mock
         .calls[0]?.[0] as CronSchedulerOptions;

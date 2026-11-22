@@ -16,6 +16,9 @@ function whitelistedEntry(entry: RuntimeLogEntry): RuntimeLogEntry {
     ...(entry.category === undefined ? {} : { category: entry.category }),
     ...(entry.httpStatus === undefined ? {} : { httpStatus: entry.httpStatus }),
     ...(entry.retryable === undefined ? {} : { retryable: entry.retryable }),
+    ...(entry.retryDelayMs === undefined
+      ? {}
+      : { retryDelayMs: entry.retryDelayMs }),
     ...(entry.final === undefined ? {} : { final: entry.final }),
   };
 }

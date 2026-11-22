@@ -1,5 +1,6 @@
 import type { LlmFailureCategory } from "../llm/failure-summary.js";
 import type { LlmOperation } from "../prompt/prompt-repository.js";
+import type { LlmOperationRetryPolicy } from "../llm/operation-policy.js";
 import type { CollectResult } from "../collection/contracts.js";
 import type { EventAnalysisResult } from "../event-analysis/contracts.js";
 import type { KnowledgeResult } from "../knowledge/contracts.js";
@@ -68,6 +69,10 @@ export interface StageServices {
   ): Promise<PublishResult>;
 }
 
+export type RuntimeOperationRetryPolicies = Readonly<
+  Partial<Record<LlmOperation, LlmOperationRetryPolicy>>
+>;
+
 export interface RuntimeLogEntry {
   readonly taskType?: RuntimeTaskType;
   readonly taskId?: string;
@@ -81,6 +86,7 @@ export interface RuntimeLogEntry {
   readonly category?: LlmFailureCategory;
   readonly httpStatus?: number;
   readonly retryable?: boolean;
+  readonly retryDelayMs?: number;
   readonly final?: boolean;
 }
 
@@ -94,6 +100,10 @@ export interface RuntimeDependencies {
   readonly queueCapacity?: number;
   /** Stage attempts including the first attempt. Defaults to 2. */
   readonly maxAttempts?: number;
+  /** LLM task attempts, cancellable delay, and shared retry budget. */
+  readonly operationRetryPolicies?: RuntimeOperationRetryPolicies;
+  /** Monotonic policy clock. Defaults to performance.now(). */
+  readonly policyClock?: () => number;
   /** Downstream enqueue attempts including the first attempt. Defaults to 2. */
   readonly dispatchAttempts?: number;
   /** Graceful shutdown budget in milliseconds. Defaults to 5000. */
