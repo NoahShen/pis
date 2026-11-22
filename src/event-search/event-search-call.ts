@@ -1,4 +1,5 @@
 import type { TypedLlmCalls } from "../llm/llm-calls.js";
+import { summarizeLlmFailure } from "../llm/failure-summary.js";
 import type { EventSearchResponse } from "../llm/response-validators.js";
 
 import type { EventSearchTaskData } from "./content-input.js";
@@ -32,6 +33,9 @@ export async function callEventSearch(
       throw new EventSearchError("aborted");
     }
 
-    throw new EventSearchError("llm_failed");
+    throw new EventSearchError(
+      "llm_failed",
+      summarizeLlmFailure(error, "event-search"),
+    );
   }
 }

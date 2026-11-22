@@ -12,6 +12,11 @@ function whitelistedEntry(entry: RuntimeLogEntry): RuntimeLogEntry {
     ...(entry.queueSize === undefined ? {} : { queueSize: entry.queueSize }),
     ...(entry.reason === undefined ? {} : { reason: entry.reason }),
     ...(entry.durationMs === undefined ? {} : { durationMs: entry.durationMs }),
+    ...(entry.operation === undefined ? {} : { operation: entry.operation }),
+    ...(entry.category === undefined ? {} : { category: entry.category }),
+    ...(entry.httpStatus === undefined ? {} : { httpStatus: entry.httpStatus }),
+    ...(entry.retryable === undefined ? {} : { retryable: entry.retryable }),
+    ...(entry.final === undefined ? {} : { final: entry.final }),
   };
 }
 

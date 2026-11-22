@@ -1,3 +1,6 @@
+import { summarizeLlmFailure } from "../llm/failure-summary.js";
+import type { LlmFailureSummary } from "../llm/failure-summary.js";
+
 export type EventAnalysisErrorCode =
   "invalid_input" | "aborted" | "event_analysis_failed" | "llm_failed";
 
@@ -10,11 +13,15 @@ export const EVENT_ANALYSIS_ERROR_MESSAGES = {
 
 export class EventAnalysisError extends Error {
   readonly code: EventAnalysisErrorCode;
+  declare readonly llmFailure?: LlmFailureSummary;
 
-  constructor(code: EventAnalysisErrorCode) {
+  constructor(code: EventAnalysisErrorCode, llmFailure?: LlmFailureSummary) {
     super(EVENT_ANALYSIS_ERROR_MESSAGES[code]);
     this.name = "EventAnalysisError";
     this.code = code;
+    if (llmFailure !== undefined) {
+      this.llmFailure = llmFailure;
+    }
   }
 }
 
@@ -52,5 +59,10 @@ export function normalizeEventAnalysisError(
     return new EventAnalysisError("aborted");
   }
 
-  return new EventAnalysisError(fallback);
+  return new EventAnalysisError(
+    fallback,
+    fallback === "llm_failed"
+      ? summarizeLlmFailure(error, "event-analysis")
+      : undefined,
+  );
 }

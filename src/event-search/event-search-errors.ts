@@ -1,3 +1,6 @@
+import { summarizeLlmFailure } from "../llm/failure-summary.js";
+import type { LlmFailureSummary } from "../llm/failure-summary.js";
+
 export type EventSearchErrorCode =
   "invalid_input" | "aborted" | "event_search_failed" | "llm_failed";
 
@@ -10,11 +13,15 @@ export const EVENT_SEARCH_ERROR_MESSAGES = {
 
 export class EventSearchError extends Error {
   readonly code: EventSearchErrorCode;
+  declare readonly llmFailure?: LlmFailureSummary;
 
-  constructor(code: EventSearchErrorCode) {
+  constructor(code: EventSearchErrorCode, llmFailure?: LlmFailureSummary) {
     super(EVENT_SEARCH_ERROR_MESSAGES[code]);
     this.name = "EventSearchError";
     this.code = code;
+    if (llmFailure !== undefined) {
+      this.llmFailure = llmFailure;
+    }
   }
 }
 
@@ -51,5 +58,10 @@ export function normalizeEventSearchError(
     return new EventSearchError("aborted");
   }
 
-  return new EventSearchError(fallback);
+  return new EventSearchError(
+    fallback,
+    fallback === "llm_failed"
+      ? summarizeLlmFailure(error, "event-search")
+      : undefined,
+  );
 }

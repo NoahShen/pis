@@ -35,6 +35,11 @@ const allowedLogFields = new Set([
   "queueSize",
   "reason",
   "durationMs",
+  "operation",
+  "category",
+  "httpStatus",
+  "retryable",
+  "final",
 ]);
 
 const runtimeSourceFileNames = [

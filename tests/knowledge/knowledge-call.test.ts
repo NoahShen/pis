@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { ChatCompletionsError } from "../../src/llm/chat-completions-client.js";
 import {
   createTypedLlmCalls,
   type TypedLlmCalls,
@@ -117,6 +118,9 @@ function expectKnowledgeError(
     message: KNOWLEDGE_ERROR_MESSAGES[code],
   });
   expect(Object.prototype.hasOwnProperty.call(error, "cause")).toBe(false);
+  if (code === "aborted") {
+    expect(error).not.toHaveProperty("llmFailure");
+  }
 }
 
 function spyCalls(implementation: AnalyzeKnowledge): Pick<
@@ -141,6 +145,23 @@ function abortErrorWithCode(): Error & { readonly code: string } {
 }
 
 describe("knowledge call boundary", () => {
+  it("preserves a fixed knowledge-analysis failure summary", async () => {
+    const calls = spyCalls(() =>
+      Promise.reject(new ChatCompletionsError("LLM_NETWORK_ERROR")),
+    );
+    const error = await captureRejection(
+      callKnowledgeAnalysis(TASK_DATA, calls, undefined, undefined),
+    );
+
+    expectKnowledgeError(error, "llm_failed");
+    expect(error.llmFailure).toEqual({
+      operation: "knowledge-analysis",
+      category: "network",
+      reason: "LLM_NETWORK_ERROR",
+      retryable: true,
+    });
+  });
+
   it("KNO-01 returns a valuable response with three findings after one LLM call", async () => {
     await withStrictCalls(
       JSON.stringify(VALUABLE_RESPONSE),

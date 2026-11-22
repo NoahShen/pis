@@ -1,4 +1,5 @@
 import type { Topic } from "../configuration/contracts.js";
+import { summarizeLlmFailure } from "../llm/failure-summary.js";
 import type { JsonObject, TypedLlmCalls } from "../llm/llm-calls.js";
 import type {
   TopicMatchingReferences,
@@ -123,6 +124,9 @@ export async function callTopicMatching(
       throw new TopicMatchingError("aborted");
     }
 
-    throw new TopicMatchingError("llm_failed");
+    throw new TopicMatchingError(
+      "llm_failed",
+      summarizeLlmFailure(error, "topic-matching"),
+    );
   }
 }

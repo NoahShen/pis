@@ -1,4 +1,5 @@
 import type { TypedLlmCalls } from "../llm/llm-calls.js";
+import { summarizeLlmFailure } from "../llm/failure-summary.js";
 import type {
   EventAnalysisReferences,
   EventAnalysisResponse,
@@ -48,6 +49,9 @@ export async function callEventAnalysis(
       throw new EventAnalysisError("aborted");
     }
 
-    throw new EventAnalysisError("llm_failed");
+    throw new EventAnalysisError(
+      "llm_failed",
+      summarizeLlmFailure(error, "event-analysis"),
+    );
   }
 }

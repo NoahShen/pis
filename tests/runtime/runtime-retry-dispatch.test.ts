@@ -557,6 +557,11 @@ describe("Runtime lifecycle and observability", () => {
       "queueSize",
       "reason",
       "durationMs",
+      "operation",
+      "category",
+      "httpStatus",
+      "retryable",
+      "final",
     ]);
     expect(entries).toHaveLength(2);
     for (const entry of entries) {

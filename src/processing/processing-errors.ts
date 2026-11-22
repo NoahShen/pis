@@ -1,3 +1,6 @@
+import { summarizeLlmFailure } from "../llm/failure-summary.js";
+import type { LlmFailureSummary } from "../llm/failure-summary.js";
+
 export const PROCESSING_ERROR_CODES = [
   "invalid_input",
   "aborted",
@@ -20,11 +23,15 @@ const SAFE_MESSAGES = {
 
 export class ProcessingError extends Error {
   readonly code: ProcessingErrorCode;
+  declare readonly llmFailure?: LlmFailureSummary;
 
-  constructor(code: ProcessingErrorCode) {
+  constructor(code: ProcessingErrorCode, llmFailure?: LlmFailureSummary) {
     super(SAFE_MESSAGES[code]);
     this.name = "ProcessingError";
     this.code = code;
+    if (llmFailure !== undefined) {
+      this.llmFailure = llmFailure;
+    }
   }
 }
 
@@ -46,7 +53,8 @@ function readErrorField(error: unknown, field: string): unknown {
 export function isProcessingAbort(error: unknown): boolean {
   return (
     readErrorField(error, "name") === "AbortError" ||
-    readErrorField(error, "code") === "ABORT_ERR"
+    readErrorField(error, "code") === "ABORT_ERR" ||
+    readErrorField(error, "code") === "LLM_CANCELLED"
   );
 }
 
@@ -56,5 +64,8 @@ export function toProcessingError(
 ): ProcessingError {
   return new ProcessingError(
     isProcessingAbort(error) ? "aborted" : fallbackCode,
+    isProcessingAbort(error) || fallbackCode !== "llm_failed"
+      ? undefined
+      : summarizeLlmFailure(error, "processing-route"),
   );
 }
