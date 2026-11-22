@@ -76,6 +76,53 @@ describe("LLM failure acceptance harness (offline)", () => {
     ).toThrow(/Duplicate/u);
   });
 
+  it.each([
+    {
+      name: "401",
+      error: new components.ChatCompletionsError("LLM_HTTP_ERROR", 401),
+      expected: {
+        category: "http",
+        reason: "LLM_HTTP_ERROR",
+        httpStatus: 401,
+      },
+    },
+    {
+      name: "429",
+      error: new components.ChatCompletionsError("LLM_HTTP_ERROR", 429),
+      expected: {
+        category: "http",
+        reason: "LLM_HTTP_ERROR",
+        httpStatus: 429,
+      },
+    },
+    {
+      name: "output schema",
+      error: new components.LlmOutputValidationError(
+        "LLM_OUTPUT_SCHEMA_INVALID",
+        null,
+      ),
+      expected: {
+        category: "output_validation",
+        reason: "LLM_OUTPUT_SCHEMA_INVALID",
+      },
+    },
+  ])(
+    "summarizes direct $name failures without exposing response details",
+    ({ error, expected }) => {
+      const privateResponse = "PRIVATE_UPSTREAM_RESPONSE";
+      Object.defineProperty(error, "message", { value: privateResponse });
+      const result = harness.summary(error, "processing-route", components);
+      expect(result).toEqual({
+        operation: "processing-route",
+        ...expected,
+        attempt: 1,
+        final: true,
+        count: 1,
+      });
+      expect(JSON.stringify(result)).not.toContain(privateResponse);
+    },
+  );
+
   it("self-tests all five typed operations and writes only private mode-600 artifacts", async () => {
     const result = await harness.runSelfTest(components);
     expect(result.modelExecuted).toBe(false);

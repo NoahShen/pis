@@ -139,13 +139,14 @@ function validateCredentials(env) {
   };
 }
 
-function summary(error, operation) {
+export function summary(error, operation, components) {
+  const failure = components.summarizeLlmFailure(error, operation);
   return {
     operation,
-    category: error?.llmFailure?.category ?? "harness",
-    reason: error?.llmFailure?.reason ?? "ACCEPTANCE_HARNESS_ERROR",
-    ...(Number.isInteger(error?.llmFailure?.httpStatus)
-      ? { httpStatus: error.llmFailure.httpStatus }
+    category: failure.category,
+    reason: failure.reason,
+    ...(Number.isInteger(failure.httpStatus)
+      ? { httpStatus: failure.httpStatus }
       : {}),
     attempt: 1,
     final: true,
@@ -346,7 +347,7 @@ export async function runSelfTest(components) {
         await invoke(calls, method);
         throw new Error("Self-test unexpectedly succeeded");
       } catch (error) {
-        results.push(summary(error, operation));
+        results.push(summary(error, operation, components));
       }
     }
     const runtime = await verifyRuntimeMatrix(components);
@@ -429,7 +430,7 @@ export async function runFaultInjection(components, onRaw = async () => {}) {
         count: 1,
       });
     } catch (error) {
-      results.push(summary(error, operation));
+      results.push(summary(error, operation, components));
     }
   }
   return results;
@@ -484,7 +485,7 @@ async function executeReal(components, config, outputPath) {
       });
     } catch (error) {
       await raw({ operation, error: String(error) });
-      results.push(summary(error, operation));
+      results.push(summary(error, operation, components));
     }
   }
   const report = { mode: "real", modelExecuted: true, results };
