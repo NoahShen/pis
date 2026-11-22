@@ -5,6 +5,7 @@ import {
   createChatCompletionsClient,
   type ChatCompletionsConfig,
 } from "../../src/llm/chat-completions-client.js";
+import { summarizeLlmFailure } from "../../src/llm/failure-summary.js";
 
 const ENDPOINT = "https://llm.example.test/v1/chat/completions?route=synthetic";
 const API_KEY = "key-sentinel-do-not-leak";
@@ -108,6 +109,7 @@ function expectSafeError(
     readonly category: ChatCompletionsError["category"];
     readonly retryable: boolean;
     readonly status?: number;
+    readonly reason?: string;
   },
 ): ChatCompletionsError {
   expect(error).toBeInstanceOf(ChatCompletionsError);
@@ -117,11 +119,13 @@ function expectSafeError(
     category: chatError.category,
     retryable: chatError.retryable,
     status: chatError.status,
+    reason: chatError.reason,
   }).toEqual({
     code: expected.code,
     category: expected.category,
     retryable: expected.retryable,
     status: expected.status,
+    reason: expected.reason ?? expected.code,
   });
 
   const text = `${String(chatError)} ${JSON.stringify(chatError)}`;
@@ -211,11 +215,17 @@ describe("createChatCompletionsClient", () => {
   it.each([
     ["null content", { content: null }],
     ["empty content", { content: "" }],
+    ["whitespace content", { content: " \n\t" }],
+    [
+      "reasoning-only content",
+      { content: null, reasoning: "provider-message-sentinel" },
+    ],
     ["array content", { content: [{ type: "text", text: "synthetic" }] }],
     ["refusal", { content: "synthetic", refusal: "provider-message-sentinel" }],
     ["tool calls", { tool_calls: [{ id: "call-1" }] }],
     ["function call", { function_call: { name: "synthetic" } }],
     ["missing finish reason", { finish_reason: undefined }],
+    ["invalid finish reason", { finish_reason: "content_filter" }],
     ["length finish reason", { finish_reason: "length" }],
   ])(
     "complete rejects invalid response envelopes without exposing provider text: %s",
@@ -251,25 +261,58 @@ describe("createChatCompletionsClient", () => {
       expectSafeError(error, {
         code: "LLM_RESPONSE_PROTOCOL_ERROR",
         category: "response_protocol",
-        retryable: false,
+        retryable:
+          _name !== "refusal" &&
+          _name !== "tool calls" &&
+          _name !== "function call",
+        reason:
+          _name === "refusal"
+            ? "LLM_REFUSAL"
+            : _name === "tool calls" || _name === "function call"
+              ? "LLM_TOOL_CALL_UNEXPECTED"
+              : _name === "length finish reason"
+                ? "LLM_OUTPUT_TRUNCATED"
+                : _name === "missing finish reason"
+                  ? "LLM_RESPONSE_MALFORMED"
+                  : _name === "invalid finish reason"
+                    ? "LLM_FINISH_REASON_INVALID"
+                    : "LLM_CONTENT_EMPTY",
+      });
+      expect(summarizeLlmFailure(error)).toMatchObject({
+        operation: null,
+        category: "response_protocol",
       });
       expect(fetchMock).toHaveBeenCalledOnce();
     },
   );
 
   it("complete rejects malformed JSON UTF-8 and choice envelopes safely", async () => {
-    const envelopes: readonly (string | Uint8Array)[] = [
-      "provider-body-sentinel",
-      "{}",
-      JSON.stringify({ choices: [] }),
-      JSON.stringify({ choices: [{ message: { content: "synthetic" } }] }),
-      new Uint8Array([0xff, 0xfe, 0xfd]),
+    const envelopes: readonly {
+      readonly body: string | Uint8Array;
+      readonly reason: string;
+    }[] = [
+      { body: "provider-body-sentinel", reason: "LLM_RESPONSE_MALFORMED" },
+      { body: "{}", reason: "LLM_RESPONSE_MALFORMED" },
+      {
+        body: JSON.stringify({ choices: [] }),
+        reason: "LLM_RESPONSE_MALFORMED",
+      },
+      {
+        body: JSON.stringify({
+          choices: [{ message: { content: "synthetic" } }],
+        }),
+        reason: "LLM_RESPONSE_MALFORMED",
+      },
+      {
+        body: new Uint8Array([0xff, 0xfe, 0xfd]),
+        reason: "LLM_RESPONSE_MALFORMED",
+      },
     ];
 
     for (const envelope of envelopes) {
       const fetchMock = vi.fn<typeof fetch>(
         async () =>
-          new Response(envelope, {
+          new Response(envelope.body, {
             headers: { "Content-Type": "application/json" },
           }),
       );
@@ -286,7 +329,8 @@ describe("createChatCompletionsClient", () => {
       expectSafeError(error, {
         code: "LLM_RESPONSE_PROTOCOL_ERROR",
         category: "response_protocol",
-        retryable: false,
+        retryable: true,
+        reason: envelope.reason,
       });
     }
   });

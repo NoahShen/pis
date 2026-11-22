@@ -15,6 +15,7 @@ import {
   LLM_OPERATIONS,
   type LlmOperation,
 } from "../../src/prompt/prompt-repository.js";
+import { summarizeLlmFailure } from "../../src/llm/failure-summary.js";
 import {
   LlmOutputValidationError,
   getOutputJsonSchema,
@@ -72,6 +73,12 @@ function expectOutputError(
   expect(error).not.toHaveProperty("issues");
   expect(error).not.toHaveProperty("data");
   expect(error).not.toHaveProperty("path");
+  expect(summarizeLlmFailure(error)).toEqual({
+    operation,
+    category: "output_validation",
+    reason: code,
+    retryable: true,
+  });
 
   return error;
 }
