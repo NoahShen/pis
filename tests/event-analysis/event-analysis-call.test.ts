@@ -6,6 +6,7 @@ import type {
   EventCandidate,
   EventCandidateUpdate,
 } from "../../src/event-search/contracts.js";
+import { ChatCompletionsError } from "../../src/llm/chat-completions-client.js";
 import type { EventAnalysisResponse } from "../../src/llm/response-validators.js";
 import { createTypedLlmCalls } from "../../src/llm/llm-calls.js";
 import { PromptRepository } from "../../src/prompt/prompt-repository.js";
@@ -102,6 +103,9 @@ function expectEventAnalysisError(
     message: EVENT_ANALYSIS_ERROR_MESSAGES[code],
   });
   expect(Object.prototype.hasOwnProperty.call(error, "cause")).toBe(false);
+  if (code === "aborted") {
+    expect(error).not.toHaveProperty("llmFailure");
+  }
   expect(error).not.toHaveProperty("issues");
   expect(error).not.toHaveProperty("prompt");
   expect(error).not.toHaveProperty("token");
@@ -208,6 +212,28 @@ function p03ErrorCases(): readonly {
 }
 
 describe("event analysis error boundary", () => {
+  it("preserves a fixed event-analysis failure summary", async () => {
+    const typed = analyzeEvents(() =>
+      Promise.reject(new ChatCompletionsError("LLM_RESPONSE_TOO_LARGE")),
+    );
+    const error = await captureRejection(
+      callEventAnalysis(
+        TASK_DATA,
+        REFERENCES,
+        { analyzeEvents: typed },
+        undefined,
+      ),
+    );
+
+    expectEventAnalysisError(error, "llm_failed");
+    expect(error.llmFailure).toEqual({
+      operation: "event-analysis",
+      category: "response_size",
+      reason: "LLM_RESPONSE_TOO_LARGE",
+      retryable: false,
+    });
+  });
+
   it("ERROR_SAFETY exposes four exact stable codes/messages without causes", () => {
     for (const code of [
       "invalid_input",

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { ChatCompletionsError } from "../../src/llm/chat-completions-client.js";
 import type { JsonObject, TypedLlmCalls } from "../../src/llm/llm-calls.js";
 import { parseLlmResponse } from "../../src/llm/response-validators.js";
 import {
@@ -67,6 +68,9 @@ async function expectProcessingError(
       }[code],
     );
     expect(processingError).not.toHaveProperty("cause");
+    if (code === "aborted") {
+      expect(processingError).not.toHaveProperty("llmFailure");
+    }
     return processingError;
   }
 
@@ -95,6 +99,32 @@ describe("ProcessingError and ProcessingLogger contracts", () => {
 });
 
 describe("routeCommittedContent", () => {
+  it("preserves a fixed-operation safe LLM failure summary", async () => {
+    const routeProcessing = vi.fn<RouteProcessingCall["routeProcessing"]>(
+      async () => {
+        throw new ChatCompletionsError("LLM_HTTP_ERROR", 503);
+      },
+    );
+    const error = await expectProcessingError(
+      routeCommittedContent(
+        createContent(),
+        createTypedCall(routeProcessing),
+        new CapturedProcessingLogger(),
+        new AbortController().signal,
+      ),
+      "llm_failed",
+    );
+
+    expect(error.llmFailure).toEqual({
+      operation: "processing-route",
+      category: "http",
+      reason: "LLM_HTTP_ERROR",
+      retryable: true,
+      httpStatus: 503,
+    });
+    expect(error).not.toHaveProperty("cause");
+  });
+
   it("PRO-07 maps one typed-call failure to llm_failed without retry or committed rollback", async () => {
     const logger = new CapturedProcessingLogger();
     const signal = new AbortController().signal;

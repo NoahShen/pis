@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { ChatCompletionsError } from "../../src/llm/chat-completions-client.js";
 import type { EventSearchTaskData } from "../../src/event-search/content-input.js";
 import { callEventSearch } from "../../src/event-search/event-search-call.js";
 import {
@@ -119,6 +120,9 @@ function expectEventSearchError(
     message: EVENT_SEARCH_ERROR_MESSAGES[code],
   });
   expect(Object.prototype.hasOwnProperty.call(error, "cause")).toBe(false);
+  if (code === "aborted") {
+    expect(error).not.toHaveProperty("llmFailure");
+  }
   expect(error).not.toHaveProperty("issues");
   expect(error).not.toHaveProperty("data");
   expect(error).not.toHaveProperty("prompt");
@@ -187,6 +191,23 @@ async function withStrictEventSearchCalls<T>(
 }
 
 describe("event search call boundary", () => {
+  it("preserves the event-search failure summary without a cause", async () => {
+    const calls = searchCalls(() =>
+      Promise.reject(new ChatCompletionsError("LLM_TIMEOUT")),
+    );
+    const error = await captureRejection(
+      callEventSearch(TASK_DATA, calls, undefined),
+    );
+
+    expectEventSearchError(error, "llm_failed");
+    expect(error.llmFailure).toEqual({
+      operation: "event-search",
+      category: "timeout",
+      reason: "LLM_TIMEOUT",
+      retryable: true,
+    });
+  });
+
   it("P02_CALL / SIGNAL calls searchEvents once with exact task data and signal", async () => {
     const controller = new AbortController();
     const searchEvents = vi.fn<SearchEvents>(() =>

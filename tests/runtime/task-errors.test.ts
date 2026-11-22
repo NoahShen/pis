@@ -1,6 +1,93 @@
 import { describe, expect, it } from "vitest";
 
+import { ChatCompletionsError } from "../../src/llm/chat-completions-client.js";
+import { LlmOutputValidationError } from "../../src/llm/response-validators.js";
 import { classifyTaskError } from "../../src/runtime/index.js";
+
+describe("LLM failure summary runtime classification", () => {
+  it("uses a valid summary after cancellation and preserves its safe log fields", () => {
+    expect(
+      classifyTaskError({
+        code: "llm_failed",
+        llmFailure: {
+          operation: "event-search",
+          category: "http",
+          reason: "LLM_HTTP_ERROR",
+          retryable: false,
+          httpStatus: 400,
+        },
+      }),
+    ).toEqual({
+      category: "non_retryable",
+      reason: "LLM_HTTP_ERROR",
+      llmFailure: {
+        operation: "event-search",
+        category: "http",
+        reason: "LLM_HTTP_ERROR",
+        retryable: false,
+        httpStatus: 400,
+      },
+    });
+  });
+
+  it("summarizes typed failures without reading sensitive message fields", () => {
+    const error = new ChatCompletionsError("LLM_TIMEOUT");
+    expect(classifyTaskError(error)).toMatchObject({
+      category: "retryable",
+      reason: "LLM_TIMEOUT",
+      llmFailure: { operation: null, category: "timeout" },
+    });
+    expect(
+      classifyTaskError(
+        new LlmOutputValidationError("LLM_OUTPUT_CONFLICT", "event-analysis"),
+      ),
+    ).toMatchObject({ category: "retryable", reason: "LLM_OUTPUT_CONFLICT" });
+  });
+
+  it("ignores malformed, hostile, or unwhitelisted summaries", () => {
+    const malformed = [
+      {
+        operation: "invalid",
+        category: "http",
+        reason: "LLM_HTTP_ERROR",
+        retryable: false,
+      },
+      {
+        operation: null,
+        category: "http",
+        reason: "private",
+        retryable: false,
+      },
+      {
+        operation: null,
+        category: "http",
+        reason: "LLM_HTTP_ERROR",
+        retryable: "false",
+      },
+      {
+        operation: null,
+        category: "http",
+        reason: "LLM_HTTP_ERROR",
+        retryable: false,
+        httpStatus: 42,
+      },
+    ];
+    for (const llmFailure of malformed) {
+      expect(classifyTaskError({ code: "llm_failed", llmFailure })).toEqual({
+        category: "retryable",
+        reason: "llm_failed",
+      });
+    }
+    expect(
+      classifyTaskError({
+        code: "llm_failed",
+        get llmFailure(): never {
+          throw new Error("private getter");
+        },
+      }),
+    ).toEqual({ category: "retryable", reason: "llm_failed" });
+  });
+});
 
 describe("RUN-15_CLASSIFY stable runtime task error classification", () => {
   it("RUN-15_CLASSIFY maps every business failure code to retryable", () => {

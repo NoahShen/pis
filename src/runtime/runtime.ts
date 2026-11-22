@@ -1,3 +1,4 @@
+import type { LlmFailureSummary } from "../llm/failure-summary.js";
 import { BoundedTaskQueue, QueueClosedError } from "./bounded-task-queue.js";
 import type {
   CollectResult,
@@ -268,6 +269,9 @@ function failureLogEntry(
   maxAttempts: number,
   reason: string,
   durationMs: number,
+  final: boolean,
+  retryable: boolean,
+  llmFailure?: LlmFailureSummary,
 ): RuntimeLogEntry {
   return {
     taskType: task.type,
@@ -277,6 +281,17 @@ function failureLogEntry(
     maxAttempts,
     reason,
     durationMs,
+    retryable,
+    final,
+    ...(llmFailure === undefined
+      ? {}
+      : {
+          operation: llmFailure.operation,
+          category: llmFailure.category,
+          ...(llmFailure.httpStatus === undefined
+            ? {}
+            : { httpStatus: llmFailure.httpStatus }),
+        }),
   };
 }
 
@@ -357,7 +372,15 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
       if (signal.aborted) {
         logRuntime(
           dependencies.logger,
-          failureLogEntry(task, 1, configuration.maxAttempts, "cancelled", 0),
+          failureLogEntry(
+            task,
+            1,
+            configuration.maxAttempts,
+            "cancelled",
+            0,
+            true,
+            false,
+          ),
         );
         return;
       }
@@ -380,6 +403,8 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
                 configuration.maxAttempts,
                 "cancelled",
                 Math.max(0, Date.now() - startedAt),
+                true,
+                false,
               ),
             );
           }
@@ -402,6 +427,9 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
               configuration.maxAttempts,
               signal.aborted ? "cancelled" : classification.reason,
               durationMs,
+              terminal,
+              cancelled ? false : classification.category === "retryable",
+              classification.llmFailure,
             ),
           );
 
@@ -418,7 +446,15 @@ export function createRuntime(dependencies: RuntimeDependencies): Runtime {
       if (signal.aborted) {
         logRuntime(
           dependencies.logger,
-          failureLogEntry(task, 1, configuration.maxAttempts, "cancelled", 0),
+          failureLogEntry(
+            task,
+            1,
+            configuration.maxAttempts,
+            "cancelled",
+            0,
+            true,
+            false,
+          ),
         );
         return;
       }

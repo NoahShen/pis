@@ -1,3 +1,6 @@
+import { summarizeLlmFailure } from "../llm/failure-summary.js";
+import type { LlmFailureSummary } from "../llm/failure-summary.js";
+
 export type TopicMatchingErrorCode =
   | "invalid_input"
   | "aborted"
@@ -15,11 +18,15 @@ export const TOPIC_MATCHING_ERROR_MESSAGES = {
 
 export class TopicMatchingError extends Error {
   readonly code: TopicMatchingErrorCode;
+  declare readonly llmFailure?: LlmFailureSummary;
 
-  constructor(code: TopicMatchingErrorCode) {
+  constructor(code: TopicMatchingErrorCode, llmFailure?: LlmFailureSummary) {
     super(TOPIC_MATCHING_ERROR_MESSAGES[code]);
     this.name = "TopicMatchingError";
     this.code = code;
+    if (llmFailure !== undefined) {
+      this.llmFailure = llmFailure;
+    }
   }
 }
 
@@ -57,5 +64,10 @@ export function normalizeTopicMatchingError(
     return new TopicMatchingError("aborted");
   }
 
-  return new TopicMatchingError(fallback);
+  return new TopicMatchingError(
+    fallback,
+    fallback === "llm_failed"
+      ? summarizeLlmFailure(error, "topic-matching")
+      : undefined,
+  );
 }

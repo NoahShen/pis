@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 
 import { describe, expect, it, vi } from "vitest";
 
+import { ChatCompletionsError } from "../../src/llm/chat-completions-client.js";
 import {
   createTypedLlmCalls,
   type TypedLlmCalls,
@@ -119,6 +120,9 @@ function expectTopicMatchingError(
     message: TOPIC_MATCHING_ERROR_MESSAGES[code],
   });
   expect(Object.prototype.hasOwnProperty.call(error, "cause")).toBe(false);
+  if (code === "aborted") {
+    expect(error).not.toHaveProperty("llmFailure");
+  }
   expect(error).not.toHaveProperty("issues");
   expect(error).not.toHaveProperty("data");
   expect(error).not.toHaveProperty("prompt");
@@ -284,6 +288,29 @@ describe("topic matching payload builders", () => {
 });
 
 describe("topic matching error boundary", () => {
+  it("preserves a fixed topic-matching failure summary", async () => {
+    const calls = matchTopicsCalls(() =>
+      Promise.reject(
+        new ChatCompletionsError(
+          "LLM_RESPONSE_PROTOCOL_ERROR",
+          undefined,
+          "LLM_REFUSAL",
+        ),
+      ),
+    );
+    const error = await captureRejection(
+      callTopicMatching(TASK_DATA, REFERENCES, calls, undefined),
+    );
+
+    expectTopicMatchingError(error, "llm_failed");
+    expect(error.llmFailure).toEqual({
+      operation: "topic-matching",
+      category: "response_protocol",
+      reason: "LLM_REFUSAL",
+      retryable: false,
+    });
+  });
+
   it("ERROR_SAFETY exposes the exact five stable codes and messages without causes", () => {
     expect(Object.keys(TOPIC_MATCHING_ERROR_MESSAGES)).toEqual([
       "invalid_input",

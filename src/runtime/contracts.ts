@@ -1,3 +1,5 @@
+import type { LlmFailureCategory } from "../llm/failure-summary.js";
+import type { LlmOperation } from "../prompt/prompt-repository.js";
 import type { CollectResult } from "../collection/contracts.js";
 import type { EventAnalysisResult } from "../event-analysis/contracts.js";
 import type { KnowledgeResult } from "../knowledge/contracts.js";
@@ -75,6 +77,11 @@ export interface RuntimeLogEntry {
   readonly queueSize?: number;
   readonly reason?: string;
   readonly durationMs?: number;
+  readonly operation?: LlmOperation | null;
+  readonly category?: LlmFailureCategory;
+  readonly httpStatus?: number;
+  readonly retryable?: boolean;
+  readonly final?: boolean;
 }
 
 export interface RuntimeLogger {
