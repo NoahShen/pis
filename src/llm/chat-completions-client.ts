@@ -25,6 +25,14 @@ export type ChatCompletionsErrorCode =
   | "LLM_RESPONSE_PROTOCOL_ERROR"
   | "LLM_RESPONSE_TOO_LARGE";
 
+export type ChatCompletionsProtocolReason =
+  | "LLM_RESPONSE_MALFORMED"
+  | "LLM_CONTENT_EMPTY"
+  | "LLM_FINISH_REASON_INVALID"
+  | "LLM_OUTPUT_TRUNCATED"
+  | "LLM_REFUSAL"
+  | "LLM_TOOL_CALL_UNEXPECTED";
+
 export type ChatCompletionsErrorCategory =
   | "configuration"
   | "cancellation"
@@ -67,8 +75,13 @@ export class ChatCompletionsError extends Error {
   readonly category: ChatCompletionsErrorCategory;
   readonly retryable: boolean;
   readonly status: number | undefined;
+  readonly reason: ChatCompletionsErrorCode | ChatCompletionsProtocolReason;
 
-  constructor(code: ChatCompletionsErrorCode, status?: number) {
+  constructor(
+    code: ChatCompletionsErrorCode,
+    status?: number,
+    reason: ChatCompletionsProtocolReason = "LLM_RESPONSE_MALFORMED",
+  ) {
     super(`Chat Completions error: ${code}`);
     this.name = "ChatCompletionsError";
     this.code = code;
@@ -77,9 +90,13 @@ export class ChatCompletionsError extends Error {
       code === "LLM_HTTP_ERROR" && isSafeHttpStatus(status)
         ? status
         : undefined;
+    this.reason = code === "LLM_RESPONSE_PROTOCOL_ERROR" ? reason : code;
     this.retryable =
       code === "LLM_TIMEOUT" ||
       code === "LLM_NETWORK_ERROR" ||
+      (code === "LLM_RESPONSE_PROTOCOL_ERROR" &&
+        reason !== "LLM_REFUSAL" &&
+        reason !== "LLM_TOOL_CALL_UNEXPECTED") ||
       (code === "LLM_HTTP_ERROR" && isRetryableHttpStatus(this.status));
   }
 }
@@ -169,8 +186,14 @@ function lifecycleError(reason: LifecycleReason): ChatCompletionsError {
   );
 }
 
-function protocolError(): ChatCompletionsError {
-  return new ChatCompletionsError("LLM_RESPONSE_PROTOCOL_ERROR");
+function protocolError(
+  reason: ChatCompletionsProtocolReason = "LLM_RESPONSE_MALFORMED",
+): ChatCompletionsError {
+  return new ChatCompletionsError(
+    "LLM_RESPONSE_PROTOCOL_ERROR",
+    undefined,
+    reason,
+  );
 }
 
 function consumeRejection(value: PromiseLike<unknown>): void {
@@ -211,10 +234,7 @@ function hasActiveToolOrFunctionCall(
 ): boolean {
   if (Object.prototype.hasOwnProperty.call(message, "tool_calls")) {
     const toolCalls = message.tool_calls;
-    if (
-      !Array.isArray(toolCalls) ||
-      (toolCalls.length > 0 && toolCalls.some((call) => call !== null))
-    ) {
+    if (!Array.isArray(toolCalls) || toolCalls.length > 0) {
       return true;
     }
   }
@@ -234,22 +254,36 @@ function extractMessageContent(payload: unknown): string {
   }
 
   const choice = payload.choices[0];
-  if (!isRecord(choice) || choice.finish_reason !== "stop") {
+  if (!isRecord(choice)) {
     throw protocolError();
+  }
+  if (
+    !Object.prototype.hasOwnProperty.call(choice, "finish_reason") ||
+    choice.finish_reason === undefined
+  ) {
+    throw protocolError();
+  }
+  if (choice.finish_reason === "length") {
+    throw protocolError("LLM_OUTPUT_TRUNCATED");
+  }
+  if (choice.finish_reason !== "stop") {
+    throw protocolError("LLM_FINISH_REASON_INVALID");
   }
 
   const message = choice.message;
-  if (
-    !isRecord(message) ||
-    hasActiveRefusal(message) ||
-    hasActiveToolOrFunctionCall(message)
-  ) {
+  if (!isRecord(message)) {
     throw protocolError();
+  }
+  if (hasActiveRefusal(message)) {
+    throw protocolError("LLM_REFUSAL");
+  }
+  if (hasActiveToolOrFunctionCall(message)) {
+    throw protocolError("LLM_TOOL_CALL_UNEXPECTED");
   }
 
   const content = message.content;
   if (!isNonBlankString(content)) {
-    throw protocolError();
+    throw protocolError("LLM_CONTENT_EMPTY");
   }
 
   return content;
