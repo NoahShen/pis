@@ -55,6 +55,26 @@ node scripts/llm-streaming-acceptance.mjs \
 
 stdout 仅输出 mode、五类计数、成功/失败数、总耗时和 COMPLETE/FAILED。报告写入仓库外私有路径。失败时进程非零，不得以 self-test 替代真实结果。真实报告由 Architect 判读并另行记录安全结论；当前 Worker 状态为 **REAL_ACCEPTANCE=NOT_RUN**，不是 PASS，也不宣称 `OPS-02_FINAL_PASS`。
 
-## 4. 独立范围
+## 4. Architect 真实 `group/pis` 复验结果
 
-生产 6 Source、真实 Source/User Context、P50/P90 业务吞吐、失败补跑、Pages/Scheduler、运行监控和 `/health` 均未在本卡执行，由负责人或相应后续任务另行验收。
+- 状态：**REAL_ACCEPTANCE=COMPLETE_WITH_OUTPUT_FORMAT_FAILURES**
+- 执行方式：自主合成输入，五类 operation，真实流式 SSE；未读取真实 Source/User Context。
+- 结果：**5 次 operation 流程中 3 成功、2 失败**，累计耗时约 47.2 秒；没有 60 秒超时、499 或流式协议读取失败。
+
+| operation | 结果 | attempts | firstByteMs | firstContentMs | durationMs |
+|---|---|---:|---:|---:|---:|
+| processing-route | SUCCESS（第二次成功） | 2 | 2331 | 2335 | 12731 |
+| event-search | `LLM_OUTPUT_JSON_INVALID` | 2 | 12994 | 13008 | 17715 |
+| event-analysis | `LLM_OUTPUT_JSON_INVALID` | 2 | 4840 | 4844 | 10111 |
+| knowledge-analysis | SUCCESS | 1 | 3485 | 3490 | 3493 |
+| topic-matching | SUCCESS | 1 | 3183 | 3186 | 3189 |
+
+五类 operation 均实际观察到 request_started、first_chunk_received、reasoning_started、content_started、upstream_closed、stream_done。两个 Event operation 的原始 Content 均为 `json` 代码围栏包裹的 JSON；现有契约正确拒绝，未剥离围栏或放宽 Schema 冒充通过。该结果证明流式/预算/重试链可用，同时证明 `group/pis` 在当前合成指令下仍有输出格式波动。
+
+- 精确代码 `e52515fe7f9ed095792f7dedfa72d769f87b97de` 的 Linux CI run `45047110209`：Success。
+- 独立 `git archive` 干净快照：152 files / 1558 tests，build、全部 smoke、378 文件格式检查通过；离线 self-test 10 项通过。
+- 原始 SSE 和报告均位于私有 `/private/tmp`，权限 600，不进入 Git。
+
+## 5. 独立范围
+
+生产 6 Source、真实 Source/User Context、P50/P90 业务吞吐、失败补跑、Pages/Scheduler、运行监控和 `/health` 均未在本卡执行，由负责人或相应后续任务另行验收。当前 Event 输出格式问题需要在生产配置/Prompt 语义层面单独处理，不能宣称五类真实模型全部通过。
