@@ -44,6 +44,8 @@ Pages 通知失败不回滚 Published Item 是正确行为；当前可通过启�
 
 ### 阶段 A：错误摘要与重试分类（最高优先级）
 
+**交付状态：OPS-01 实现及离线验收脚本已交付；真实模型复验 PENDING，未签发最终验收。**
+
 1. 在各业务 Error 上保留原稳定 `code`，新增安全的 failure summary：`operation/category/reason/retryable/httpStatus?`。
 2. Runtime 日志白名单增加 operation、category、reason、HTTP status、attempt/maxAttempts、final、durationMs；记录每次尝试与最终耗尽。
 3. 重试建议：
