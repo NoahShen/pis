@@ -1,6 +1,6 @@
 # PIS
 
-运维安装、PM2 启动、私有环境模板、上线验收、升级回滚和备份迁移见 **[`docs/deployment.md`](docs/deployment.md)**；可复制 `docs/deployment.env.example` 到仓库外作为私有环境模板。试运行问题复核与后续改造边界见 `docs/operations/runtime-improvement-review-2026-11-22.md`。
+运维安装、PM2 启动、私有环境模板、上线验收、升级回滚和备份迁移见 **[`docs/deployment.md`](docs/deployment.md)**；可复制 `docs/deployment.env.example` 到仓库外作为私有环境模板。试运行问题复核与后续改造边界见 `docs/operations/runtime-improvement-review-2026-11-22.md`；LLM 响应超时与结构化输出复核见 `docs/operations/llm-timeout-structured-output-review-2026-11-22.md`。
 
 PIS 是一个单进程、由 TypeScript 编写的个人 RSS 信息筛选服务。当前仓库包含 D00～D11 的业务基础，以及 D11A 的生产运行整合：真实 SQLite、共享依赖、六阶段 Service、Runtime、Cron Scheduler、配置 API 与进程生命周期由同一条生产装配链持有。D12 已实现本地静态 RSS 的显式同步与完整文件集（head/pending/封存归档），由 `createLocalRssSync` 显式调用；本 README 不把确定性 Stub/本地 Fixture 结果表述为真实 RSS + 真实 LLM 的端到端验收，也不把本地子集冒充 D13 云端与阅读器验收。
 
