@@ -46,16 +46,12 @@ Self-test 使用本地 SSE 替身、生产 Prompt 和 typed calls，网络请求
 
 测试对实际场景数做交叉断言，不仅检查固定 attempt 总数。Self-test 临时 raw/report 在结束后删除。
 
-## 3. Architect 真实对照
+## 3. Architect 真实对照结果
 
-Worker 不执行此步骤。获授权 Architect 在固定 Node 工具链下构建后，使用私有 `group/pis` 配置单独执行：
-
-```sh
-node scripts/event-prompt-compatibility.mjs \
-  --env-file /absolute/private/llm.env \
-  --output /absolute/private/ops-03-event-prompt-baseline.json
-```
-
-进程以任何最终失败返回非零。不得用 self-test 代替真实结果；公开基线只记录安全输出形态、attempt 和耗时。Architect 完成真实语义判读后再决定：生产 Prompt 稳定则保持原文；频繁围栏时才考虑 Spec 允许的最小输出段修订，并保留第二轮对照。
+- 首次真实执行：28 attempts 全部以 `LLM_RESPONSE_MALFORMED` 结束，outputShape 为 valid JSON；私有 SSE 证明 stop、usage 和 `[DONE]` 均存在，根因不是 Prompt 或代码围栏，而是 Magpie 在 stop 前后发送 `choices: []` 的 usage-only 事件，流式 Client 误将其判为协议错误。
+- 修复：允许带对象 `usage` 的空 choices 事件，其他空 choices 仍拒绝；merge `666238634205e710ca345feff7dcdca24aad9e7b`，回归测试 merge `38c94bc7d22af9b538cb61e5113c2a0c7f8583d9`。
+- 修复后生产 Prompt 对照：**14 attempts / 14 SUCCESS / 0 FAIL**，outputShape 全部 valid，累计约 56 秒。七类场景的 P-02/P-03 均第一次成功，含合法 NEW_UPDATE、NO_INCREMENT、跨语言、公司≠产品、空结果和非法引用拒绝。
+- **生产 `event-search.md` 与 `event-analysis.md` 无需修改**，不新增输出约束，不启用 response_format，不剥离代码围栏。OPS-02 的极简验收指令问题与生产 Prompt 分离。
+- 原始 SSE 和报告仅存私有 600 文件，不进入 Git；公开记录不含模型名、endpoint、正文或秘密。
 
 当前没有真实结果支持修改 Prompt，也没有签发 `OPS-03_FINAL_PASS`。
