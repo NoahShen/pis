@@ -2,6 +2,7 @@ import { XMLValidator } from "fast-xml-parser";
 import { describe, expect, it } from "vitest";
 
 import type { PublishedItem } from "../../src/publication/contracts.js";
+import { TemplatePublicationRenderer } from "../../src/publication/template-renderer.js";
 import {
   RSS_ARCHIVE_BATCH_SIZE,
   RSS_FEEDS,
@@ -21,6 +22,10 @@ import {
   type ParsedRssDocument,
   type ParsedRssItem,
 } from "../fixtures/rss.js";
+import {
+  createPublicationKnowledgeContext,
+  publicationKnowledgeFixture,
+} from "../fixtures/publication.js";
 
 const EVENT_FEED = RSS_FEEDS.EVENT_UPDATES;
 const CURATED_FEED = RSS_FEEDS.CURATED_CONTENT;
@@ -154,6 +159,44 @@ describe("RSS document rendering", () => {
       isPermaLink: "false",
       value: "pis:published:rss-&<中文>",
     });
+  });
+
+  it("OPS-03_READABLE_HTML preserves escaped labels and separate Finding paragraphs", () => {
+    const draft = new TemplatePublicationRenderer().render(
+      createPublicationKnowledgeContext({
+        knowledge: { summary: "Summary & <details>" },
+        findings: [
+          { title: "Finding <title>", description: "Details & notes" },
+        ],
+      }),
+    );
+    const parsed = validateAndParse(
+      renderRssHead({
+        feed: CURATED_FEED,
+        items: [
+          createRssPublishedItem({
+            target_type: "KNOWLEDGE",
+            target_id: publicationKnowledgeFixture.id,
+            title: draft.title,
+            summary: draft.summary,
+            body: draft.body,
+          }),
+        ],
+        documentHref: CURATED_FEED.headKey,
+        previousArchiveHref: CURATED_FEED.pendingKey,
+      }),
+    );
+    const body = itemAt(parsedRssItems(parsed))["content:encoded"];
+
+    expect(body).toBe(draft.body);
+    expect(body).toContain(
+      "<strong>摘要</strong>：Summary &amp; &lt;details&gt;",
+    );
+    expect(body).toContain(
+      "<li><strong>Finding &lt;title&gt;</strong><p>Details &amp; notes</p></li>",
+    );
+    expect(body).not.toContain("<title>");
+    expect(body).not.toContain("<details>");
   });
 
   it("RSS-05_TIME converts +08:00 to RFC 822 GMT and rejects invalid instants", () => {

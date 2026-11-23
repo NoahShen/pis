@@ -58,10 +58,10 @@ describe("TemplatePublicationRenderer", () => {
       [
         "<section>",
         "<h2>Synthetic Event Title</h2>",
-        "<p>核心实体：Synthetic Event Entity</p>",
-        "<p>主题：Synthetic Event Subject</p>",
-        "<p>范围：Synthetic Event Scope</p>",
-        "<p>发生时间：时间未确定</p>",
+        "<p><strong>核心实体</strong>：Synthetic Event Entity</p>",
+        "<p><strong>主题</strong>：Synthetic Event Subject</p>",
+        "<p><strong>范围</strong>：Synthetic Event Scope</p>",
+        "<p><strong>发生时间</strong>：时间未确定</p>",
         "<h3>初始事实</h3>",
         "<p>Synthetic Event Description</p>",
         "</section>",
@@ -100,11 +100,11 @@ describe("TemplatePublicationRenderer", () => {
       [
         "<section>",
         "<h2>Synthetic Current Update</h2>",
-        "<p>所属主线：Synthetic Parent Title</p>",
-        "<p>核心实体：Synthetic Parent Entity</p>",
-        "<p>主题：Synthetic Parent Subject</p>",
-        "<p>范围：Synthetic Parent Scope</p>",
-        "<p>发生时间：2026-11-20T10:00:00.000+08:00</p>",
+        "<p><strong>所属主线</strong>：Synthetic Parent Title</p>",
+        "<p><strong>核心实体</strong>：Synthetic Parent Entity</p>",
+        "<p><strong>主题</strong>：Synthetic Parent Subject</p>",
+        "<p><strong>范围</strong>：Synthetic Parent Scope</p>",
+        "<p><strong>发生时间</strong>：2026-11-20T10:00:00.000+08:00</p>",
         "<h3>本次进展</h3>",
         "<p>Synthetic Current Update Description</p>",
         "</section>",
@@ -125,13 +125,13 @@ describe("TemplatePublicationRenderer", () => {
       [
         "<section>",
         "<h2>Synthetic Knowledge Title</h2>",
-        "<p>分类：Insight</p>",
-        "<p>摘要：Synthetic Knowledge Summary</p>",
-        "<p>价值：Synthetic Knowledge Value</p>",
+        "<p><strong>分类</strong>：Insight</p>",
+        "<p><strong>摘要</strong>：Synthetic Knowledge Summary</p>",
+        "<p><strong>价值</strong>：Synthetic Knowledge Value</p>",
         "<h3>Findings</h3>",
         "<ul>",
-        "<li>Synthetic Finding One：Synthetic finding one description</li>",
-        "<li>Synthetic Finding Two：Synthetic finding two description</li>",
+        "<li><strong>Synthetic Finding One</strong><p>Synthetic finding one description</p></li>",
+        "<li><strong>Synthetic Finding Two</strong><p>Synthetic finding two description</p></li>",
         "</ul>",
         "</section>",
       ].join("\n"),
@@ -142,7 +142,9 @@ describe("TemplatePublicationRenderer", () => {
         knowledge: { category: null },
       }),
     );
-    expect(uncategorized.body).toContain("<p>分类：未分类</p>");
+    expect(uncategorized.body).toContain(
+      "<p><strong>分类</strong>：未分类</p>",
+    );
   });
 
   it("PUB-10_SUMMARY_BOUND preserves short text and bounds long text on UTF-16 boundaries", () => {
@@ -169,20 +171,81 @@ describe("TemplatePublicationRenderer", () => {
     expect(truncateSummary("abc", 0)).toBe("");
   });
 
-  it("TAGS_ALLOWLIST emits only section/h2/h3/p/ul/li without attributes", () => {
+  it("OPS-03_ESCAPE escapes every Event, Update, and Knowledge display value", () => {
+    const malicious = '<script>alert("x")</script><img src=x onerror="x">';
+    const event = new TemplatePublicationRenderer().render(
+      createPublicationEventContext(
+        {
+          title: malicious,
+          entityName: malicious,
+          subject: malicious,
+          scope: malicious,
+          description: malicious,
+        },
+        malicious,
+      ),
+    );
+    const update = new TemplatePublicationRenderer().render(
+      createPublicationUpdateContext({
+        update: { title: malicious, description: malicious },
+        parentEvent: {
+          title: malicious,
+          entityName: malicious,
+          subject: malicious,
+          scope: malicious,
+        },
+        occurredAt: malicious,
+      }),
+    );
+    const knowledge = new TemplatePublicationRenderer().render(
+      createPublicationKnowledgeContext({
+        knowledge: {
+          title: malicious,
+          category: malicious,
+          summary: malicious,
+          value: malicious,
+        },
+        findings: [{ title: malicious, description: malicious }],
+      }),
+    );
+
+    for (const draft of [event, update, knowledge]) {
+      expect(draft.body).not.toContain("<script>");
+      expect(draft.body).not.toContain("<img");
+      expect(draft.body).not.toContain('onerror="x">');
+      expect(draft.body).toContain(
+        "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;&lt;img src=x onerror=&quot;x&quot;&gt;",
+      );
+    }
+    const escaped =
+      "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;&lt;img src=x onerror=&quot;x&quot;&gt;";
+    expect(knowledge.body).toContain(
+      `<li><strong>${escaped}</strong><p>${escaped}</p></li>`,
+    );
+  });
+
+  it("TAGS_ALLOWLIST emits only section/h2/h3/p/ul/li/strong without attributes", () => {
     const bodies = renderedBodies([
       createPublicationEventContext(),
       createPublicationUpdateContext(),
       createPublicationKnowledgeContext(),
       createPublicationKnowledgeContext({ findings: [] }),
     ]);
-    const allowedTags = new Set(["section", "h2", "h3", "p", "ul", "li"]);
+    const allowedTags = new Set([
+      "section",
+      "h2",
+      "h3",
+      "p",
+      "ul",
+      "li",
+      "strong",
+    ]);
 
     for (const body of bodies) {
       const tags = [...body.matchAll(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi)];
       for (const match of tags) {
         expect(allowedTags.has(match[1]!.toLowerCase())).toBe(true);
-        expect(match[0]).toMatch(/^<\/?(?:section|h2|h3|p|ul|li)>$/);
+        expect(match[0]).toMatch(/^<\/?(?:section|h2|h3|p|ul|li|strong)>$/);
       }
       expect(body).not.toMatch(/<a\b/i);
     }
@@ -326,10 +389,16 @@ describe("TemplatePublicationRenderer", () => {
       expect(typeof draft.summary).toBe("string");
       expect(typeof draft.body).toBe("string");
     }
-    expect(emptyEvent.body).toContain("<p>核心实体：</p>");
-    expect(emptyEvent.body).toContain("<p>发生时间：时间未确定</p>");
-    expect(emptyUpdate.body).toContain("<p>发生时间：时间未确定</p>");
-    expect(emptyKnowledge.body).toContain("<p>分类：未分类</p>");
+    expect(emptyEvent.body).toContain("<p><strong>核心实体</strong>：</p>");
+    expect(emptyEvent.body).toContain(
+      "<p><strong>发生时间</strong>：时间未确定</p>",
+    );
+    expect(emptyUpdate.body).toContain(
+      "<p><strong>发生时间</strong>：时间未确定</p>",
+    );
+    expect(emptyKnowledge.body).toContain(
+      "<p><strong>分类</strong>：未分类</p>",
+    );
     expect(emptyKnowledge.body).toContain("<p>暂无 Findings</p>");
   });
 });

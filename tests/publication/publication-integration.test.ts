@@ -69,7 +69,16 @@ function bodyHrefs(body: string): string[] {
 }
 
 function assertSafeBody(body: string): void {
-  const allowedTags = new Set(["a", "h2", "h3", "li", "p", "section", "ul"]);
+  const allowedTags = new Set([
+    "a",
+    "h2",
+    "h3",
+    "li",
+    "p",
+    "section",
+    "strong",
+    "ul",
+  ]);
   for (const match of body.matchAll(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi)) {
     expect(allowedTags.has(match[1]!.toLowerCase())).toBe(true);
   }
