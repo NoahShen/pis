@@ -63,10 +63,10 @@ function renderEvent(
     body: [
       "<section>",
       `<h2>${escapeHtml(event.title)}</h2>`,
-      `<p>核心实体：${escapeHtml(event.entityName)}</p>`,
-      `<p>主题：${escapeHtml(event.subject)}</p>`,
-      `<p>范围：${escapeHtml(event.scope)}</p>`,
-      `<p>发生时间：${escapeHtml(formatOccurredAt(occurredAt))}</p>`,
+      `<p><strong>核心实体</strong>：${escapeHtml(event.entityName)}</p>`,
+      `<p><strong>主题</strong>：${escapeHtml(event.subject)}</p>`,
+      `<p><strong>范围</strong>：${escapeHtml(event.scope)}</p>`,
+      `<p><strong>发生时间</strong>：${escapeHtml(formatOccurredAt(occurredAt))}</p>`,
       "<h3>初始事实</h3>",
       `<p>${escapeHtml(event.description)}</p>`,
       "</section>",
@@ -85,11 +85,11 @@ function renderEventUpdate(
     body: [
       "<section>",
       `<h2>${escapeHtml(update.title)}</h2>`,
-      `<p>所属主线：${escapeHtml(parentEvent.title)}</p>`,
-      `<p>核心实体：${escapeHtml(parentEvent.entityName)}</p>`,
-      `<p>主题：${escapeHtml(parentEvent.subject)}</p>`,
-      `<p>范围：${escapeHtml(parentEvent.scope)}</p>`,
-      `<p>发生时间：${escapeHtml(formatOccurredAt(occurredAt))}</p>`,
+      `<p><strong>所属主线</strong>：${escapeHtml(parentEvent.title)}</p>`,
+      `<p><strong>核心实体</strong>：${escapeHtml(parentEvent.entityName)}</p>`,
+      `<p><strong>主题</strong>：${escapeHtml(parentEvent.subject)}</p>`,
+      `<p><strong>范围</strong>：${escapeHtml(parentEvent.scope)}</p>`,
+      `<p><strong>发生时间</strong>：${escapeHtml(formatOccurredAt(occurredAt))}</p>`,
       "<h3>本次进展</h3>",
       `<p>${escapeHtml(update.description)}</p>`,
       "</section>",
@@ -105,7 +105,7 @@ function renderKnowledge(knowledge: PublicationKnowledge): PublicationDraft {
           "<ul>",
           ...knowledge.findings.map(
             (finding) =>
-              `<li>${escapeHtml(finding.title)}：${escapeHtml(finding.description)}</li>`,
+              `<li><strong>${escapeHtml(finding.title)}</strong><p>${escapeHtml(finding.description)}</p></li>`,
           ),
           "</ul>",
         ];
@@ -116,9 +116,9 @@ function renderKnowledge(knowledge: PublicationKnowledge): PublicationDraft {
     body: [
       "<section>",
       `<h2>${escapeHtml(knowledge.title)}</h2>`,
-      `<p>分类：${escapeHtml(knowledge.category ?? "未分类")}</p>`,
-      `<p>摘要：${escapeHtml(knowledge.summary)}</p>`,
-      `<p>价值：${escapeHtml(knowledge.value)}</p>`,
+      `<p><strong>分类</strong>：${escapeHtml(knowledge.category ?? "未分类")}</p>`,
+      `<p><strong>摘要</strong>：${escapeHtml(knowledge.summary)}</p>`,
+      `<p><strong>价值</strong>：${escapeHtml(knowledge.value)}</p>`,
       "<h3>Findings</h3>",
       ...findings,
       "</section>",
